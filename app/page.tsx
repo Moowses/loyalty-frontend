@@ -54,7 +54,7 @@ export default function LandingPage() {
   };
 
   return (
-    <div className="relative min-h-screen w-full "
+    <div className="relative min-h-screen w-full"
         style={{
           backgroundImage: "url('/backgroundimg.jpg')",
           backgroundSize: 'cover',
@@ -62,8 +62,7 @@ export default function LandingPage() {
           backgroundRepeat: 'no-repeat',
         }}>
       {/* Overlay */}
-     <div className="absolute inset-0 flex items-center justify-center px-4 py-12">
-
+      <div className="absolute inset-0 flex items-center justify-center px-4 py-12">
         <div className="w-full max-w-4xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-8">
           {/* Hero Text */}
           <div className="text-white text-center lg:text-left max-w-lg">
@@ -92,25 +91,24 @@ export default function LandingPage() {
                 {isSubmitting ? 'Processing...' : isSignup ? 'Sign Up' : 'Log In'}
               </button>
             </form>
-            <p className="text-center text-sm mt-4">
+            <div className="text-center text-sm mt-4">
               {isSignup ? 'Already have an account?' : 'Don’t have an account?'}{' '}
               <button onClick={() => setIsSignup(!isSignup)} className="text-[#003B73] hover:text-[#005F73] underline font-medium">
                 {isSignup ? 'Log In' : 'Sign Up'}
               </button>
-              {/* App download prompt */}
-              <div className="mt-6 text-center">
-                <p className="text-sm text-gray-600 mb-2">Download our app to access all features</p>
-                <div className="flex justify-center gap-3">
-                  <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
-                    <img src="/ggstore.png" alt="Get it on Google Play" className="h-10" />
-                  </a>
-                  <a href="https://www.apple.com/app-store/" target="_blank" rel="noopener noreferrer">
-                    <img src="/applestore.png" alt="Download on the App Store" className="h-10" />
-                  </a>
-                </div>
+            </div>
+            {/* App download prompt */}
+            <div className="mt-6 text-center">
+              <p className="text-sm text-gray-600 mb-2">Download our app to access all features</p>
+              <div className="flex justify-center gap-3">
+                <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer">
+                  <img src="/ggstore.png" alt="Get it on Google Play" className="h-10" />
+                </a>
+                <a href="https://www.apple.com/app-store/" target="_blank" rel="noopener noreferrer">
+                  <img src="/applestore.png" alt="Download on the App Store" className="h-10" />
+                </a>
               </div>
-
-            </p>
+            </div>
           </div>
         </div>
       </div>
