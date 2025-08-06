@@ -2,6 +2,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaCrown } from 'react-icons/fa6';
+import Image from 'next/image';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -83,11 +84,12 @@ export default function LandingPage() {
           {/* Form Container */}
           <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] border border-[#333] rounded-xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex justify-center mb-6">
-              <FaCrown className="text-3xl text-[#D4AF37]" />
+             
             </div>
             <h2 className="text-2xl font-serif font-light text-center text-white mb-6">
               {isSignup ? 'Create Your Account' : 'Member Login'}
             </h2>
+            
             
             {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-100 p-3 rounded-lg text-sm mb-4">
@@ -178,10 +180,22 @@ export default function LandingPage() {
               <p className="text-sm text-center text-gray-500 mb-4">Download our luxury travel companion</p>
               <div className="flex justify-center gap-4">
                 <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                  <img src="/ggstore.png" alt="Get it on Google Play" className="h-10" />
+                  <Image 
+                      src="/ggstore.png" 
+                      alt="Google Play" 
+                      width={120} 
+                      height={40}
+                      priority={false}
+                    />
                 </a>
                 <a href="https://www.apple.com/app-store/" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
-                  <img src="/applestore.png" alt="Download on the App Store" className="h-10" />
+                  <Image 
+                      src="/applestore.png" 
+                      alt="App Store" 
+                      width={120} 
+                      height={40}
+                      priority={false}
+                    />
                 </a>
               </div>
             </div>
