@@ -5,9 +5,11 @@ import { FaBellConcierge, FaSuitcaseRolling, FaGift, FaReceipt, FaCrown, FaGem }
 import Image from 'next/image';
 
 interface DashboardData {
-  name: string;
-  membershiptier?: string;
-  totalPoints: number;
+   name: string;
+    membershipNo: string;
+    membershiptier: string;
+    tier: string;
+    totalPoints: number;
   history: Array<{
     CREATED_BY: string;
     META_REDEMPTIONITEMNAME?: string;
@@ -45,6 +47,8 @@ export default function DashboardPage() {
     }
 
     const parsed: DashboardData = JSON.parse(dashboard);
+    
+    parsed.membershiptier = parsed.membershiptier || 'Unknown';
     parsed.history = parsed.history?.length > 0 ? [parsed.history[parsed.history.length - 1]] : [];
     parsed.fullHistory = parsed.history || [];
     setData(parsed);
@@ -112,7 +116,7 @@ export default function DashboardPage() {
             <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] border border-[#333] rounded-xl p-6 flex-1">
               <h3 className="text-sm text-[#999] mb-2">Membership Tier</h3>
               <p className="text-2xl font-serif text-[#D4AF37]">
-                {data.membershiptier || 'Elite'} Member
+                 {data.membershiptier} Member
               </p>
             </div>
             
