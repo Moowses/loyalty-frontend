@@ -47,7 +47,7 @@ export default function LandingPage() {
           router.push('/');
         }
       } else {
-        setError(json.message || 'Something went wrong.');
+        setError('Username is already registered with a profile');
       }
     } catch (err) {
       setIsSubmitting(false);
@@ -84,12 +84,17 @@ export default function LandingPage() {
           {/* Form Container */}
           <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] border border-[#333] rounded-xl p-8 w-full max-w-md shadow-2xl">
             <div className="flex justify-center mb-6">
-             
+              <Image 
+              src="/dreamtripclubicon.png" 
+              alt="Dream Trip Club Logo"
+              width={200}  // Adjust as needed
+              height={80}  // Adjust as needed
+              className="object-contain"
+            />
             </div>
             <h2 className="text-2xl font-serif font-light text-center text-white mb-6">
               {isSignup ? 'Create Your Account' : 'Member Login'}
             </h2>
-            
             
             {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-100 p-3 rounded-lg text-sm mb-4">

@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { FaBellConcierge, FaSuitcaseRolling, FaGift, FaReceipt, FaCrown, FaGem } from 'react-icons/fa6';
+import Image from 'next/image';
 
 interface DashboardData {
   name: string;
@@ -75,10 +76,13 @@ export default function DashboardPage() {
       <header className="bg-gradient-to-r from-[#1A1A1A] to-[#0D0D0D] border-b border-[#333] px-8 py-6">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center">
           <div className="flex items-center gap-3 mb-4 sm:mb-0">
-            <FaCrown className="text-2xl text-[#D4AF37]" />
-            <h1 className="text-2xl font-serif font-bold tracking-wider bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] to-[#F5F5F5]">
-              Dream Trip Club
-            </h1>
+             <Image 
+              src="/dreamtripclubicon.png" 
+              alt="Dream Trip Club Logo"
+              width={200}  // Adjust size as needed
+              height={32}  // Adjust size as needed
+              className="object-contain"
+      />
           </div>
           
           <nav className="flex items-center gap-6">
