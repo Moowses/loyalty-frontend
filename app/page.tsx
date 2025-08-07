@@ -13,7 +13,7 @@ export default function LandingPage() {
     email: '',
     mobilenumber: '',
     password: '',
-    country: 'Canada', // Default value
+    country: 'Canada', // Default valueS
     postalcode: '', // Default value
   });
   const [agreements, setAgreements] = useState({
@@ -351,7 +351,7 @@ export default function LandingPage() {
                   <Image 
                       src="/ggstore.png" 
                       alt="Google Play" 
-                      width={150} 
+                      width={130} 
                       height={50}
                       priority={false}
                     />
