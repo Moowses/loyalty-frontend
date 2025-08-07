@@ -94,33 +94,33 @@ export default function LandingPage() {
         <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
           {/* Hero Text */}
           <div className="text-white text-center lg:text-left max-w-xl">
-            <h1 className="text-4xl md:text-5xl font-serif font-bold tracking-wide mb-6">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#D4AF37] to-[#F5F5F5]">
+            <h1 className="text-4xl md:text-5xl font-aviner font-black tracking-wide mb-6">
+              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FFFFFF] to-[#FFFFFF]">
                 Unforgettable Vacations
               </span>
             </h1>
-            <p className="text-xl md:text-2xl font-light mb-6 text-[#D4AF37]">
-              Unbelievable Prices • Exclusive Rewards
+            <p className="text-xl md:text-2xl font-Avenir mb-6 text-[#FFFFFF]">
+              Extraordinary Adventure • Exclusive Rewards
             </p>
             <p className="text-lg text-gray-300 hidden lg:block">
-              Discover dream destinations with exclusive member benefits and once-in-a-lifetime experiences.
+              Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
             </p>
           </div>
 
           {/* Form Container */}
-          <div className="bg-gradient-to-br from-[#1A1A1A] to-[#0D0D0D] border border-[#333] rounded-xl p-8 w-full max-w-md shadow-2xl">
+          <div className="bg-white/85  border border-gray-300 rounded-xl p-8  w-full max-w-md shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
             <div className="flex justify-center mb-6">
               <Image 
                 src="/dreamtripclubicon.png" 
                 alt="Dream Trip Club Logo"
-                width={200}
+                width={250}
                 height={80}
                 className="object-contain"
               />
             </div>
-            <h2 className="text-2xl font-serif font-light text-center text-white mb-6">
-              {isSignup ? 'Create Your Account' : 'Member Login'}
-            </h2>
+            <div className="flex justify-center items-center gap-4 mb-6">
+              <span className="text-2xl font-normal text-[#000000] font-['Avenir']">REWARDS</span>
+            </div>
             
             {error && (
               <div className="bg-red-900/50 border border-red-700 text-red-100 p-3 rounded-lg text-sm mb-4">
@@ -131,38 +131,57 @@ export default function LandingPage() {
             <form onSubmit={handleSubmit} className="space-y-4">
               {isSignup && (
                 <>
-                  <input 
-                    name="firstname" 
-                    placeholder="First Name" 
-                    value={form.firstname} 
-                    onChange={handleChange} 
-                    required 
-                    className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
-                  />
+                  <div className="mb-4" >
+                     <label htmlFor="firstname" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                      First Name
+                     </label>
+                    <input 
+                      name="firstname" 
+                      placeholder="" 
+                      value={form.firstname} 
+                      onChange={handleChange} 
+                      required 
+                      className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
+                    />
+                  </div>
+                  <div className="mb-4" >
+                    <label htmlFor="lastname" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                      Lastname
+                    </label>
                   <input 
                     name="lastname" 
-                    placeholder="Last Name" 
+                    placeholder="" 
                     value={form.lastname} 
                     onChange={handleChange} 
                     required 
-                    className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
+                  className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
                   />
+                  </div>
+                  <div className="mb-4" >
+                  <label htmlFor="moblenumber" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                    Mobile Number
+                  </label>
                   <input 
                     name="mobilenumber" 
-                    placeholder="Mobile Number" 
+                    placeholder="" 
                     value={form.mobilenumber} 
                     onChange={handleChange} 
                     required 
-                    className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
+                    className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
                   />
+                  </div>
+                   <div className="mb-4" >
+                    <label htmlFor="country" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                      Country
+                    </label>
                   <select
                     name="country"
                     value={form.country}
                     onChange={(e) => setForm({...form, country: e.target.value})}
-                    className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent"
+                    className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
                     required
                   >
-                    
+                      <option value="Canada"></option>
                       <option value="Canada">Canada</option>
                       <option value="United States">United States</option>
                       <option value="Mexico">Mexico</option>
@@ -213,36 +232,50 @@ export default function LandingPage() {
                       <option value="Morocco">Morocco</option>
                       <option value="Other">Other</option>
                   </select>
-
+                  </div>
+                  <div className="mb-4" >
+                    <label htmlFor="postalcode" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                      Postalcode
+                    </label>
                   <input 
                     name="postalcode" 
-                    placeholder="Postal Code/Zip Code" 
+                    placeholder=""
                     value={form.postalcode} 
                     onChange={handleChange} 
                     required 
-                    className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
+                    className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
                   />
+                  </div>
                 </>
               )}
-              <input 
-                type="email" 
-                name="email" 
-                placeholder="Email" 
-                value={form.email} 
-                onChange={handleChange} 
-                required 
-                className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
-              />
+              <div className="mb-4" >
+                <label htmlFor="email" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                  Email
+                </label> 
+                <input 
+                  type="email" 
+                  placeholder=""
+                  name="email" 
+                  value={form.email} 
+                  onChange={handleChange} 
+                  required 
+                  className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
+                />
+              </div>
+              <div className="mb-4" >
+                <label htmlFor="email" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
+                  Password
+                </label>
               <input 
                 type="password" 
+                placeholder=""
                 name="password" 
-                placeholder="Password" 
                 value={form.password} 
                 onChange={handleChange} 
                 required 
-                className="w-full p-3 bg-[#1A1A1A] border border-[#333] text-white rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-500" 
+                className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
               />
-
+              </div>
               {isSignup && (
                 <div className="space-y-3 text-sm text-gray-400">
                   <div className="flex items-start gap-2">
@@ -286,7 +319,7 @@ export default function LandingPage() {
                 className={`w-full py-3 rounded-lg font-medium transition-all duration-300 ${
                   isSubmitting 
                     ? 'bg-gray-600 cursor-not-allowed' 
-                    : 'bg-gradient-to-r from-[#D4AF37] to-[#F5E6B2] text-[#0A0A0A] hover:from-[#F5E6B2] hover:to-[#D4AF37] hover:shadow-lg'
+                    : 'bg-gradient-to-r from-[#1898C4] to-[#1898C4] text-[#ffffff] hover:from-[#211F45] hover:to-[#211F45] hover:shadow-lg'
                 }`}
               >
                 {isSubmitting ? (
@@ -297,7 +330,7 @@ export default function LandingPage() {
                     </svg>
                     Processing...
                   </span>
-                ) : isSignup ? 'Join Now' : 'Access Your Account'}
+                ) : isSignup ? 'Join Now' : 'SIGN IN'}
               </button>
             </form>
 
@@ -305,22 +338,21 @@ export default function LandingPage() {
               {isSignup ? 'Already a member?' : 'New to Dream Trip Club?'}{' '}
               <button 
                 onClick={() => setIsSignup(!isSignup)} 
-                className="text-[#D4AF37] hover:text-[#F5E6B2] underline font-medium"
+                className="text-[#EB6923] hover:text-[#F5E6B2] underline font-medium"
               >
                 {isSignup ? 'Sign In' : 'Create Account'}
               </button>
             </div>
 
             {/* App download prompt */}
-            <div className="mt-8 pt-6 border-t border-[#333]">
-              <p className="text-sm text-center text-gray-500 mb-4">Download our luxury travel companion</p>
+            <div className="mt-8">
               <div className="flex justify-center gap-4">
                 <a href="https://play.google.com/store" target="_blank" rel="noopener noreferrer" className="hover:opacity-80 transition-opacity">
                   <Image 
                       src="/ggstore.png" 
                       alt="Google Play" 
-                      width={120} 
-                      height={40}
+                      width={150} 
+                      height={50}
                       priority={false}
                     />
                 </a>
