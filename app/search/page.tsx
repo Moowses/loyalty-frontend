@@ -36,7 +36,7 @@ export default function SearchTab() {
   return (
     <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
       <div className="p-1 bg-gray-100">
-        <p className="text-xs font-semibold text-gray-600 uppercase">Where can we take you?</p>
+       
       </div>
       
       <div className="flex flex-col md:flex-row items-center p-4">
