@@ -61,11 +61,42 @@ export default function LoginClient() {
     }
   };
 
+  // ===== Auto-resize iframe + remove top space =====
+  useEffect(() => {
+    // remove any default margins that can create top gap
+    document.documentElement.style.margin = '0';
+    document.body.style.margin = '0';
+    document.documentElement.style.padding = '0';
+    document.body.style.padding = '0';
+
+    const postSize = () => {
+      const h = Math.max(
+        document.body.scrollHeight,
+        document.documentElement.scrollHeight
+      );
+      // If you want to lock to your WP domain, replace '*' with 'https://YOUR-WP-DOMAIN'
+      window.parent?.postMessage({ type: 'frame-height', height: h }, '*');
+    };
+
+    // initial + observe changes
+    postSize();
+    const ro = new ResizeObserver(postSize);
+    ro.observe(document.body);
+
+    // fallback ticker in case something doesn't trigger ResizeObserver
+    const t = setInterval(postSize, 800);
+
+    return () => {
+      ro.disconnect();
+      clearInterval(t);
+    };
+  }, [isSignup]); // re-run when switching Sign In <-> Create Account
+
   // Always open dashboard in a NEW TAB (parent WP stays put)
   const redirectAfterAuth = (url?: string) => {
     const target = url || redirectPath || '/dashboard';
     window.open(target, '_blank', 'noopener,noreferrer');
-    // also notify parent iframe if you added the postMessage listener
+    // also notify parent iframe (WordPress listener will also open it)
     window.parent?.postMessage({ type: 'auth-success', redirectUrl: target }, '*');
   };
 
@@ -133,8 +164,8 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="w-full">
-      <div className="mx-auto my-6 w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+    <div className="w-full m-0 p-0"> {/* no outer spacing */}
+      <div className="mx-auto w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <h1 className="text-[28px] font-semibold tracking-tight text-neutral-900">
             {isSignup ? 'Create Account' : 'Sign In'}
