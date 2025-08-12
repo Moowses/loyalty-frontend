@@ -452,7 +452,7 @@ function SearchBar() {
 
 export default function SearchPage() {
   return (
-    <div className="bg-transparent min-h-[120px] flex items-center justify-center px-3">
+    <div className="bg-dtc-bgSearch min-h-[120px] flex items-center justify-center px-3">
       <SearchBar />
       <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
     </div>

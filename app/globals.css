@@ -19,6 +19,7 @@
   --color-dtc-muted: #93AFB9;       /* marketing muted blue */
   --color-dtc-bg:    #f5f7fa;       /* app background */
   --color-dtc-card:  #F2F6F7;  /* card bg */
+  --color-dtc-bgSearch: transparent;
 
   /* Fonts (mapped to next/font variables from layout.tsx) */
   --font-sans: var(--font-nunito), var(--font-manrope),
