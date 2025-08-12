@@ -3,7 +3,8 @@
 /* Light theme (DTC mock) */
 :root {
   --background: #f5f7fa;            /* page bg */
-  --foreground: #0f172a;            /* slate-900 */
+  --foreground: #0f172a;      
+  --color-dtc-bgSearch: transparent;      /* slate-900 */
 }
 
 /* Tailwind v4 design tokens */
