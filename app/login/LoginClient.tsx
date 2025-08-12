@@ -165,7 +165,7 @@ export default function LoginClient() {
 
   return (
     <div className="w-full m-0 p-0"> {/* no outer spacing */}
-      <div className="mx-auto w-full max-w-xl rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
+      <div className="mx-auto w-full max-w-xl bg-transparent rounded-xl border border-neutral-200 bg-white p-6 shadow-sm">
         <div className="mb-2 flex items-center justify-between">
           <h1 className="text-[28px] font-semibold tracking-tight text-neutral-900">
             {isSignup ? 'Create Account' : 'Sign In'}
