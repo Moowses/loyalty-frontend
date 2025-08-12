@@ -4,7 +4,7 @@
 :root {
   --background: #f5f7fa;            /* page bg */
   --foreground: #0f172a;      
-  --color-dtc-bgSearchs: transparent;      /* slate-900 */
+  --color-dtc-bgSearchs: transparent;     
 }
 
 /* Tailwind v4 design tokens */

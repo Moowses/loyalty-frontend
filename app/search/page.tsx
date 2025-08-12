@@ -451,8 +451,20 @@ function SearchBar() {
 }
 
 export default function SearchPage() {
+  // Route-local transparent background (no global CSS changes)
+  useEffect(() => {
+    const htmlPrev = document.documentElement.style.background;
+    const bodyPrev = document.body.style.background;
+    document.documentElement.style.background = 'transparent';
+    document.body.style.background = 'transparent';
+    return () => {
+      document.documentElement.style.background = htmlPrev;
+      document.body.style.background = bodyPrev;
+    };
+  }, []);
+
   return (
-    <div className="bg-dtc-bgSearchs min-h-[120px] flex items-center justify-center px-3">
+    <div className="bg-transparent min-h-[120px] flex items-center justify-center px-3">
       <SearchBar />
       <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
     </div>
