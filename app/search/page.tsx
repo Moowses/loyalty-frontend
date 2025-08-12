@@ -53,47 +53,57 @@ function DestinationPicker({ isMobile, value, setValue }: { isMobile: boolean; v
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<Array<{ label: string; lat: number; lon: number }>>([]);
   const triggerRef = useRef<HTMLDivElement | null>(null);
-  const [pos, setPos] = useState({ top: 0, left: 0, width: 360 });
+  const [pos, setPos] = useState({ top: 0, left: 0, width: 300 });
 
-  useLayoutEffect(() => {
+useLayoutEffect(() => {
     if (!open || !triggerRef.current || isMobile) return;
     const calc = () => {
-      const r = triggerRef.current!.getBoundingClientRect();
-      setPos({ top: r.bottom + 8, left: Math.max(8, Math.min(r.left, window.innerWidth - 380)), width: Math.min(360, r.width) });
+        const r = triggerRef.current.getBoundingClientRect();
+        setPos({ 
+            top: r.bottom + 8, 
+            left: Math.max(8, Math.min(r.left, window.innerWidth - 300)), 
+            width: Math.min(300, r.width) 
+        });
     };
     calc();
     window.addEventListener('scroll', calc, true);
     window.addEventListener('resize', calc);
-    return () => { window.removeEventListener('scroll', calc, true); window.removeEventListener('resize', calc); };
-  }, [open, isMobile]);
+    return () => { 
+        window.removeEventListener('scroll', calc, true); 
+        window.removeEventListener('resize', calc); 
+    };
+}, [open, isMobile]);
 
-  useEffect(() => {
+useEffect(() => {
     if (!open || !query.trim()) { setResults([]); return; }
     const id = setTimeout(async () => {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(query)}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        setResults(data.map((d: any) => ({ label: d.display_name, lat: +d.lat, lon: +d.lon })));
-      } catch {}
+        try {
+            const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(query)}`;
+            const res = await fetch(url);
+            const data = await res.json();
+            setResults(data.map((d: any) => ({ label: d.display_name, lat: +d.lat, lon: +d.lon })));
+        } catch {}
     }, 250);
     return () => clearTimeout(id);
-  }, [query, open]);
+}, [query, open]);
 
-  // Event bridge so parent can open this modal
-  useEffect(() => {
-    const openHandler = () => { if (isMobile) setShowDest(true); else setOpen(true); };
+// Event bridge so parent can open this modal
+useEffect(() => {
+    const openHandler = () => { 
+        if (isMobile) setShowDest(true); 
+        else setOpen(true); 
+    };
     window.addEventListener('open-dest-modal', openHandler);
     return () => window.removeEventListener('open-dest-modal', openHandler);
-  }, [isMobile]);
+}, [isMobile]);
 
-  const finalizePick = (place: Place) => {
+const finalizePick = (place: Place) => {
     setValue(place);
     pushRecent(place);
     setShowDest(false);
     setOpen(false);
     window.dispatchEvent(new Event('dest-picked'));
-  };
+};
 
   const choose = (item: { label: string; lat: number; lon: number }) => finalizePick({ label: item.label, lat: item.lat, lng: item.lon });
 

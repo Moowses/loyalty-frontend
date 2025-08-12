@@ -1,26 +1,53 @@
 @import "tailwindcss";
 
+/* Light theme (DTC mock) */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f5f7fa;            /* page bg */
+  --foreground: #0f172a;            /* slate-900 */
 }
 
+/* Tailwind v4 design tokens */
 @theme inline {
+  /* map CSS vars into tailwind tokens */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+
+  /* Dream Trip Club palette */
+  --color-dtc-navy:  #1f2141;       /* brand/navy */
+  --color-dtc-tile:  #242748;       /* action tiles */
+  --color-dtc-sky:   #cfe5ef;       /* banner + card headers (light sky) */
+  --color-dtc-muted: #93AFB9;       /* marketing muted blue */
+  --color-dtc-bg:    #f5f7fa;       /* app background */
+  --color-dtc-card:  #F2F6F7;  /* card bg */
+
+  /* Fonts (mapped to next/font variables from layout.tsx) */
+  --font-sans: var(--font-nunito), var(--font-manrope),
+               system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+
+  /* Extras */
+  --radius-xl: 12px;
+  --shadow-card: 0 1px 2px 0 rgba(16,24,40,.06);
 }
 
+/* Optional dark mode – we still keep light styling */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: transparent;
-    --foreground: #ededed;
+    --background: #0b0f1a;
+    --foreground: #e5e7eb;
   }
 }
 
+/* Base */
+html, body { height: 100%; }
 body {
-  background: var(--background);
+  background: var(--color-dtc-bg);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
+
+/* Utilities used in components */
+.shadow-card { box-shadow: var(--shadow-card); }
+.tnum { font-variant-numeric: tabular-nums; }  /* align numbers like points */
