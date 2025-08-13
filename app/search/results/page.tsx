@@ -195,13 +195,13 @@ function DestinationPicker({
 
   return (
     <div className="flex-1 min-w-[220px]">
-      <div className="flex items-center gap-2 text-[#F05A28] uppercase tracking-wide text-[10px] font-semibold mb-1">
-        <PinIcon className="w-3.5 h-3.5" /> Destination
+      <div className="flex items-center gap-2  text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
+        <PinIcon className="w-3.5 h-3.5 b text-[#F05A28]" /> Destination
       </div>
       <div ref={triggerRef}>
         <button
           type="button"
-          className="w-full text-left text-lg md:text-[16px] font-medium text-gray-900"
+          className="w-full text-left text-lg md:text-[16px] font-semibold text-gray-900"
           onClick={() => {
             if (isMobile) {
               setDestQuery(value?.label || '');
@@ -326,7 +326,7 @@ function DestinationPicker({
                   ✕
                 </button>
               </div>
-              <div className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1 flex items-center gap-2">
+              <div className="text-[11px] uppercase tracking-wide font-semibold text-black mb-1 flex items-center gap-2">
                 <PinIcon className="w-4 h-4" /> Destination
               </div>
               <input
@@ -472,6 +472,7 @@ function ResultsContent() {
   const initialPlace = params.get('place') || '';
   const initialLat = params.get('lat') ? Number(params.get('lat')) : undefined;
   const initialLng = params.get('lng') ? Number(params.get('lng')) : undefined;
+  const initialPet = (params.get('pet') || 'no').toLowerCase();
 
   const [dest, setDest] = useState<Place | null>(
     initialPlace ? { label: initialPlace, lat: initialLat, lng: initialLng } : null
@@ -488,6 +489,7 @@ function ResultsContent() {
   const [adults, setAdults] = useState<number>(Number(initialAdult || 1));
   const [children, setChildren] = useState<number>(Number(initialChild || 0));
   const [infants, setInfants] = useState<number>(0);
+  const [pet, setPet] = useState<boolean>(initialPet === 'yes' || initialPet === '1');
 
   // Responsiveness
   const [isMobile, setIsMobile] = useState(false);
@@ -617,11 +619,11 @@ function ResultsContent() {
     min: number,
     max: number
   ) => setter(Math.min(max, Math.max(min, cur + delta)));
-  const summaryLabel = `${roomsCount} ${
-    roomsCount > 1 ? 'Rooms' : 'Room'
-  } • ${adults} ${adults > 1 ? 'Adults' : 'Adult'} • ${children} ${
-    children !== 1 ? 'Children' : 'Child'
-  }${infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''}`;
+  const summaryLabel = `${roomsCount} ${roomsCount > 1 ? 'Rooms' : 'Room'} • ${adults} ${ // summary search label
+  adults > 1 ? 'Adults' : 'Adult'
+} • ${children} ${children !== 1 ? 'Children' : 'Child'}${
+  infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''
+}${pet ? ' • Pet' : ''}`;
 
   // Availability fetch
   const [rooms, setRooms] = useState<any[]>([]);
@@ -650,7 +652,7 @@ function ResultsContent() {
           adult: String(adults),
           child: String(children),
           infant: '0',
-          pet: 'no',
+          pet: pet ? 'yes' : 'no', // UPDATED
         });
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
@@ -669,7 +671,7 @@ function ResultsContent() {
       }
     };
     run();
-  }, [startDate, endDate, lat, lng, adults, children]);
+  }, [startDate, endDate, lat, lng, adults, children, pet]);
 
   const applySearch = () => {
     const query = new URLSearchParams({
@@ -680,6 +682,7 @@ function ResultsContent() {
       place: dest?.label || '',
       lat,
       lng,
+      pet: pet ? 'yes' : 'no', // NEW added august 13 
     });
     router.push(`/search/results?${query.toString()}`);
   };
@@ -695,9 +698,9 @@ function ResultsContent() {
 
   /* ─────────────── Render ─────────────── */
   return (
-    <div className="max-w-6xl mx-auto px-4 md:px-6 py-4 md:py-6">
+    <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
       {/* Search pill */}
-      <div className="w-full bg-white rounded-[1.25rem] md:rounded-[2rem] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4 mb-6">
+      <div className="w-full bg-white rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4 mb-6">
         {!isMobile ? (
           <div className="flex items-center gap-4">
             {/* Destination */}
@@ -710,8 +713,8 @@ function ResultsContent() {
 
             {/* Dates */}
             <div className="flex-1" ref={datesRef}>
-              <div className="flex items-center gap-2 text-[#F05A28] uppercase tracking-wide text-[10px] font-semibold mb-1">
-                <CalIcon className="w-3.5 h-3.5" />{' '}
+              <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
+                <CalIcon className="w-3.5 h-3.5 text-[#F05A28]" />{' '}
                 {nights > 0 ? `${nights} Night${nights > 1 ? 's' : ''}` : 'Dates'}
               </div>
               <button
@@ -719,10 +722,10 @@ function ResultsContent() {
                 onClick={() => setShowCal(true)}
                 type="button"
               >
-                <div className="text-lg md:text-[16px] font-medium text-gray-900">
+                <div className="text-lg md:text-[16px] font-semibold text-gray-900">
                   {checkIn ? fmtShort(checkIn) : 'Add dates'}{' '}
-                  <span className="mx-1 text-gray-500">-</span>{' '}
-                  {checkOut ? fmtShort(checkOut) : 'Add dates'}
+                  <span className="mx-1 text-gray-500"></span>{' '}
+                  {checkOut ? fmtShort(checkOut) : ''}
                 </div>
               </button>
             </div>
@@ -733,8 +736,8 @@ function ResultsContent() {
             {/* Rooms & Guests + Search */}
             <div className="flex items-center gap-4 flex-1">
               <div className="flex-1" ref={guestsRef}>
-                <div className="flex items-center gap-2 text-[#F05A28] uppercase tracking-wide text-[10px] font-semibold mb-1">
-                  <UsersIcon className="w-4 h-4" /> Rooms & Guests
+                <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
+                  <UsersIcon className="w-4 h-4 text-[#F05A28]" /> Rooms & Guests
                 </div>
                 <button
                   type="button"
@@ -772,7 +775,7 @@ function ResultsContent() {
                 onClick={() => window.dispatchEvent(new Event('open-dest-modal'))}
               >
                 <div className="flex items-center gap-1 text-[#F05A28] text-[10px] uppercase font-semibold tracking-wide">
-                  <PinIcon className="w-3.5 h-3.5" /> Destination
+                  <PinIcon className="w-3.5 h-3.5 text-black" /> Destination
                 </div>
                 <div className="text-sm font-medium text-gray-900 truncate">
                   {dest?.label || 'Where next?'}
@@ -788,7 +791,7 @@ function ResultsContent() {
                 }}
               >
                 <div className="flex items-center gap-1 text-[#F05A28] text-[10px] uppercase font-semibold tracking-wide">
-                  <CalIcon className="w-3.5 h-3.5" /> Dates
+                  <CalIcon className="w-3.5 h-3.5 text-black" /> Dates
                 </div>
                 <div className="text-sm font-medium text-gray-900 truncate">
                   {checkIn && checkOut
@@ -978,6 +981,20 @@ function ResultsContent() {
                   </div>
                 </div>
               ))}
+
+              {/* NEW: Pet row (Yes/No) */}
+                <div className="flex items-center justify-between py-3 border-b">
+                  <div className="text-[15px] font-medium text-gray-900">Bringing a pet?</div>
+                  <select
+                    value={pet ? 'yes' : 'no'}
+                    onChange={(e) => setPet(e.target.value === 'yes')}
+                    className="border rounded-lg px-2 py-1 text-sm"
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   className="px-4 py-2 rounded-lg text-black border hover:bg-gray-50"
@@ -1017,9 +1034,20 @@ function ResultsContent() {
         {rooms.map((room: any) => {
           const nightsCount =
             checkIn && checkOut ? Math.max(1, differenceInCalendarDays(checkOut, checkIn)) : 0;
-          const total = Number(room.totalPrice ?? 0);
-          const nightly = nightsCount > 0 ? total / nightsCount : total;
-          const imgSrc = getHotelImage(room.hotelName);
+            const imgSrc = getHotelImage(room.hotelName);
+            const toNum = (v: any) => {
+              if (v == null) return 0;
+              const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
+              return Number.isFinite(n) ? n : 0;
+            };
+
+            const roomTotal = toNum(room.totalPrice);                 // rooms only
+            const petFee = toNum(room.petFeeAmount);                  // can be "0" or number
+            const grandTotal = roomTotal + petFee;                    // rooms + pet
+            const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+            const currency = room.currencyCode || 'USD';
+            const money = (n: number) =>
+              new Intl.NumberFormat('en-CA', { style: 'currency', currency }).format(n);
 
           return (
             <div
@@ -1046,57 +1074,96 @@ function ResultsContent() {
               </div>
 
               {/* Info + CTA */}
-              <div className="flex-1 flex flex-col md:flex-row">
-                <div className="flex-1 pr-0 md:pr-6">
-                  <h2 className="text-[18px] md:text-[20px] font-semibold text-gray-900 mb-1">
-                    {room.hotelName}
-                  </h2>
-                  <p className="text-sm text-gray-700 mb-1">
-                    Room Type:{' '}
-                    <span className="font-medium text-gray-900">{room.RoomType}</span>
-                  </p>
-                  <p className="text-sm text-gray-700 mb-1">
-                    Capacity:{' '}
-                    <span className="font-medium text-gray-900">
-                      {room.capacity} guest{room.capacity > 1 ? 's' : ''}
-                    </span>
-                  </p>
-                  <p className="text-sm text-gray-700 mb-2">
-                    {nightsCount} {nightsCount === 1 ? 'night' : 'nights'} — Total:{' '}
-                    <span className="font-semibold text-gray-900">
-                      ${total.toFixed(2)}
-                    </span>
-                    {nightsCount > 0 && (
-                      <span className="text-gray-500"> ({nightly.toFixed(2)} / night)</span>
-                    )}
-                  </p>
-                </div>
+              
+                      <div className="flex-1 flex flex-col">
+                        {/* Header row: title + PRICE PER NIGHT (top-right) */}
+                        <div className="flex items-start justify-between">
+                          <h2 className="text-[18px] md:text-[20px] font-semibold text-gray-900">
+                            {room.hotelName}
+                          </h2>
+                          <div className="text-right">
+                            <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-0.5">
+                              Price per night
+                            </div>
+                            <div className="text-[22px] md:text-[24px] font-semibold text-gray-900 leading-none">
+                              {money(nightlyRoomsOnly)}
+                            </div>
+                            <div className="text-[11px] text-gray-500">{currency} / Night (rooms)</div>
+                          </div>
+                        </div>
 
-                <div className="mt-3 md:mt-0 md:w-56 flex md:flex-col md:items-end items-start gap-3">
-                  <div className="md:text-right">
-                    <div className="text-[22px] md:text-[24px] font-semibold text-gray-900 leading-none">
-                      ${nightly.toFixed(2)}
-                    </div>
-                    <div className="text-[11px] text-gray-500">USD / Night</div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const q = new URLSearchParams({
-                        hotelId: room.hotelId,
-                        roomId: room.roomTypeId,
-                        startDate,
-                        endDate,
-                        adult: String(adults),
-                        child: String(children),
-                      });
-                      router.push(`/booking/confirm?${q.toString()}`);
-                    }}
-                    className="bg-[#211F45] text-white text-sm md:text-base px-4 py-2 rounded-full hover:brightness-110 transition"
-                  >
-                    View Rates
-                  </button>
-                </div>
-              </div>
+                        {/* Details stack */}
+                        <div className="mt-2 text-sm text-gray-700 space-y-1.5">
+                          <div>
+                            Room Type:{' '}
+                            <span className="font-medium text-gray-900">{room.RoomType || '—'}</span>
+                          </div>
+                          
+                          <div>
+                            Guests:{' '}
+                            <span className="font-medium text-gray-900">
+                              {adults} adult{adults > 1 ? 's' : ''}
+                              {Number(children) > 0 ? ` • ${children} child${Number(children) > 1 ? 'ren' : ''}` : ''}
+                              {Number(infants) > 0 ? ` • ${infants} infant${Number(infants) > 1 ? 's' : ''}` : ''}
+                            </span>
+                          </div>
+                          <div>
+                            {nightsCount} {nightsCount === 1 ? 'night' : 'nights'}:{' '}
+                            <span className="font-semibold text-gray-900">{money(roomTotal)}</span>
+                            {nightsCount > 0 && (
+                              <span className="text-gray-500"> ({money(nightlyRoomsOnly)} / night)</span>
+                            )}
+                          </div>
+                          <div>
+                            Pet fee:{' '}
+                            <span className="font-medium text-gray-900">
+                              {petFee > 0 ? money(petFee) : '0'}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Bottom bar */}
+                        <div className="mt-4 pt-3 border-t">
+                          <div className="flex items-center justify-end gap-4">
+                            {/* Grand total (left of button) */}
+                            <div className="text-right">
+                              <div className="flex items-baseline justify-end gap-1 leading-none">
+                                <span className="text-xl md:text-2xl font-bold text-gray-900">
+                                  {money(grandTotal)}
+                                </span>
+                                <span className="text-sm text-gray-700">CAD</span>
+                              </div>
+                              <div className="text-[11px] text-gray-500 uppercase tracking-wide">
+                                Grand total
+                              </div>
+                            </div>
+
+                            {/* Book button */}
+                            <button
+                              onClick={() => {
+                                const q = new URLSearchParams({
+                                  hotelId: room.hotelId,
+                                  roomId: room.roomTypeId,
+                                  startDate,
+                                  endDate,
+                                  adult: String(adults),
+                                  child: String(children),
+                                  pet: pet ? 'yes' : 'no',
+                                });
+                                router.push(`/booking/confirm?${q.toString()}`);
+                              }}
+                              className="bg-[#211F45] text-white text-sm md:text-base px-5 py-2.5 rounded-full hover:brightness-110 transition"
+                            >
+                              Book Now
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+
+                
+                  {/* END Bottom bar: button + grand total */}
+                         
             </div>
           );
         })}

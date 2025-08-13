@@ -186,14 +186,14 @@ function DestinationPicker({
 
   return (
     <div className="flex-1 min-w-[220px]">
-      <div className="flex items-center gap-2 text-gray-600 uppercase tracking-wide text-[10px] font-semibold mb-1">
+      <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
         <PinIcon className="w-3.5 h-3.5 text-[#F05A28]" /> Destination
       </div>
 
       <div ref={triggerRef}>
         <button
           type="button"
-          className="w-full text-left text-lg md:text-[15px] font-medium text-gray-900"
+          className="w-full text-left text-lg md:text-[18px] font-semibold text-[#000000]"
           onClick={() => {
             if (isMobile) {
               setDestQuery(value?.label || '');
@@ -222,7 +222,7 @@ function DestinationPicker({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search a city, hotel, landmark…"
-                className="w-full text-[15px] px-3 py-2 rounded-lg bg-gray-50 outline-none mb-2"
+                className="w-full text-[15px] px-3 py-2 rounded-lg bg-gray-50 outline-none text-black mb-2"
               />
               <div
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
@@ -235,27 +235,7 @@ function DestinationPicker({
                 </span>
                 <div className="text-sm font-medium text-gray-900">Use current location</div>
               </div>
-              {recents.length > 0 && (
-                <>
-                  <div className="mx-2 my-2 border-t" />
-                  <div className="px-3 py-1 text-xs uppercase tracking-wide text-gray-400">
-                    Recent Searches
-                  </div>
-                  {recents.map((r, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                      onClick={() => finalizePick(r)}
-                    >
-                      <svg viewBox="0 0 24 24" className="w-4 h-4 mt-1" fill="none" stroke="currentColor">
-                        <circle cx="11" cy="11" r="7" strokeWidth="2" />
-                        <path d="M21 21l-4.35-4.35" strokeWidth="2" />
-                      </svg>
-                      <div className="text-sm text-gray-800">{r.label}</div>
-                    </div>
-                  ))}
-                </>
-              )}
+              
               {query && (
                 <>
                   <div className="mx-2 my-2 border-t" />
@@ -289,7 +269,7 @@ function DestinationPicker({
             <div className="absolute inset-x-0 bottom-0 top-12 bg-white rounded-t-2xl shadow-2xl p-4 animate-[slideup_200ms_ease-out] overflow-y-auto">
               <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
               <div className="flex items-center justify-between mb-2">
-                <div className="text-xl font-semibold">Where are you headed?</div>
+                <div className="text-xl font-semibold text-black">Where are you headed?</div>
                 <button
                   className="p-2 rounded-full hover:bg-gray-100"
                   onClick={() => setShowDest(false)}
@@ -298,7 +278,7 @@ function DestinationPicker({
                   ✕
                 </button>
               </div>
-              <div className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1 flex items-center gap-2">
+              <div className="text-[12px] uppercase tracking-wide font-semibold text-black mb-1 flex items-center gap-2">
                 <PinIcon className="w-4 h-4" /> Destination
               </div>
               <input
@@ -306,7 +286,7 @@ function DestinationPicker({
                 value={destQuery}
                 onChange={(e) => setDestQuery(e.target.value)}
                 placeholder="Search a city, hotel, landmark…"
-                className="w-full text-[16px] pb-2 border-b border-gray-300 outline-none placeholder:text-gray-400"
+                className="w-full text-[16px] pb-2 border-b border-gray-300 outline-none placeholder:text-gray-800"
               />
               <div
                 className="mt-4 flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
@@ -325,33 +305,8 @@ function DestinationPicker({
               {recents.length > 0 && (
                 <>
                   <div className="my-3 border-t" />
-                  <div className="px-1 py-1 text-xs uppercase tracking-wide text-gray-400">
-                    Recent Searches
-                  </div>
-                  <div className="max-h-48 overflow-auto">
-                    {recents.map((r, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 px-1 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                        onClick={() => finalizePick(r)}
-                      >
-                        <svg viewBox="0 0 24 24" className="w-4 h-4 mt-1" fill="none" stroke="currentColor">
-                          <circle cx="11" cy="11" r="7" strokeWidth="2" />
-                          <path d="M21 21l-4.35-4.35" strokeWidth="2" />
-                        </svg>
-                        <div className="text-sm text-gray-800">{r.label}</div>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className="w-full text-left text-xs text-gray-500 hover:text-gray-700 px-1 py-2"
-                    onClick={() => {
-                      setRecents([]);
-                      localStorage.removeItem('recentSearches');
-                    }}
-                  >
-                    Clear Recents
-                  </button>
+                  
+
                 </>
               )}
               {destQuery && (
@@ -403,7 +358,7 @@ function MobileResults({
           onClick={() => onPick({ label: r.label, lat: r.lat, lng: r.lon })}
         >
           <PinIcon className="w-4 h-4 mt-1" />
-          <div className="text-sm text-gray-800">{r.label}</div>
+          <div className="text-sm text-black">{r.label}</div>
         </div>
       ))}
       {list.length === 0 && <div className="px-1 py-4 text-sm text-gray-500">Searching…</div>}
@@ -416,13 +371,15 @@ function SearchBar() {
   const router = useRouter();
 
   const [dest, setDest] = useState<Place | null>(null);
-  const [checkIn, setCheckIn] = useState<Date | null>(new Date());
-  const [checkOut, setCheckOut] = useState<Date | null>(addDays(new Date(), 1));
+  const [checkIn, setCheckIn] = useState<Date | null>(null);
+  const [checkOut, setCheckOut] = useState<Date | null>(null);
 
   const [rooms, setRooms] = useState<number>(1);
   const [adults, setAdults] = useState<number>(1);
   const [children, setChildren] = useState<number>(0);
-  const [infants, setInfants] = useState<number>(0);
+  const [infants, setInfants] = useState<number>(0); // added last august 10
+
+  const [pet, setPet] = useState<boolean>(false); // added last august 13
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -580,10 +537,12 @@ function SearchBar() {
     const next = Math.min(max, Math.max(min, cur + delta));
     setter(next);
   };
-
+  //togger for adults rooms and etch
   const summaryLabel = `${rooms} ${rooms > 1 ? 'Rooms' : 'Room'} • ${adults} ${
     adults > 1 ? 'Adults' : 'Adult'
-  } • ${children} ${children !== 1 ? 'Children' : 'Child'}${infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''}`;
+  } • ${children} ${children !== 1 ? 'Children' : 'Child'}${
+    infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''
+  }${pet ? ' • Pet' : ''}`;
 
   const handleSearch = () => {
     if (!dest || !checkIn || !checkOut) return;
@@ -597,6 +556,7 @@ function SearchBar() {
       place: dest?.label || '',
       lat: dest?.lat?.toString() || '',
       lng: dest?.lng?.toString() || '',
+      pet: pet ? 'yes' : 'no',
     });
     const url = `/search/results?${query.toString()}`;
       if (window.top) {
@@ -615,7 +575,7 @@ function SearchBar() {
         </div>
       )}
 
-      <div className="w-full max-w-5xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[2rem] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4">
+      <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4">
         {/* Desktop layout */}
         {!isMobile ? (
           <div className="flex flex-row items-center gap-4">
@@ -629,12 +589,12 @@ function SearchBar() {
             {/* Dates */}
             <div className="flex-1" ref={triggerRef}>
               <button className="w-full text-left" onClick={() => setShowCal(true)} type="button"> 
-                <div className="flex items-center gap-2 text-gray-600 uppercase tracking-wide text-[10px] font-semibold mb-1 ">
+                <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1 ">
                   <CalIcon className="w-3.5 h-3.5 text-[#F05A28]" /> {nights > 0 ? `${nights} Night${nights > 1 ? 's' : ''}` : 'Dates'}
                 </div>
-                <div className="text-lg md:text-[16px] font-medium text-gray-900">
+                <div className="text-lg md:text-[16px] font-semibold text-[#000000]">
                   {checkIn ? fmtShort(checkIn) : 'Add dates'}{' '}
-                  <span className="mx-1 text-gray-500">-</span> {checkOut ? fmtShort(checkOut) : 'Add dates'}
+                  <span className="mx-1 text-black"></span> {checkOut ? fmtShort(checkOut) : ''}
                 </div>
               </button>
             </div>
@@ -644,7 +604,7 @@ function SearchBar() {
             {/* Rooms & Guests trigger */}
             <div className="flex-1" ref={guestsRef}>
               <button type="button" onClick={() => setShowGuests(true)} className="w-full text-left">
-                <div className="flex items-center gap-2 text-gray-600 uppercase tracking-wide text-[10px] font-semibold mb-1">
+                <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
                   <UsersIcon className="w-4 h-4 text-[#F05A28]" /> Rooms & Guests
                 </div>
                 <div className="text-lg md:text-[16px] font-medium text-gray-900">{summaryLabel}</div>
@@ -678,10 +638,10 @@ function SearchBar() {
                 className="flex-1 px-4 py-3 text-left hover:bg-gray-50 cursor-pointer"
                 onClick={() => window.dispatchEvent(new Event('open-dest-modal'))}
               >
-                <div className="flex items-center gap-1 text-[#F05A28] text-[10px] uppercase font-semibold tracking-wide">
+                <div className="flex items-center gap-1 text-[#F05A28] text-[10px] uppercase font-semibold tracking-wide text-[#000000]">
                   <PinIcon className="w-3.5 h-3.5" /> Destination
                 </div>
-                <div className="text-sm font-medium text-gray-900 truncate">
+                <div className="text-sm font-medium text-black truncate">
                   {dest?.label || 'Where next?'}
                 </div>
               </div>
@@ -743,6 +703,18 @@ function SearchBar() {
                       </div>
                     </div>
                   ))}
+                  {/* NEW: Pet row (Yes/No) */}
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <div className="text-[15px] font-medium text-gray-900">Bringing a pet?</div>
+                        <select
+                          value={pet ? 'yes' : 'no'}
+                          onChange={(e) => setPet(e.target.value === 'yes')}
+                          className="border rounded-lg px-2 py-1 text-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
 
                   <div className="flex justify-end gap-2 pt-2">
                     <button className="px-4 py-2 rounded-lg text-black border hover:bg-gray-80" onClick={() => setShowGuests(false)}>Close</button>
@@ -760,13 +732,13 @@ function SearchBar() {
                     {/* click-away overlay */}
                     <div className="fixed inset-0 z-[999998]" onClick={() => setShowCal(false)} />
                     <div
-                      className="fixed z-[999999] bg-white border rounded-2xl shadow-2xl p-4 w-[860px]"
+                      className="fixed z-[999999] text-gray-700 bg-white border rounded-2xl shadow-2xl p-4 w-[860px] "
                       style={{ top: calPos.top, left: calPos.left }}
                     >
                       {/* Header: month nav */}
                       <div className="flex items-center justify-between mb-3">
                         <button
-                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                          className="px-3 py-1 rounded-lg border hover:bg-gray-50 "
                           onClick={() =>
                             setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))
                           }
@@ -873,12 +845,12 @@ function SearchBar() {
                 <div className="text-base font-semibold text-gray-900">{format(leftMonth, 'MMMM yyyy')}</div>
                 <button className="px-3 py-1 rounded-lg border hover:bg-gray-50" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}>Next</button>
               </div>
-              <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d)=>(<div key={d} className="py-1">{d}</div>))}</div>
+              <div className="grid grid-cols-7 text-center text-xs text-gray-900 mb-1">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d)=>(<div key={d} className="py-1">{d}</div>))}</div>
               <div className="grid grid-cols-7 gap-1 mb-3">{leftDays.map(({date,currentMonth},i)=>(<div key={i} className="flex items-center justify-center"><DayCell d={date} muted={!currentMonth} size="lg" /></div>))}</div>
 
               <div className="flex items-center justify-between">
                 <button className="text-sm text-gray-700 hover:underline" onClick={() => { setCheckIn(null); setCheckOut(null); }}>Reset</button>
-                <div className="text-sm text-gray-600 mx-auto">
+                <div className="text-sm text-black mx-auto">
                   {checkIn && !checkOut && 'Select a check-out date'}
                   {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
                   {!checkIn && !checkOut && 'Select a check-in date'}
@@ -900,7 +872,7 @@ function SearchBar() {
               <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
               <div className="flex items-center justify-between mb-3">
                 <div className="text-xl font-semibold">Rooms & Guests</div>
-                <button className="p-2 rounded-full hover:bg-gray-100" onClick={() => setShowGuests(false)} aria-label="Close">
+                <button className="p-2 rounded-full hover:bg-gray-100 text-black" onClick={() => setShowGuests(false)} aria-label="Close">
                   ✕
                 </button>
               </div>
@@ -931,6 +903,20 @@ function SearchBar() {
                   </div>
                 </div>
               ))}
+
+                {/* NEW: Pet row (Yes/No) - mobile */}
+                <div className="flex items-center justify-between py-3">
+                  <div className="text-base font-medium text-gray-900">Bringing a pet?</div>
+                  <select
+                    value={pet ? 'yes' : 'no'}
+                    onChange={(e) => setPet(e.target.value === 'yes')}
+                    className="border rounded-lg px-3 py-2 text-sm"
+                  >
+                    <option value="no">No</option>
+                    <option value="yes">Yes</option>
+                  </select>
+                </div>
+
               <button
                 onClick={() => setShowGuests(false)}
                 className="mt-3 w-full font-semibold px-6 py-4 rounded-full bg-[#F05A28] text-white"
@@ -951,8 +937,8 @@ function SearchBar() {
             <div className="absolute inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl p-4 pb-6 max-h-[85vh] animate-[slideup_200ms_ease-out]">
               <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
               <div className="flex items-center justify-between mb-3">
-                <div className="text-xl font-semibold">Search</div>
-                <button className="p-2 rounded-full hover:bg-gray-100" onClick={() => setShowSummary(false)} aria-label="Close">✕</button>
+                <div className="text-xl font-semibold text-black">Search</div>
+                <button className="p-2 rounded-full hover:bg-gray-100 " onClick={() => setShowSummary(false)} aria-label="Close">✕</button>
               </div>
               {/* Destination */}
               <div className="pb-3 border-b">
