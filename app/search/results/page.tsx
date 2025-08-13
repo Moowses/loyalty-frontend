@@ -232,7 +232,7 @@ function DestinationPicker({
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 placeholder="Search a city, hotel, landmark…"
-                className="w-full text-[15px] px-3 py-2 rounded-lg bg-gray-50 outline-none mb-2"
+                className="w-full text-[15px] px-3 py-2 rounded-lg bg-gray-50 outline-none text-black mb-2"
               />
               <div
                 className="flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
@@ -257,28 +257,8 @@ function DestinationPicker({
               </div>
               {recents.length > 0 && (
                 <>
-                  <div className="mx-2 my-2 border-t" />
-                  <div className="px-3 py-1 text-xs uppercase tracking-wide text-gray-400">
-                    Recent Searches
-                  </div>
-                  {recents.map((r, i) => (
-                    <div
-                      key={i}
-                      className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                      onClick={() => finalizePick(r)}
-                    >
-                      <svg
-                        viewBox="0 0 24 24"
-                        className="w-4 h-4 mt-1"
-                        fill="none"
-                        stroke="currentColor"
-                      >
-                        <circle cx="11" cy="11" r="7" strokeWidth="2" />
-                        <path d="M21 21l-4.35-4.35" strokeWidth="2" />
-                      </svg>
-                      <div className="text-sm text-gray-800">{r.label}</div>
-                    </div>
-                  ))}
+                 
+                  
                 </>
               )}
               {query && (
@@ -294,7 +274,7 @@ function DestinationPicker({
                         }
                       >
                         <PinIcon className="w-4 h-4 mt-1" />
-                        <div className="text-sm text-[#F05A28]">{r.label}</div>
+                        <div className="text-sm text-black">{r.label}</div>
                       </div>
                     ))}
                   </div>
@@ -334,7 +314,7 @@ function DestinationPicker({
                 value={destQuery}
                 onChange={(e) => setDestQuery(e.target.value)}
                 placeholder="Search a city, hotel, landmark…"
-                className="w-full text-[16px] pb-2 border-b border-gray-300 outline-none placeholder:text-gray-400"
+                className="w-full text-[16px] pb-2 border-b border-gray-300 text-black outline-none placeholder:text-gray-400"
               />
               <div
                 className="mt-4 flex items-center gap-3 p-3 rounded-xl hover:bg-gray-50 cursor-pointer"
