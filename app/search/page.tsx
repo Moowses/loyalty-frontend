@@ -474,6 +474,8 @@ function SearchBar() {
     }
     return days;
   };
+
+  
   const leftMonth = viewMonth;
   const rightMonth = addMonths(viewMonth, 1);
   const leftDays = buildMonth(leftMonth);
@@ -481,7 +483,7 @@ function SearchBar() {
 
   const disabledPast = (d: Date) => isBefore(d, new Date(new Date().setHours(0, 0, 0, 0)));
   const inRange = (d: Date) =>
-    checkIn && checkOut ? isWithinInterval(d, { start: checkIn, end: checkOut }) : false;
+  checkIn && checkOut ? isWithinInterval(d, { start: checkIn, end: checkOut }) : false;
   const isStart = (d: Date) => (checkIn ? isSameDay(d, checkIn) : false);
   const isEnd = (d: Date) => (checkOut ? isSameDay(d, checkOut) : false);
 
@@ -596,7 +598,12 @@ function SearchBar() {
       lat: dest?.lat?.toString() || '',
       lng: dest?.lng?.toString() || '',
     });
-    router.push(`/search/results?${query.toString()}`);
+    const url = `/search/results?${query.toString()}`;
+      if (window.top) {
+        window.top.location.href = url; // redirect parent page
+      } else {
+        window.location.href = url; // fallback if not in iframe
+      }
   };
 
   return (
@@ -621,7 +628,7 @@ function SearchBar() {
 
             {/* Dates */}
             <div className="flex-1" ref={triggerRef}>
-              <button className="w-full text-left" onClick={() => setShowCal(true)} type="button-[#F05A28]">
+              <button className="w-full text-left" onClick={() => setShowCal(true)} type="button"> 
                 <div className="flex items-center gap-2 text-gray-600 uppercase tracking-wide text-[10px] font-semibold mb-1 ">
                   <CalIcon className="w-3.5 h-3.5 text-[#F05A28]" /> {nights > 0 ? `${nights} Night${nights > 1 ? 's' : ''}` : 'Dates'}
                 </div>
@@ -659,6 +666,7 @@ function SearchBar() {
             </button>
           </div>
         ) : (
+          
           /* Mobile layout: single start button */
           <div className="col-span-2">
             <button
@@ -696,6 +704,7 @@ function SearchBar() {
             </button>
           </div>
         )}
+        
       </div>
 
    {/* ===== Desktop: Guests Popover ===== */}
@@ -744,6 +753,104 @@ function SearchBar() {
               document.body,
             )
           }
+        {/* ===== Desktop: Calendar Popover (two months) ===== */}
+              {mounted && !isMobile && showCal &&
+                createPortal(
+                  <>
+                    {/* click-away overlay */}
+                    <div className="fixed inset-0 z-[999998]" onClick={() => setShowCal(false)} />
+                    <div
+                      className="fixed z-[999999] bg-white border rounded-2xl shadow-2xl p-4 w-[860px]"
+                      style={{ top: calPos.top, left: calPos.left }}
+                    >
+                      {/* Header: month nav */}
+                      <div className="flex items-center justify-between mb-3">
+                        <button
+                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                          onClick={() =>
+                            setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))
+                          }
+                        >
+                          Prev
+                        </button>
+                        <div className="flex items-center gap-8">
+                          <div className="text-base font-semibold text-gray-900">
+                            {format(leftMonth, 'MMMM yyyy')}
+                          </div>
+                          <div className="text-base font-semibold text-gray-900">
+                            {format(rightMonth, 'MMMM yyyy')}
+                          </div>
+                        </div>
+                        <button
+                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                          onClick={() =>
+                            setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))
+                          }
+                        >
+                          Next
+                        </button>
+                      </div>
+
+                      {/* Weekday headers (shared) */}
+                      <div className="grid grid-cols-2 gap-6">
+                        {[leftDays, rightDays].map((days, idx) => (
+                          <div key={idx}>
+                            <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">
+                              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                                <div key={d} className="py-1">{d}</div>
+                              ))}
+                            </div>
+                            <div className="grid grid-cols-7 gap-1">
+                              {days.map(({ date, currentMonth }, i) => (
+                                <div key={i} className="flex items-center justify-center">
+                                  <DayCell d={date} muted={!currentMonth} />
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Footer actions */}
+                      <div className="flex items-center justify-between mt-3">
+                        <button
+                          className="text-sm text-gray-700 hover:underline"
+                          onClick={() => { setCheckIn(null); setCheckOut(null); }}
+                        >
+                          Reset
+                        </button>
+
+                        <div className="text-sm text-gray-600">
+                          {checkIn && !checkOut && 'Select a check-out date'}
+                          {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
+                          {!checkIn && !checkOut && 'Select a check-in date'}
+                        </div>
+
+                        <div className="flex items-center gap-2">
+                          <button
+                            className="text-sm px-4 py-2 rounded-lg border hover:bg-gray-50"
+                            onClick={() => setShowCal(false)}
+                          >
+                            Close
+                          </button>
+                          <button
+                            disabled={!checkIn || !checkOut}
+                            className={`text-sm px-4 py-2 rounded-full text-white ${
+                              checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'
+                            }`}
+                            onClick={() => setShowCal(false)}
+                          >
+                            Apply
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </>,
+                  document.body
+                )
+              }
+
+        
 
 
       {/* ===== Mobile: Calendar full-screen sheet (single month) ===== */}
