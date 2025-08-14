@@ -113,13 +113,15 @@ export default function LandingPage() {
               <Image 
                 src="/dreamtripclubicon.png" 
                 alt="Dream Trip Club Logo"
-                width={250}
+                width={350}
                 height={80}
                 className="object-contain"
               />
             </div>
             <div className="flex justify-center items-center gap-4 mb-6">
-              <span className="text-2xl font-normal text-[#000000] font-['Avenir']">REWARDS</span>
+              <span className={"font-[300] text-[20px] leading-[102.5%] tracking-[0.50em] text-black"}>
+                  REWARDS
+              </span>
             </div>
             
             {error && (
@@ -128,7 +130,7 @@ export default function LandingPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="mb-5 space-y-4">
               {isSignup && (
                 <>
                   <div className="mb-4" >
@@ -233,7 +235,7 @@ export default function LandingPage() {
                       <option value="Other">Other</option>
                   </select>
                   </div>
-                  <div className="mb-4" >
+                  <div className="mb-2" >
                     <label htmlFor="postalcode" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
                       Postalcode
                     </label>
@@ -248,7 +250,7 @@ export default function LandingPage() {
                   </div>
                 </>
               )}
-              <div className="mb-4" >
+              <div className="mb-2" >
                 <label htmlFor="email" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
                   Email
                 </label> 
@@ -259,10 +261,10 @@ export default function LandingPage() {
                   value={form.email} 
                   onChange={handleChange} 
                   required 
-                  className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
+                  className="w-full p-3 bg-white border border-gray-300 text-black rounded-[15px] focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
                 />
               </div>
-              <div className="mb-4" >
+              <div className="mb-3" >
                 <label htmlFor="email" className="block text-sm font-medium text-black mb-2 font-['Avenir']">
                   Password
                 </label>
@@ -273,7 +275,7 @@ export default function LandingPage() {
                 value={form.password} 
                 onChange={handleChange} 
                 required 
-                className="w-full p-3 bg-white border border-gray-300 text-black rounded-lg focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
+                className="w-full p-3 bg-white border border-gray-300 text-black rounded-[15px] focus:ring-2 focus:ring-[#D4AF37] focus:border-transparent placeholder-gray-400 font-['Avenir']" 
               />
               </div>
               {isSignup && (
@@ -334,15 +336,21 @@ export default function LandingPage() {
               </button>
             </form>
 
-            <div className="text-center text-sm mt-6 text-gray-400">
-              {isSignup ? 'Already a member?' : 'New to Dream Trip Club?'}{' '}
-              <button 
-                onClick={() => setIsSignup(!isSignup)} 
-                className="text-[#EB6923] hover:text-[#F5E6B2] underline font-medium"
-              >
-                {isSignup ? 'Sign In' : 'Create Account'}
-              </button>
+            <div 
+              className="mx-auto w-[310px] h-[26px] bg-white border border-gray-200 shadow-sm
+                        flex items-center justify-center px-3 text-center "
+            >
+              <span className="text-[14px] leading-none text-black">
+                {isSignup ? 'Already a member?' : 'New to Dream Trip Club?'}{' '}
+                <button
+                  onClick={() => setIsSignup(!isSignup)}
+                  className="ml-1 text-[#EB6923] underline font-semibold hover:opacity-90"
+                >
+                  {isSignup ? 'Sign In' : 'Create Account'}
+                </button>
+              </span>
             </div>
+
 
             {/* App download prompt */}
             <div className="mt-8">
