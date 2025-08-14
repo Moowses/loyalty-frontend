@@ -192,15 +192,15 @@ function SiteHeader({ onSignOut }: { onSignOut: () => void }) {
 
       <div className="bg-white text-[#1F2042] border-b border-[#E6E8EF]">
         <div className="max-w-7xl mx-auto h-16 md:h-[72px] px-3 md:px-6 flex items-center justify-between gap-4">
-          <Link href="/" className="flex items-center gap-3">
+             <Link href="/" className="flex items-center gap-3">
             <Image src="/dreamtripclubicon.png" alt="Dream Trip Club" width={160} height={36} className="h-8 md:h-9 w-auto object-contain" priority />
           </Link>
           <div className="flex items-center gap-4 md:gap-6">
-            <NavIcon href="/" icon={<FaHouse className="text-[18px]" />} label="Home" />
+          {/*  <NavIcon href="/" icon={<FaHouse className="text-[18px]" />} label="Home" />
             <NavIcon href="/booking" icon={<FaTicket className="text-[18px]" />} label="Bookings" />
             <NavIcon href="/rewards" icon={<FaMedal className="text-[18px]" />} label="Rewards" />
             <NavIcon href="/gifting" icon={<FaGift className="text-[18px]" />} label="Gifting" />
-            <NavIcon href="/account" icon={<FaUser className="text-[18px]" />} label="Account" />
+            <NavIcon href="/account" icon={<FaUser className="text-[18px]" />} label="Account" />  */}
             
           </div>
         </div>

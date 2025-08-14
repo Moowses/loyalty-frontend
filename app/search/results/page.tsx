@@ -1261,7 +1261,7 @@ function ResultsContent() {
                                 <span className="text-sm text-gray-700">CAD</span>
                               </div>
                               <div className="text-[11px] text-gray-500 uppercase tracking-wide">
-                                Grand total
+                                CAD / Night
                               </div>
                             </div>
 
