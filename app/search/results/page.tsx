@@ -25,6 +25,156 @@ import {
   startOfWeek,
 } from 'date-fns';
 import Script from 'next/script';
+import Link from "next/link";
+import { json } from 'stream/consumers';
+
+
+ function SiteHeader({ isLoggedIn = false }: { isLoggedIn?: boolean }) {
+  const [open, setOpen] = useState(false);
+  const brand = '#211F45';
+
+  return (
+    <header className="w-full border-b border-gray-200 bg-white">
+      {/* Desktop layout: 3 columns (logo | centered nav | actions) */}
+      <div className="mx-auto max-w-[1280px] px-4 md:px-6 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+        {/* Logo / Brand */}
+        <Link href="https://dreamtripclub.com" className="flex items-center gap-3 shrink-0">
+          <Image src="/dreamtripclubicon.png" alt="Dream Trip Club" width={200} height={44} priority />
+        </Link>
+
+        {/* Centered icon nav (desktop only) */}
+        <nav className="hidden lg:flex items-end justify-center gap-8">
+          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navhome.png" alt="Home" width={28} height={28} />
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
+              Home
+            </span>
+          </Link>
+          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navreservation.png" alt="Reserve" width={28} height={28} />
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
+              Reserve
+            </span>
+          </Link>
+          <Link href="https://member.dreamtripclub.com/search/results" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navrewards.png" alt="Rewards" width={28} height={28} />
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
+              Rewards
+            </span>
+          </Link>
+          <Link href="https://dreamtripclub.com/help" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navoffer.png" alt="Offers" width={28} height={28} />
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
+              Offers
+            </span>
+          </Link>
+          <Link
+            href={isLoggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/signin'}
+            className="flex flex-col items-center gap-1 group"
+          >
+            <Image src="/Navaccount.png" alt="Account" width={28} height={28} />
+            <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
+              Account
+            </span>
+          </Link>
+        </nav>
+
+        {/* Right actions (desktop) */}
+        <div className="hidden md:flex items-center gap-4">
+          <Link href="/help" className="text-[12px] font-semibold inline-flex items-center gap-2" style={{ color: brand }}>
+            HELP
+            <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border" style={{ borderColor: brand, color: brand }}>
+              ?
+            </span>
+          </Link>
+          <Link
+            href="/join"
+            className="px-4 py-2 rounded-[12px] text-sm font-semibold border hover:bg-[#211F45]/5"
+            style={{ color: brand, borderColor: brand }}
+          >
+            JOIN
+          </Link>
+          <Link
+            href="/signin"
+            className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
+            style={{ backgroundColor: brand }}
+          >
+            SIGN IN
+          </Link>
+        </div>
+
+        {/* Mobile quick actions */}
+        <div className="md:hidden justify-self-end flex items-center gap-2">
+          <Link
+            href="/signin"
+            className="px-3 py-1.5 rounded-[12px] text-xs font-semibold text-white"
+            style={{ backgroundColor: brand }}
+          >
+            Sign In
+          </Link>
+          <button
+            aria-label="Open menu"
+            aria-expanded={open}
+            aria-controls="mobile-nav"
+            onClick={() => setOpen((v) => !v)}
+            className="inline-flex items-center justify-center p-2 rounded-md border border-gray-300"
+          >
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+              <path d="M3 6h18M3 12h18M3 18h18" stroke={brand} strokeWidth="2" strokeLinecap="round" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile dropdown panel */}
+      <div id="mobile-nav" className={`${open ? 'block' : 'hidden'} md:hidden border-t border-gray-200 bg-white`}>
+        <div className="px-4 py-4 space-y-5">
+          {/* Icon grid */}
+          <div className="grid grid-cols-5 gap-3 text-center" style={{ color: brand }}>
+            <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1">
+              <Image src="/Navhome.png" alt="Home" width={24} height={24} />
+              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">Home</span>
+            </Link>
+            <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1">
+              <Image src="/Navreservation.png" alt="Reserve" width={24} height={24} />
+              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">Reserve</span>
+            </Link>
+            <Link href="https://member.dreamtripclub.com/search/results" className="flex flex-col items-center gap-1">
+              <Image src="/Navrewards.png" alt="Rewards" width={24} height={24} />
+              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">Rewards</span>
+            </Link>
+            <Link href="https://dreamtripclub.com/help" className="flex flex-col items-center gap-1">
+              <Image src="/Navoffer.png" alt="Offers" width={24} height={24} />
+              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">Offers</span>
+            </Link>
+            <Link href={isLoggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/signin'} className="flex flex-col items-center gap-1">
+              <Image src="/Navaccount.png" alt="Account" width={24} height={24} />
+              <span className="text-[10px] font-semibold tracking-[0.08em] uppercase">Account</span>
+            </Link>
+          </div>
+
+          {/* Help + Join/Sign in */}
+          <div className="flex items-center justify-between">
+            <Link href="/help" className="text-[12px] font-semibold inline-flex items-center gap-2" style={{ color: brand }}>
+              HELP
+              <span className="inline-flex h-5 w-5 items-center justify-center rounded-full border" style={{ borderColor: brand, color: brand }}>
+                ?
+              </span>
+            </Link>
+            <div className="flex items-center gap-2">
+              <Link href="/join" className="px-4 py-2 rounded-[12px] text-sm font-semibold border" style={{ color: brand, borderColor: brand }}>
+                JOIN
+              </Link>
+              <Link href="/signin" className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white" style={{ backgroundColor: brand }}>
+                SIGN IN
+              </Link>
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+  );
+}
 
 
 // Always render dynamically (avoid prerender errors for query-driven page)
@@ -440,12 +590,14 @@ function buildMonth(monthStart: Date): Day[] {
   }
   return days;
 }
+/* ───────── Filter helpers ───────── */
+
 
 /* ───────────────── Results Content (moved under Suspense) ───────────────── */
 function ResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
-
+  <SiteHeader isLoggedIn={false} />
   // URL → state
   const initialStart = params.get('startDate') || '';
   const initialEnd = params.get('endDate') || '';
@@ -641,6 +793,7 @@ function ResultsContent() {
         );
         const data = await res.json();
         if (data.success && data.data?.data) setRooms(data.data.data);
+        
         else {
           setRooms([]);
           setFetchError('No availability found.');
@@ -667,6 +820,7 @@ function ResultsContent() {
       pet: pet ? 'yes' : 'no', // NEW added august 13 
     });
     router.push(`/search/results?${query.toString()}`);
+    
   };
 
   /* Static image mapping */
@@ -675,14 +829,18 @@ function ResultsContent() {
     'Escape From Life': '/escapefromlife.png',
     'The Perfect Getaway': '/perfectgetaway.png',
     'Spa Getaway': '/spagetaway.png',
+    'Fern Woods Escape': '/spagetaway.png',
+    'Scandinavian-Inspired Tiny Home Experience': '/spagetaway.png',
   };
   const getHotelImage = (name?: string) => (name && imageMap[name]) || '';
 
   /* ─────────────── Render ─────────────── */
   return (
+    <>
+     <SiteHeader isLoggedIn={false} />
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
       {/* Search pill */}
-      <div className="w-full bg-white rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4 mb-6">
+      <div className="w-full bg-white rounded-[25px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4 mb-6">
         {!isMobile ? (
           <div className="flex items-center gap-4">
             {/* Destination */}
@@ -783,6 +941,7 @@ function ResultsContent() {
               </div>
             </button>
           </div>
+          
         )}
       </div>
 
@@ -1058,21 +1217,7 @@ function ResultsContent() {
               {/* Info + CTA */}
               
                       <div className="flex-1 flex flex-col">
-                        {/* Header row: title + PRICE PER NIGHT (top-right) */}
-                        <div className="flex items-start justify-between">
-                          <h2 className="text-[18px] md:text-[20px] font-semibold text-gray-900">
-                            {room.hotelName}
-                          </h2>
-                          <div className="text-right">
-                            <div className="text-[11px] uppercase tracking-wide text-gray-500 mb-0.5">
-                              Price per night
-                            </div>
-                            <div className="text-[22px] md:text-[24px] font-semibold text-gray-900 leading-none">
-                              {money(nightlyRoomsOnly)}
-                            </div>
-                            <div className="text-[11px] text-gray-500">{currency} / Night (rooms)</div>
-                          </div>
-                        </div>
+            
 
                         {/* Details stack */}
                         <div className="mt-2 text-sm text-gray-700 space-y-1.5">
@@ -1111,7 +1256,7 @@ function ResultsContent() {
                             <div className="text-right">
                               <div className="flex items-baseline justify-end gap-1 leading-none">
                                 <span className="text-xl md:text-2xl font-bold text-gray-900">
-                                  {money(grandTotal)}
+                                  {money(nightlyRoomsOnly)}
                                 </span>
                                 <span className="text-sm text-gray-700">CAD</span>
                               </div>
@@ -1150,7 +1295,8 @@ function ResultsContent() {
           );
         })}
       </div>
-    </div>
+      </div>
+    </>
   );
 }
 

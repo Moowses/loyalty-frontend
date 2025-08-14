@@ -159,13 +159,13 @@ export default function LandingPage() {
             <p className="font-[700] text-[16px] sm:text-[20px] mb-3 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
               • Extraordinary Adventures • Exclusive Rewards
             </p>
-            <p className="text-[14px] sm:text-[16px] leading-relaxed text-white/90 max-w-[52ch] mx-auto lg:mx-0">
-              Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
-            </p>
+            <p className="mt-7 text-[14px] sm:text-[16px] leading-relaxed sm:leading-[1.65] text-white/90 max-w-[52ch] mx-auto lg:mx-0">
+            Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
+          </p>
           </div>
 
           {/* GLASS CARD (form) */}
-          <div className="w-full max-w-md bg-white/85 backdrop-blur-sm border border-gray-300 rounded-[24px] p-6 sm:p-8 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
+          <div className="w-full max-w-md mx-auto lg:mx-0 bg-white/85 backdrop-blur-sm border border-gray-300 rounded-[24px] p-6 sm:p-8 shadow-[0_4px_16px_rgba(0,0,0,0.12)]">
             {/* Logo */}
             <div className="flex justify-center mb-4 sm:mb-6">
               <Image
