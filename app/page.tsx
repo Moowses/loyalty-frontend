@@ -91,21 +91,23 @@ export default function LandingPage() {
       
       {/* Content */}
       <div className="relative z-10 flex items-center justify-center min-h-screen px-4 py-12">
-        <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-12">
-          {/* Hero Text */}
-          <div className="text-white text-center lg:text-left max-w-xl">
-            <h1 className="text-4xl md:text-5xl font-aviner font-black tracking-wide mb-6">
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#FFFFFF] to-[#FFFFFF]">
-                Unforgettable Vacations
-              </span>
-            </h1>
-            <p className="text-xl md:text-2xl font-Avenir mb-6 text-[#FFFFFF]">
-              Extraordinary Adventure • Exclusive Rewards
-            </p>
-            <p className="text-lg text-gray-300 hidden lg:block">
-              Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
-            </p>
-          </div>
+        <div className="relative z-10 flex items-center justify-center min-h-[420px] md:min-h-[520px] px-4 py-10">
+    <div className="w-full max-w-6xl mx-auto flex flex-col lg:flex-row items-center justify-between gap-10">
+      {/* Hero Text */}
+      <div className="text-white text-center lg:text-left max-w-2xl">
+        <h1 className="font-[900] text-[44px] md:text-[64px] leading-[102.5%] tracking-[-0.02em] mb-4 [text-shadow:0_2px_6px_rgba(0,0,0,0.35)]">
+          Unforgettable <span className="hidden sm:inline"><br/></span> Vacations
+        </h1>
+
+        <p className="font-[700] text-[18px] md:text-[22px] mb-4 text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.35)]">
+          Extraordinary Adventures &bull; Exclusive Rewards
+        </p>
+
+        <p className="hidden lg:block text-[16px] md:text-[18px] leading-relaxed text-white/90 max-w-[52ch]">
+          Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
+        </p>
+        </div>
+      </div>
 
           {/* Form Container */}
           <div className="bg-white/85  border border-gray-300 rounded-xl p-8  w-full max-w-md shadow-[0_4px_6px_rgba(0,0,0,0.1)]">
