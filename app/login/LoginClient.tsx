@@ -370,28 +370,28 @@ export default function LoginClient() {
             </p>
 
             {/* Benefits row */}
-            <div className="mt-5 grid grid-cols-4 gap-1 sm:grid-cols-4">
+            <div className="mt-4 grid grid-cols-4 gap-0 sm:grid-cols-4">
               <div className="flex flex-col text-[#211F45] items-center text-center">
                 <Image src="/earnpoints.png" alt="Earn Points" width={30} height={30} />
-                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                <span className="mt-1 text-[11px] font-semibold leading-tight">
                   EARN<br />POINTS
                 </span>
               </div>
               <div className="flex flex-col text-[#211F45] items-center text-center">
                 <Image src="/concierge.png" alt="Concierge Service" width={30} height={30} />
-                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                <span className="mt-1 text-[11px] font-semibold leading-tight">
                   CONCIERGE<br />SERVICE
                 </span>
               </div>
               <div className="flex flex-col text-[#211F45] items-center text-center">
                 <Image src="/wifi.png" alt="Free Wi‑Fi" width={30} height={30} />
-                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                <span className="mt-1 text-[11px] font-semibold leading-tight">
                   FREE<br />WI‑FI
                 </span>
               </div>
               <div className="flex flex-col text-[#211F45] items-center text-center">
                 <Image src="/memberoffer.png" alt="Member Offers" width={30} height={30} />
-                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                <span className="mt-1 text-[11px] font-semibold leading-tight">
                   MEMBER<br />OFFERS
                 </span>
               </div>
