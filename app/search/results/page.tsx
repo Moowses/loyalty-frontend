@@ -24,6 +24,8 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
+import Script from 'next/script';
+
 
 // Always render dynamically (avoid prerender errors for query-driven page)
 export const dynamic = 'force-dynamic';

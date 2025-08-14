@@ -1,5 +1,7 @@
+// /app/(wherever)/LoginClient.tsx
 'use client';
 
+import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -17,8 +19,6 @@ type FormState = {
 export default function LoginClient() {
   const router = useRouter();
   const search = useSearchParams();
-
-  // optional support for ?redirect=/path ; defaults to /dashboard
   const redirectPath = search.get('redirect') || '/dashboard';
 
   const [isSignup, setIsSignup] = useState(false);
@@ -63,7 +63,6 @@ export default function LoginClient() {
 
   // ===== Auto-resize iframe + remove top space =====
   useEffect(() => {
-    // remove any default margins that can create top gap
     document.documentElement.style.margin = '0';
     document.body.style.margin = '0';
     document.documentElement.style.padding = '0';
@@ -74,29 +73,23 @@ export default function LoginClient() {
         document.body.scrollHeight,
         document.documentElement.scrollHeight
       );
-      // If you want to lock to your WP domain, replace '*' with 'https://YOUR-WP-DOMAIN'
       window.parent?.postMessage({ type: 'frame-height', height: h }, '*');
     };
 
-    // initial + observe changes
     postSize();
     const ro = new ResizeObserver(postSize);
     ro.observe(document.body);
-
-    // fallback ticker in case something doesn't trigger ResizeObserver
     const t = setInterval(postSize, 800);
 
     return () => {
       ro.disconnect();
       clearInterval(t);
     };
-  }, [isSignup]); // re-run when switching Sign In <-> Create Account
+  }, [isSignup]);
 
-  // Always open dashboard in a NEW TAB (parent WP stays put)
   const redirectAfterAuth = (url?: string) => {
     const target = url || redirectPath || '/dashboard';
     window.open(target, '_blank', 'noopener,noreferrer');
-    // also notify parent iframe (WordPress listener will also open it)
     window.parent?.postMessage({ type: 'auth-success', redirectUrl: target }, '*');
   };
 
@@ -138,16 +131,27 @@ export default function LoginClient() {
       const json = await res.json();
       setIsSubmitting(false);
 
-      if (!json || json.success === false) {
-        setError(
+      if (!res.ok || !json?.success) {
+        // Optional: map backend flags to human messages
+        const flag = json?.result?.flag ?? json?.flag ?? '';
+        const flagMessage: Record<string, string> = {
+          // Adjust these as your backend defines them
+          // '1': 'Invalid data. Please review the form.',
+          // '2': 'Weak password. Use at least 8 characters.',
+          // '3': 'Invalid country or postal code.',
+          '7': 'This email or member already exists',
+        };
+
+        const apiMessage =
+          flagMessage[flag] ||
           json?.message ||
-            (isSignup
-              ? 'Signup failed. Email may already be registered.'
-              : 'Invalid login. Please check your credentials.')
-        );
+          (isSignup
+            ? 'Signup failed. Please review your details.'
+            : 'Invalid login. Please check your credentials.');
+
+        setError(flag ? `${apiMessage} (code ${flag})` : apiMessage);
         return;
       }
-
       if (rememberMe) localStorage.setItem('login_email', form.email);
       else localStorage.removeItem('login_email');
 
@@ -155,7 +159,6 @@ export default function LoginClient() {
         localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
       }
 
-      // open new tab
       redirectAfterAuth(json.redirectUrl);
     } catch (err) {
       setIsSubmitting(false);
@@ -164,20 +167,18 @@ export default function LoginClient() {
   };
 
   return (
-    <div className="w-full m-0 p-0 bg-transparent"> {/* no outer spacing */}
-      <div className="mx-auto w-full max-w-xl bg-transparent rounded-xl p-6 border-0 shadow-none">
-        <div className="mb-2 flex items-center justify-between">
-          <h1 className="text-[28px] font-semibold tracking-tight text-neutral-900">
-            {isSignup ? 'Create Account' : 'Sign In'}
+    <div className="w-full m-0 p-0 bg-transparent">
+      <div className="mx-auto w-full max-w-md rounded-xl p-6">
+        {/* Heading area mirrors the mock’s right-column title copy */}
+        <div className="mb-4">
+          <h1 className="text-[40px] font-extrabold leading-[104.5%] tracking-[-0.0em] text-[#93AFB9]">
+            {isSignup ? 'Create Your Account' : 'Welcome to Dream Trip Club Rewards'}
           </h1>
-          {isSignup ? (
-            <button
-              onClick={() => setIsSignup(false)}
-              className="text-sm text-neutral-700 underline underline-offset-2 hover:text-neutral-900"
-            >
-              Back to Sign In
-            </button>
-          ) : null}
+          {!isSignup && (
+            <p className="mt-2 text-[15px] font-semibold text-neutral-900">
+              Let’s get you signed in!
+            </p>
+          )}
         </div>
 
         {error && (
@@ -186,6 +187,7 @@ export default function LoginClient() {
           </div>
         )}
 
+        {/* FORM */}
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignup && (
             <>
@@ -196,7 +198,7 @@ export default function LoginClient() {
                   value={form.firstname}
                   onChange={handleInput}
                   required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                 />
               </div>
               <div>
@@ -206,7 +208,7 @@ export default function LoginClient() {
                   value={form.lastname}
                   onChange={handleInput}
                   required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                 />
               </div>
               <div>
@@ -216,48 +218,52 @@ export default function LoginClient() {
                   value={form.mobilenumber}
                   onChange={handleInput}
                   required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
+                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-sm text-neutral-700">Country</label>
-                <select
-                  name="country"
-                  value={form.country}
-                  onChange={handleInput}
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
-                  required
-                >
-                  <option value="Canada">Canada</option>
-                  <option value="United States">United States</option>
-                  <option value="Philippines">Philippines</option>
-                  <option value="Australia">Australia</option>
-                  <option value="United Kingdom">United Kingdom</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-              <div>
-                <label className="mb-1 block text-sm text-neutral-700">Postal Code</label>
-                <input
-                  name="postalcode"
-                  value={form.postalcode}
-                  onChange={handleInput}
-                  required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
-                />
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">Country</label>
+                  <select
+                    name="country"
+                    value={form.country}
+                    onChange={handleInput}
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                    required
+                  >
+                    <option value="Canada">Canada</option>
+                    <option value="United States">United States</option>
+                    <option value="Philippines">Philippines</option>
+                    <option value="Australia">Australia</option>
+                    <option value="United Kingdom">United Kingdom</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">Postal Code</label>
+                  <input
+                    name="postalcode"
+                    value={form.postalcode}
+                    onChange={handleInput}
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                  />
+                </div>
               </div>
             </>
           )}
 
           <div>
-            <label className="mb-1 block text-sm text-neutral-700">Email or Member Number</label>
+            <label className="mb-1 block text-sm text-neutral-700">
+              Email or Member Number
+            </label>
             <input
               type="email"
               name="email"
               value={form.email}
               onChange={handleInput}
               required
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
             />
           </div>
 
@@ -269,7 +275,7 @@ export default function LoginClient() {
               value={form.password}
               onChange={handleInput}
               required
-              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-neutral-900"
+              className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
             />
           </div>
 
@@ -283,7 +289,9 @@ export default function LoginClient() {
                 onChange={handleInput}
                 className="h-4 w-4"
               />
-              <label htmlFor="rememberMe" className="text-sm text-neutral-700">Remember Me</label>
+              <label htmlFor="rememberMe" className="text-sm text-neutral-700">
+                Remember Me
+              </label>
             </div>
           )}
 
@@ -317,43 +325,92 @@ export default function LoginClient() {
           <button
             type="submit"
             disabled={isSubmitting}
-            className={`w-[140px] rounded-full px-6 py-3 text-sm font-semibold text-white transition ${
-              isSubmitting ? 'cursor-not-allowed bg-neutral-400' : 'bg-neutral-900 hover:bg-neutral-800'
+            className={`w-[120px] rounded-full px-5 py-2.5 text-sm font-bold text-white transition ${
+              isSubmitting
+                ? 'cursor-not-allowed bg-neutral-400'
+                : 'bg-[#211F45] hover:opacity-90'
             }`}
           >
             {isSubmitting ? 'Processing…' : isSignup ? 'Join Now' : 'Sign In'}
           </button>
         </form>
 
+        {/* Under-button links (only in Sign In mode) */}
         {!isSignup && (
-          <div className="mt-4 space-x-6 text-sm">
-            <a href="#" onClick={(e) => e.preventDefault()} className="text-neutral-700 underline underline-offset-2 hover:text-neutral-900">
-              Forgot Password
+          <div className="mt-3 flex gap-6 text-sm">
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
+            >
+              Forgot password?
             </a>
-            <a href="#" onClick={(e) => e.preventDefault()} className="text-neutral-700 underline underline-offset-2 hover:text-neutral-900">
-              Activate Online Account
+            <a
+              href="#"
+              onClick={(e) => e.preventDefault()}
+              className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
+            >
+              Activate account.
             </a>
           </div>
         )}
 
+        {/* Divider */}
         <hr className="my-6 border-neutral-200" />
 
-        {!isSignup ? (
+        {/* “Not a Member?” + Icons (HIDE when joining) */}
+        {!isSignup && (
           <section>
-            <h2 className="text-[28px] font-semibold tracking-tight text-neutral-900">Join Now</h2>
-            <p className="mt-2 text-sm leading-6 text-neutral-600">
-              Get unrivaled experiences, mobile check-in, member rates, in-room Wi‑Fi, and more.
+            <h2 className="text-[22px] font-extrabold text-neutral-900">
+              Not a Member?
+            </h2>
+            <p className="mt-2 text-sm leading-6 text-neutral-700">
+              Members enjoy exclusive perks across all Cottage Dream Vacations
+              properties. Membership is free and starts rewarding you from your very first stay.
             </p>
+
+            {/* Benefits row */}
+            <div className="mt-5 grid grid-cols-2 gap-4 sm:grid-cols-4">
+              <div className="flex flex-col text-[#211F45] items-center text-center">
+                <Image src="/earnpoints.png" alt="Earn Points" width={36} height={36} />
+                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                  EARN<br />POINTS
+                </span>
+              </div>
+              <div className="flex flex-col text-[#211F45] items-center text-center">
+                <Image src="/concierge.png" alt="Concierge Service" width={36} height={36} />
+                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                  CONCIERGE<br />SERVICE
+                </span>
+              </div>
+              <div className="flex flex-col text-[#211F45] items-center text-center">
+                <Image src="/wifi.png" alt="Free Wi‑Fi" width={36} height={36} />
+                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                  FREE<br />WI‑FI
+                </span>
+              </div>
+              <div className="flex flex-col text-[#211F45] items-center text-center">
+                <Image src="/memberoffer.png" alt="Member Offers" width={36} height={36} />
+                <span className="mt-2 text-[11px] font-semibold leading-tight">
+                  MEMBER<br />OFFERS
+                </span>
+              </div>
+            </div>
+
+            {/* Join button */}
             <button
               type="button"
               onClick={() => setIsSignup(true)}
-              className="mt-4 inline-flex items-center rounded-full border border-neutral-900 px-5 py-2 text-sm font-medium text-neutral-900 hover:bg-neutral-900 hover:text-white"
+              className="mt-6 inline-flex items-center rounded-full border border-[#211F45] px-5 py-2 text-sm font-bold text-[#211F45] hover:bg-[#211F45] hover:text-white"
             >
-              Join For Free
+              JOIN FREE NOW!
             </button>
           </section>
-        ) : (
-          <p className="text-sm text-neutral-700">
+        )}
+
+        {/* Swap link beneath signup form */}
+        {isSignup && (
+          <p className="mt-4 text-sm text-neutral-700">
             Already a member?{' '}
             <button onClick={() => setIsSignup(false)} className="underline underline-offset-2">
               Sign In

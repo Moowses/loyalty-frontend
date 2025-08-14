@@ -15,6 +15,7 @@ import {
   startOfMonth,
   startOfWeek,
 } from 'date-fns';
+  import Script from 'next/script';
 
 /* ================= Icons ================= */
 const PinIcon = (p: React.SVGProps<SVGSVGElement>) => (
