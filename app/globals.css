@@ -48,6 +48,7 @@ body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply text-black;
 }
 
 /* Utilities used in components */
