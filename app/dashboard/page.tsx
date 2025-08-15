@@ -322,10 +322,10 @@ export default function DashboardPage() {
                 <FaUser className="text-white/90" />
               </div>
               <div>
-                <div className="text-[22px] md:text-[24px] font-semibold leading-tight">
+                <div className="text-[25px] md:text-[30px] font-semibold leading-tight">
                   Hello {data?.name?.split(' ')[0] ?? data?.name ?? 'Member'}
                 </div>
-                <div className="text-[16px] md:text-[18px] text-white/95">
+                <div className="text-[25px] md:text-[20px] text-white/95">
                   Member Number: <span className="font-medium">{data?.membershipNo ?? '—'}</span>
                 </div>
               </div>
@@ -336,11 +336,10 @@ export default function DashboardPage() {
 
             {/* Right: points */}
             <div className="md:text-right">
-              <div className="text-[11px] uppercase tracking-wide text-white/90">YOUR POINTS</div>
+              <div className="text-[16px] uppercase font-semibold tracking-wide text-white/90">YOUR POINTS</div>
               <div className="text-[20px] md:text-[22px] font-semibold">{points}</div>
               <div className="mt-1 text-[12px] underline flex md:justify-end gap-4">
-                <button>Redeem Points</button>
-                <button>Purchase Points</button>
+                
               </div>
             </div>
           </div>
