@@ -193,7 +193,7 @@ function SiteHeader({ onSignOut }: { onSignOut: () => void }) {
 
       <div className="bg-white text-[#1F2042] border-b border-[#E6E8EF]">
         <div className="max-w-7xl mx-auto h-16 md:h-[72px] px-3 md:px-6 flex items-center justify-between gap-4">
-             <Link href="/" className="flex items-center gap-3">
+             <Link href="https://dreamtripclub.com/" className="flex items-center gap-3">
             <Image src="/dreamtripclubicon.png" alt="Dream Trip Club" width={160} height={36} className="h-8 md:h-9 w-auto object-contain" priority />
           </Link>
           <div className="flex items-center gap-4 md:gap-6">
