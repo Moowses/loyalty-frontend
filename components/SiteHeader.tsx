@@ -51,36 +51,36 @@ export default function SiteHeader() {
         {/* Centered icon nav (desktop only) */}
         <nav className="hidden lg:flex items-end justify-center gap-8">
           <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navhome.png" alt="Home" width={28} height={28} />
+            <Image src="/Navreservation.png" alt="Home" width={28} height={28} />
             <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
-              Home
+              RESERVE
             </span>
           </Link>
-          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navreservation.png" alt="Reserve" width={28} height={28} />
+          <Link href="https://dreamtripclub.com/rewards/" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navrewards.png" alt="Reserve" width={28} height={28} />
             <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
-              Reserve
+             REWARDS
             </span>
           </Link>
-          <Link href="https://member.dreamtripclub.com/search/results" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navrewards.png" alt="Rewards" width={28} height={28} />
+          <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navoffer.png" alt="Rewards" width={28} height={28} />
             <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
-              Rewards
+              OFFERS
             </span>
           </Link>
-          <Link href="https://dreamtripclub.com/help" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navoffer.png" alt="Offers" width={28} height={28} />
+          <Link href="https://member.dreamtripclub.com/dashboard" className="flex flex-col items-center gap-1 group">
+            <Image src="/Navaccount.png" alt="Offers" width={28} height={28} />
             <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
-              Offers
+              ACCOUNT
             </span>
           </Link>
           <Link
             href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/signin'}
             className="flex flex-col items-center gap-1 group"
           >
-            <Image src="/Navaccount.png" alt="Account" width={28} height={28} />
+            <Image src="/navhelp.png" alt="Account" width={28} height={28} />
             <span className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline" style={{ color: brand }}>
-              Account
+              HELP
             </span>
           </Link>
         </nav>
