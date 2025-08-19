@@ -610,7 +610,7 @@ function SearchBar() {
         </div>
       )}
 
-      <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[100px]">
+      <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[95px]">
         {/* Desktop layout */}
         {!isMobile ? (
           <div className="flex items-center md:justify-start gap-4">
@@ -761,142 +761,170 @@ function SearchBar() {
             )
           }
         {/* ===== Desktop: Calendar Popover (two months) ===== */}
-              {mounted && !isMobile && showCal &&
-                createPortal(
-                  <>
-                    {/* click-away overlay */}
-                    <div className="fixed inset-0 z-[999998]" onClick={() => setShowCal(false)} />
-                    <div
-                      className="fixed z-[999999] text-gray-700 bg-white border rounded-2xl shadow-2xl p-4 w-[860px] "
-                      style={{ top: calPos.top, left: calPos.left }}
-                    >
-                      {/* Header: month nav */}
-                      <div className="flex items-center justify-between mb-3">
-                        <button
-                          className="px-3 py-1 rounded-lg border hover:bg-gray-50 "
-                          onClick={() =>
-                            setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))
-                          }
-                        >
-                          Prev
-                        </button>
-                        <div className="flex items-center gap-8">
-                          <div className="text-base font-semibold text-gray-900">
-                            {format(leftMonth, 'MMMM yyyy')}
-                          </div>
-                          <div className="text-base font-semibold text-gray-900">
-                            {format(rightMonth, 'MMMM yyyy')}
-                          </div>
-                        </div>
-                        <button
-                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
-                          onClick={() =>
-                            setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))
-                          }
-                        >
-                          Next
-                        </button>
-                      </div>
+           {mounted && showCal && createPortal(
+  <div className="fixed inset-0 z-[99999] pointer-events-none">
+    {/* Click-away overlay */}
+    <div
+      className="absolute inset-0 bg-black/40 pointer-events-auto"
+      onClick={() => setShowCal(false)}
+    />
 
-                      {/* Weekday headers (shared) */}
-                      <div className="grid grid-cols-2 gap-6">
-                        {[leftDays, rightDays].map((days, idx) => (
-                          <div key={idx}>
-                            <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">
-                              {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
-                                <div key={d} className="py-1">{d}</div>
-                              ))}
-                            </div>
-                            <div className="grid grid-cols-7 gap-1">
-                              {days.map(({ date, currentMonth }, i) => (
-                                <div key={i} className="flex items-center justify-center">
-                                  <DayCell d={date} muted={!currentMonth} />
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        ))}
-                      </div>
+    {isMobile ? (
+      // ===== Mobile: full-screen bottom sheet (single month) =====
+      <div
+        className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4
+                   animate-[slideup_200ms_ease-out] overflow-y-auto pointer-events-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
 
-                      {/* Footer actions */}
-                      <div className="flex items-center justify-between mt-3">
-                        <button
-                          className="text-sm text-gray-700 hover:underline"
-                          onClick={() => { setCheckIn(null); setCheckOut(null); }}
-                        >
-                          Reset
-                        </button>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-lg font-semibold">Select dates</div>
+          <button className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50"
+                  onClick={() => setShowCal(false)}>
+            Close
+          </button>
+        </div>
 
-                        <div className="text-sm text-gray-600">
-                          {checkIn && !checkOut && 'Select a check-out date'}
-                          {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
-                          {!checkIn && !checkOut && 'Select a check-in date'}
-                        </div>
+        {/* Month header */}
+        <div className="flex items-center justify-between mb-2">
+          <button className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                  onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}>
+            Prev
+          </button>
+          <div className="text-base font-semibold text-gray-900">
+            {format(leftMonth, 'MMMM yyyy')}
+          </div>
+          <button className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                  onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}>
+            Next
+          </button>
+        </div>
 
-                        <div className="flex items-center gap-2">
-                          <button
-                            className="text-sm px-4 py-2 rounded-lg border hover:bg-gray-50"
-                            onClick={() => setShowCal(false)}
-                          >
-                            Close
-                          </button>
-                          <button
-                            disabled={!checkIn || !checkOut}
-                            className={`text-sm px-4 py-2 rounded-full text-white ${
-                              checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'
-                            }`}
-                            onClick={() => setShowCal(false)}
-                          >
-                            Apply
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  </>,
-                  document.body
-                )
-              }
+        <div className="grid grid-cols-7 text-center text-xs text-gray-900 mb-1">
+          {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d)=>(<div key={d} className="py-1">{d}</div>))}
+        </div>
+        <div className="grid grid-cols-7 gap-1 mb-3">
+          {leftDays.map(({date,currentMonth},i)=>(
+            <div key={i} className="flex items-center justify-center">
+              <DayCell d={date} muted={!currentMonth} size="lg" />
+            </div>
+          ))}
+        </div>
 
-        
-
-
-      {/* ===== Mobile: Calendar full-screen sheet (single month) ===== */}
-      {mounted && isMobile && showCal &&
-        createPortal(
-          <div className="fixed inset-0 z-[999999]">
-            <div className="absolute inset-0 bg-black/40" onClick={() => setShowCal(false)} />
-            <div className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4 animate-[slideup_200ms_ease-out] overflow-y-auto">
-              <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
-              <div className="flex items-center justify-between mb-2">
-                <div className="text-lg font-semibold">Select dates</div>
-                <button className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50" onClick={() => setShowCal(false)}>
-                  Close
-                </button>
+        <div className="flex items-center justify-between">
+          <button className="text-sm text-gray-700 hover:underline"
+                  onClick={() => { setCheckIn(null); setCheckOut(null); }}>
+            Reset
+          </button>
+          <div className="text-sm text-black mx-auto">
+            {checkIn && !checkOut && 'Select a check-out date'}
+            {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
+            {!checkIn && !checkOut && 'Select a check-in date'}
+          </div>
+          <button
+            disabled={!checkIn || !checkOut}
+            className={`text-sm px-4 py-2 rounded-full text-white ${
+              checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'
+            }`}
+            onClick={() => { setShowCal(false); if (checkIn && checkOut) setShowSummary(true); }}
+          >
+            Done
+          </button>
+        </div>
+      </div>
+    ) : (
+      // ===== Desktop: anchored popover (two months) =====
+      <div
+        className="absolute pointer-events-none"
+        style={{ top: calPos.top, left: calPos.left }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div
+          className="relative z-[100000] text-gray-700 bg-white border rounded-2xl shadow-2xl p-4 w-[860px] pointer-events-auto"
+        >
+          {/* Header: month nav */}
+          <div className="flex items-center justify-between mb-3">
+            <button
+              className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+              onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}
+            >
+              Prev
+            </button>
+            <div className="flex items-center gap-8">
+              <div className="text-base font-semibold text-gray-900">
+                {format(leftMonth, 'MMMM yyyy')}
               </div>
-
-              {/* Month header */}
-              <div className="flex items-center justify-between mb-2">
-                <button className="px-3 py-1 rounded-lg border hover:bg-gray-50" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1))}>Prev</button>
-                <div className="text-base font-semibold text-gray-900">{format(leftMonth, 'MMMM yyyy')}</div>
-                <button className="px-3 py-1 rounded-lg border hover:bg-gray-50" onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}>Next</button>
-              </div>
-              <div className="grid grid-cols-7 text-center text-xs text-gray-900 mb-1">{['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d)=>(<div key={d} className="py-1">{d}</div>))}</div>
-              <div className="grid grid-cols-7 gap-1 mb-3">{leftDays.map(({date,currentMonth},i)=>(<div key={i} className="flex items-center justify-center"><DayCell d={date} muted={!currentMonth} size="lg" /></div>))}</div>
-
-              <div className="flex items-center justify-between">
-                <button className="text-sm text-gray-700 hover:underline" onClick={() => { setCheckIn(null); setCheckOut(null); }}>Reset</button>
-                <div className="text-sm text-black mx-auto">
-                  {checkIn && !checkOut && 'Select a check-out date'}
-                  {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
-                  {!checkIn && !checkOut && 'Select a check-in date'}
-                </div>
-                <button disabled={!checkIn || !checkOut} className={`text-sm px-4 py-2 rounded-full text-white ${checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'}`} onClick={() => { setShowCal(false); if (checkIn && checkOut) setShowSummary(true); }}>Done</button>
+              <div className="text-base font-semibold text-gray-900">
+                {format(rightMonth, 'MMMM yyyy')}
               </div>
             </div>
-          </div>,
-          document.body,
-        )
-      }
+            <button
+              className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+              onClick={() => setViewMonth(new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1))}
+            >
+              Next
+            </button>
+          </div>
+
+          {/* Weekday headers + grids */}
+          <div className="grid grid-cols-2 gap-6">
+            {[leftDays, rightDays].map((days, idx) => (
+              <div key={idx}>
+                <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">
+                  {['Sun','Mon','Tue','Wed','Thu','Fri','Sat'].map((d) => (
+                    <div key={d} className="py-1">{d}</div>
+                  ))}
+                </div>
+                <div className="grid grid-cols-7 gap-1">
+                  {days.map(({ date, currentMonth }, i) => (
+                    <div key={i} className="flex items-center justify-center">
+                      <DayCell d={date} muted={!currentMonth} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Footer actions */}
+          <div className="flex items-center justify-between mt-3">
+            <button
+              className="text-sm text-gray-700 hover:underline"
+              onClick={() => { setCheckIn(null); setCheckOut(null); }}
+            >
+              Reset
+            </button>
+            <div className="text-sm text-gray-600">
+              {checkIn && !checkOut && 'Select a check-out date'}
+              {checkIn && checkOut && `${nights} night${nights > 1 ? 's' : ''} selected`}
+              {!checkIn && !checkOut && 'Select a check-in date'}
+            </div>
+            <div className="flex items-center gap-2">
+              <button
+                className="text-sm px-4 py-2 rounded-lg border hover:bg-gray-50"
+                onClick={() => setShowCal(false)}
+              >
+                Close
+              </button>
+              <button
+                disabled={!checkIn || !checkOut}
+                className={`text-sm px-4 py-2 rounded-full text-white ${
+                  checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'
+                }`}
+                onClick={() => setShowCal(false)}
+              >
+                Apply
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    )}
+  </div>,
+  document.body
+)}
+
 
       {/* ===== Mobile: Guests bottom sheet ===== */}
       {mounted && isMobile && showGuests &&

@@ -875,9 +875,9 @@ function ResultsContent() {
 
               <button
                 onClick={applySearch}
-                disabled={!dest || !checkIn || !checkOut}
+                disabled={!checkIn || !checkOut}
                 className={`font-semibold tracking-wide px-7 py-3 rounded-full transition ${
-                  dest && checkIn && checkOut
+                   checkIn && checkOut
                     ? 'bg-[#F05A28] hover:brightness-95 text-white'
                     : 'bg-[#F05A28] text-white/70 cursor-not-allowed'
                 }`}
