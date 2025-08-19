@@ -17,6 +17,11 @@ import {
 } from 'date-fns';
   import Script from 'next/script';
 
+const iconUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png';
+const iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png';
+const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
+
+
 /* ================= Icons ================= */
 const PinIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
@@ -113,9 +118,14 @@ function DestinationPicker({
         )}`;
         const res = await fetch(url);
         const data = await res.json();
-        setResults(
-          data.map((d: any) => ({ label: d.display_name, lat: +d.lat, lon: +d.lon })),
+       setResults(
+          data.map((d: any) => ({
+            label: d.display_name.split(',').slice(0,2).join(', '), // show only "City, State" part
+            lat: +d.lat,
+            lon: +d.lon
+          }))
         );
+
       } catch {}
     }, 250);
     return () => clearTimeout(id);
@@ -132,12 +142,15 @@ function DestinationPicker({
   }, [isMobile]);
 
   const finalizePick = (place: Place) => {
-    setValue(place);
-    pushRecent(place);
-    setShowDest(false);
-    setOpen(false);
-    window.dispatchEvent(new Event('dest-picked'));
-  };
+  setValue(place);
+  // NEW: share the anchor for the map
+  try { localStorage.setItem('lastDestPick', JSON.stringify({ lat: place.lat, lng: place.lng })); } catch {}
+  window.dispatchEvent(new Event('dest-picked')); // notify listeners
+  pushRecent(place);
+  setShowDest(false);
+  setOpen(false);
+};
+
 
   const choose = (item: { label: string; lat: number; lon: number }) =>
     finalizePick({ label: item.label, lat: item.lat, lng: item.lon });
@@ -158,9 +171,14 @@ function DestinationPicker({
         )}`;
         const res = await fetch(url);
         const data = await res.json();
-        setMResults(
-          data.map((d: any) => ({ label: d.display_name, lat: +d.lat, lon: +d.lon })),
-        );
+       setMResults(
+        data.map((d: any) => ({
+          label: d.display_name.split(',').slice(0, 2).join(', '), // shorter label
+          lat: +d.lat,
+          lon: +d.lon,
+        }))
+      );
+
       } catch {}
     }, 250);
     return () => clearTimeout(id);
@@ -366,6 +384,8 @@ function MobileResults({
     </div>
   );
 }
+/* ===================== Main Bias Search Bar ===================== */
+
 
 /* ===================== Main Search Bar ===================== */
 function SearchBar() {
@@ -965,6 +985,9 @@ function SearchBar() {
     </div>
   );
 }
+// FittoMarkers
+
+
 
 export default function SearchPage() {
   // Route-local transparent background

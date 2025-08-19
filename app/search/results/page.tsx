@@ -131,12 +131,13 @@ function DestinationPicker({
         const res = await fetch(url);
         const data = await res.json();
         setResults(
-          data.map((d: any) => ({
-            label: d.display_name,
-            lat: +d.lat,
-            lon: +d.lon,
-          }))
-        );
+        data.map((d: any) => ({
+          label: d.display_name.split(',').slice(0, 2).join(', '), // shorter label
+          lat: +d.lat,
+          lon: +d.lon,
+        }))
+      );
+
       } catch {}
     }, 250);
     return () => clearTimeout(id);
@@ -159,23 +160,26 @@ function DestinationPicker({
         const res = await fetch(url);
         const data = await res.json();
         setMResults(
-          data.map((d: any) => ({
-            label: d.display_name,
-            lat: +d.lat,
-            lon: +d.lon,
-          }))
-        );
+        data.map((d: any) => ({
+          label: d.display_name.split(',').slice(0, 2).join(', '), // shorter label
+          lat: +d.lat,
+          lon: +d.lon,
+        }))
+      );
       } catch {}
     }, 250);
     return () => clearTimeout(id);
   }, [showDest, destQuery]);
 
-  const finalizePick = (place: Place) => {
-    setValue(place);
-    pushRecent(place);
-    setShowDest(false);
-    setOpen(false);
-  };
+      const finalizePick = (place: Place) => {
+      setValue(place);
+      try {
+        localStorage.setItem('lastDestPick', JSON.stringify({ lat: place.lat, lng: place.lng }));
+      } catch {}
+      pushRecent(place);
+      setShowDest(false);
+      setOpen(false);
+    };
 
   const useCurrentLocation = () => {
     if (!navigator.geolocation) return;
@@ -452,6 +456,37 @@ function buildMonth(monthStart: Date): Day[] {
     : Buffer.from(s, 'utf-8').toString('base64'); // SSR fallback
 }
 /* ───────────────── Results Content (moved under Suspense) ───────────────── */
+const PROVINCE_ANCHORS: Record<string, { lat: number; lng: number }[]> = {
+  Ontario: [
+    { lat: 45.202, lng: -78.217 }, // Harcourt, ON
+    { lat: 44.926, lng: -78.723 }, // Minden, ON
+    { lat: 44.520, lng: -78.170 }, // Stoney Lake, ON
+  ],
+   'Prince Edward Island': [
+    { lat: 46.307, lng: -63.580 }, // Albany area
+  ],
+};
+
+
+function anchorsForProvince(label?: string) {
+  if (!label) return null;
+  // Extract the first token before the comma: "Ontario" from "Ontario, Canada"
+  const province = label.split(',')[0].trim();
+  return PROVINCE_ANCHORS[province] || null;
+}
+
+function dedupeBy<T>(arr: T[], key: (x: T) => string) {
+  const seen = new Set<string>();
+  const out: T[] = [];
+  for (const item of arr) {
+    const k = key(item);
+    if (seen.has(k)) continue;
+    seen.add(k);
+    out.push(item);
+  }
+  return out;
+}
+
 function ResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -468,7 +503,33 @@ function ResultsContent() {
 
   const [dest, setDest] = useState<Place | null>(
     initialPlace ? { label: initialPlace, lat: initialLat, lng: initialLng } : null
+    
   );
+   // hydrate dest from localStorage (if URL didn't provide one)
+      useEffect(() => {
+            if (dest) return;
+
+            let hydrated = false;
+            try {
+              const raw = typeof window !== 'undefined'
+                ? localStorage.getItem('lastDestPick')
+                : null;
+              if (raw) {
+                const v = JSON.parse(raw);
+                if (typeof v?.lat === 'number' && typeof v?.lng === 'number') {
+                  setDest({ label: initialPlace || 'Selected area', lat: v.lat, lng: v.lng });
+                  hydrated = true;
+                }
+              }
+            } catch {}
+
+            if (!hydrated) {
+              // Google Maps base coords (example)
+              const fallback = { lat: 46.3097491, lng: -63.7612867 };
+              setDest({ label: initialPlace || 'Selected area', ...fallback });
+            }
+          }, [dest, initialPlace]);
+
   const [checkIn, setCheckIn] = useState<Date | null>(
     initialStart ? parseISO(initialStart) : null
   );
@@ -627,44 +688,108 @@ function ResultsContent() {
   const startDate = checkIn ? fmtParam(checkIn) : '';
   const endDate = checkOut ? fmtParam(checkOut) : '';
 
-  useEffect(() => {
-    const run = async () => {
-      if (!startDate || !endDate || !lat || !lng) {
+ useEffect(() => {
+  const run = async () => {
+    const start = checkIn ? fmtParam(checkIn) : '';
+    const end   = checkOut ? fmtParam(checkOut) : '';
+
+    // Need dates + a destination label
+    if (!start || !end || !dest?.label) {
+      setRooms([]);
+      return;
+    }
+
+    setLoading(true);
+    setFetchError('');
+
+    // Common (non-location) params
+    const baseParams = {
+      startDate: start,
+      endDate: end,
+      adult: String(adults),
+      child: String(children),
+      infant: String(infants),
+      pet: pet ? 'yes' : 'no',
+    } as const;
+
+    try {
+      // Province-level search: fan out to anchor points and merge
+      const provinceAnchors = anchorsForProvince(dest.label);
+      if (provinceAnchors) {
+        const responses = await Promise.all(
+          provinceAnchors.map(async (a) => {
+            const qs = new URLSearchParams({
+              ...baseParams,
+              lat: a.lat.toString(),
+              lng: a.lng.toString(),
+            } as any);
+            try {
+              const res = await fetch(
+                `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
+              );
+              return res.json();
+            } catch {
+              return null;
+            }
+          })
+        );
+
+        // Merge & de-dupe
+        const merged: any[] = [];
+        for (const r of responses) {
+          if (r?.success && r.data?.data) merged.push(...r.data.data);
+        }
+        const unique = dedupeBy(
+          merged,
+          (x: any) => `${x.hotelId || x.hotelNo}-${x.roomTypeId || x.RoomType || ''}`
+        );
+
+        if (unique.length) {
+          setRooms(unique);
+        } else {
+          setRooms([]);
+          setFetchError(`No availability found in ${dest.label}.`);
+        }
+        return; // done
+      }
+
+      // City-level search: single lat/lng
+      const latStr = dest?.lat?.toString() || '';
+      const lngStr = dest?.lng?.toString() || '';
+      if (!latStr || !lngStr) {
         setRooms([]);
+        setFetchError('Please select a city or town.');
         return;
       }
-      try {
-        setLoading(true);
-        setFetchError('');
-        const qs = new URLSearchParams({
-          startDate,
-          endDate,
-          lng,
-          lat,
-          adult: String(adults),
-          child: String(children),
-          infant: String(infants),
-          pet: pet ? 'yes' : 'no', // UPDATED
-        });
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
-        );
-        const data = await res.json();
-        if (data.success && data.data?.data) setRooms(data.data.data);
-        
-        else {
-          setRooms([]);
-          setFetchError('No availability found.');
-        }
-      } catch {
+
+      const qs = new URLSearchParams({
+        ...baseParams,
+        lat: latStr,
+        lng: lngStr,
+      } as any);
+
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
+      );
+      const data = await res.json();
+      if (data.success && data.data?.data) {
+        setRooms(data.data.data);
+      } else {
         setRooms([]);
-        setFetchError('Failed to fetch availability.');
-      } finally {
-        setLoading(false);
+        setFetchError('No availability found.');
       }
-    };
-    run();
-  }, [startDate, endDate, lat, lng, adults, children, pet]);
+    } catch {
+      setRooms([]);
+      setFetchError('Failed to fetch availability.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  run();
+  // IMPORTANT: depend on dest (label/lat/lng), dates, and guest vars
+}, [checkIn, checkOut, dest, adults, children, infants, pet]);
+
 
   const applySearch = () => {
     const query = new URLSearchParams({
