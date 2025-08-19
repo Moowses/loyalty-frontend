@@ -19,10 +19,10 @@
     "incremental": true,
     "baseUrl": ".",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
-    },
+      "@/*": ["*"],
+      "@/components/*": ["components/*"],
+      "@/app/*": ["app/*"]
+   },
     "plugins": [
       {
         "name": "next"
