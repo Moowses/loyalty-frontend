@@ -565,27 +565,41 @@ function SearchBar() {
     infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''
   }${pet ? ' • Pet' : ''}`;
 
-  const handleSearch = () => {
-    if (!dest || !checkIn || !checkOut) return;
-    const query = new URLSearchParams({
-      startDate: fmtParam(checkIn),
-      endDate: fmtParam(checkOut),
-      adult: String(adults),
-      child: String(children),
-      infant: String(infants),
-      rooms: String(rooms),
-      place: dest?.label || '',
-      lat: dest?.lat?.toString() || '',
-      lng: dest?.lng?.toString() || '',
-      pet: pet ? 'yes' : 'no',
-    });
-    const url = `/search/results?${query.toString()}`;
-      if (window.top) {
-        window.top.location.href = url; // redirect parent page
-      } else {
-        window.location.href = url; // fallback if not in iframe
+    const handleSearch = () => {
+      // allow searching without a destination; only require dates
+      if (!checkIn || !checkOut) return;
+
+      const params: Record<string, string> = {
+        startDate: fmtParam(checkIn),
+        endDate: fmtParam(checkOut),
+        adult: String(adults),
+        child: String(children),
+        infant: String(infants),
+        pet: pet ? 'yes' : 'no',
+      };
+
+      // include rooms only if you have a rooms count variable
+      if (typeof rooms === 'number') {
+        params.rooms = String(rooms);
       }
-  };
+
+      // include destination only if present
+      if (dest?.label) params.place = dest.label;
+      if (dest?.lat != null && dest?.lng != null) {
+        params.lat = String(dest.lat);
+        params.lng = String(dest.lng);
+      }
+
+      const url = `/search/results?${new URLSearchParams(params).toString()}`;
+
+      // keep iframe-friendly redirect
+      if (window.top) {
+        window.top.location.href = url;
+      } else {
+        window.location.href = url;
+      }
+    };
+
 
   return (
     <div className="w-full flex justify-center">
@@ -596,10 +610,10 @@ function SearchBar() {
         </div>
       )}
 
-      <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4">
+      <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[100px]">
         {/* Desktop layout */}
         {!isMobile ? (
-          <div className="flex flex-row items-center gap-4">
+          <div className="flex items-center md:justify-start gap-4">
             {/* Destination */}
             <div className="flex-1 min-w-[220px]">
               <DestinationPicker isMobile={false} value={dest} setValue={setDest} />
@@ -635,9 +649,9 @@ function SearchBar() {
             {/* Search button */}
             <button
               onClick={handleSearch}
-              disabled={!dest || !checkIn || !checkOut}
-              className={`w-full md:w-auto font-semibold px-6 py-3 md:px-8 md:py-3 rounded-full inline-flex items-center justify-center gap-2 transition ${
-                dest && checkIn && checkOut
+              disabled={!checkIn || !checkOut}
+              className={`w-full md:w-auto font-semibold px-6 py-3 md:px-8 md:py-3 rounded-full inline-flex items-center justify-center gap-2 transition bg-[#F05A28] hover:brightness-95 text-white ${
+                 checkIn && checkOut
                   ? 'bg-[#F05A28] hover:brightness-95 text-white'
                   : 'bg-[#F05A28] text-white cursor-not-allowed'
               }`}
@@ -976,7 +990,7 @@ function SearchBar() {
                 <div className="text-[11px] uppercase tracking-wide font-semibold text-gray-500 mb-1 flex items-center gap-2"><UsersIcon className="w-4 h-4" /> Rooms & Guests</div>
                 <button type="button" onClick={() => { setShowSummary(false); setShowGuests(true); }} className="w-full text-left text-base text-gray-900 hover:underline underline-offset-2">{summaryLabel}</button>
               </div>
-              <button onClick={handleSearch} disabled={!dest || !checkIn || !checkOut} className={`mt-4 w-full font-semibold px-6 py-4 rounded-full ${dest && checkIn && checkOut ? 'bg-[#F05A28] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`} type="button">SEARCH</button>
+              <button onClick={handleSearch} disabled={ !checkIn || !checkOut} className={`mt-4 w-full font-semibold px-6 py-4 rounded-full ${checkIn && checkOut ? 'bg-[#F05A28] text-white' : 'bg-gray-300 text-gray-500 cursor-not-allowed'}`} type="button">SEARCH</button>
             </div>
           </div>,
           document.body,
