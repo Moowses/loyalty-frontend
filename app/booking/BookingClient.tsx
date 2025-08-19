@@ -89,7 +89,7 @@ export default function BookingPage() {
           return;
         }
 
-        const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+        const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://api.dreamtripclub.com';
         const res = await fetch(`${base}/api/booking/quote`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -119,7 +119,7 @@ export default function BookingPage() {
 
   // --- Load Collect.js + mount hosted fields ---
   useEffect(() => {
-    const pub = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY;
+    const pub = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || 'z78ur3-68sE66-c3YWM3-ZC6Q56';
     if (!pub) {
       setErr('Missing NEXT_PUBLIC_NMI_PUBLIC_KEY. Contact support.');
       return;
