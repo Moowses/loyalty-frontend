@@ -13,8 +13,6 @@ import {
   FaMedal,
   FaUser,
 } from 'react-icons/fa6';
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 
 /* ========= Types ========= */
 type Txn = { date: string; description: string; points: number };
@@ -214,9 +212,7 @@ function SiteHeader({ onSignOut }: { onSignOut: () => void }) {
 
 /* ========= Page ========= */
 export default function DashboardPage() {
-  const session = cookies().get('dtc_session')?.value;
-  if (!session) redirect('/signin?next=/dashboard');
-
+  
   const router = useRouter();
   const [data, setData] = useState<Dashboard | null>(null);
   const [reservations, setReservations] = useState<ReservationsPayload>(MOCK_RESV);
