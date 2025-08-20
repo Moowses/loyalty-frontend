@@ -461,6 +461,7 @@ const PROVINCE_ANCHORS: Record<string, { lat: number; lng: number }[]> = {
     { lat: 45.202, lng: -78.217 }, // Harcourt, ON
     { lat: 44.926, lng: -78.723 }, // Minden, ON
     { lat: 44.520, lng: -78.170 }, // Stoney Lake, ON
+     { lat: 45.065773, lng: -78.023035 }, // Hastings Highlands (Old Diamond Lake Rd)
   ],
    'Prince Edward Island': [
     { lat: 46.307, lng: -63.580 }, // Albany area
