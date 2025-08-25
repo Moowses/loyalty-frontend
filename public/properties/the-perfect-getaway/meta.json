@@ -1,0 +1,72 @@
+{
+  "hotelId": "276304",
+  "hotelNo": "TPG",
+  "name": "The Perfect Getaway",
+  "brandName": "The Perfect Getaway",
+  "tagline": "Cottage • 9 guests • 3 bedrooms • 1 bath",
+  "descriptionShort": "Discover a 4-season cabin oasis in Prince Edward Island! Just 15 minutes from Summerside, 17 from Cavendish, 40 from Charlottetown, and 10 from the bridge. This cozy retreat sleeps 9. Enjoy a hot tub, cold plunge, fire pit and propane BBQ with deck seating. With AC and weekly summer rentals (2-day minimum off-season), it’s perfect for families or a romantic escape. Winter visitors, 4-wheel drive is recommended!",
+  "descriptionLong": [
+    "Discover a 4-season cabin oasis in Prince Edward Island! Just 15 minutes from Summerside, 17 from Cavendish, 40 from Charlottetown, and 10 from the bridge. This cozy retreat sleeps 9. Enjoy a hot tub, cold plunge, fire pit and propane BBQ with deck seating.",
+    "With AC and weekly summer rentals (2-day minimum off-season), it’s perfect for families or a romantic escape. Winter visitors, 4-wheel drive is recommended!"
+  ],
+  "hotelName": "The Perfect Getaway",
+  "slug": "theperfecttetaway",
+  "bedrooms": 3,
+  "bathrooms": 1,
+  "capacity": 9,
+  "type": "House",
+  "rating": 4.7,
+  "shortDescription": "Discover a 4‑season cabin oasis in Prince Edward Island!...",
+  "longDescription": "Full detailed copy for the modal…",
+  "amenities": {
+    "general": [
+      "Hot tub",
+      "Air conditioning",
+      "Washing Machine",
+      "Wireless",
+      "Laptop Friendly workspace",
+      "TV",
+      "Outdoor grill"
+    ],
+    "kitchenDining": [
+      "Kitchen"
+    ],
+    "policy": [
+      "Pets allowed",
+      "Suitable for children",
+      "Suitable for infants",
+      "Long term stays allowed",
+      "Pets allowed on request"
+    ],
+    "safety": [
+      "Smoke detector",
+      "Carbon Monoxide Detector",
+      "First aid kit",
+      "Fire Extinguisher"
+    ],
+    "parking": [
+      "Free parking"
+    ],
+    "location": [
+      "Beach"
+    ],
+    "outdoors": [
+      "Fire pit"
+    ]
+  },
+  "houseRules": [
+    "Check-in: 4 pm",
+    "Check-out: 10 am",
+    "Children: allowed",
+    "Infants: allowed",
+    "Pets: allowed",
+    "Parties and events: not allowed",
+    "Smoking inside: not allowed",
+    "Keep cottage doors shut to prevent mice from entering.",
+    "Maintain cleanliness to make check-out easier.",
+    "In case of accidental damage, notify host immediately via text."
+  ],
+  "gallery": [
+"Hero.png","1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png","9.png","10.png","11.png","12.png","13.png","14.png","15.png","16.png","17.png","18.png","19.png","20.png","21.png","22.png","23.png","24.png","25.png","26.png","27.png","28.png","29.png","30.png"
+  ]
+}

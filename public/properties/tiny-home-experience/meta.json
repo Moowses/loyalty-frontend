@@ -1,0 +1,75 @@
+{
+  "hotelId": "302995",
+  "hotelNo": "STH",
+  "name": "Scandinavian-Inspired Tiny Home Experience",
+  "brandName": "Scandinavian-Inspired Tiny Home Experience",
+  "tagline": "Tiny Home • 4 guests • 1 bedroom • 1 bath",
+  "descriptionShort": "There’s no better spot to enjoy some much-needed rest and relaxation than from this stunning tiny home. As part of our Nordik health ritual, this home’s amenities will stimulate mental, emotional, physical, and spiritual rejuvenation. Dip your toes in the outdoor hot tub and cold plunge, warm up in the sauna, and enjoy your coffee or glass of wine on the stylish deck.",
+  "descriptionLong": [
+    "There’s no better spot to enjoy some much-needed rest and relaxation than from this stunning tiny home. As part of our Nordik health ritual, this home’s amenities will stimulate mental, emotional, physical, and spiritual rejuvenation.",
+    "Dip your toes in the outdoor hot tub and cold plunge, warm up in the sauna, and enjoy your coffee or glass of wine on the stylish deck. Surrounded by the tranquillity of the forest, this property offers a remote, spa experience with plenty of privacy."
+  ],
+  "hotelName": "Scandinavian-Inspired Tiny Home Experience",
+  "slug": "scandinaviantinyhome",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "capacity": 4,
+  "type": "Tiny Home",
+  "rating": 4.9,
+  "shortDescription": "Stunning Scandinavian-inspired tiny home with spa amenities in PEI.",
+  "longDescription": "Full detailed copy for the modal…",
+  "amenities": {
+    "general": [
+      "Hot tub","Free WiFi","Air conditioning","Washing Machine","Cable TV","Internet","Wireless",
+      "Fireplace","Hair Dryer","Heating","Essentials","Shampoo","Laptop Friendly workspace","TV",
+      "Sound system","Balcony","Private living room","Linens","Outdoor grill","Towels","Hot water",
+      "Private entrance","Cooking basics","Sauna","WiFi speed (250+ Mbps)","Communal sauna",
+      "Private sauna","Clothing storage","Ceiling fan"
+    ],
+    "kitchenDining": [
+      "Kitchen","Toaster","Electric kettle","Coffee/tea maker","Stove","Refrigerator","Kitchen utensils",
+      "Spices","Dining table","Baking sheet","Barbeque utensils","Blender","Coffee","Wine glasses"
+    ],
+    "policy": [
+      "Pets allowed","Suitable for children"
+    ],
+    "safety": [
+      "Smoke detector","Carbon Monoxide Detector","First aid kit","Fire Extinguisher"
+    ],
+    "parking": [
+      "Free parking"
+    ],
+    "bathroom": [
+      "Shower","Tub","Toilet","Body soap","Conditioner"
+    ],
+    "entertainment": [
+      "Books","Dvd","Board games"
+    ],
+    "location": [
+      "Beach","Lake"
+    ],
+    "cleanliness": [
+      "Contactless Check-In/Out"
+    ],
+    "outdoors": [
+      "Fire pit"
+    ]
+  },
+  "houseRules": [
+    "Check-in: 4 pm",
+    "Check-out: 10 am",
+    "Children: allowed",
+    "Infants: not allowed",
+    "Pets: allowed",
+    "Parties and events: not allowed",
+    "Smoking inside: not allowed",
+    "Keep cottage doors shut to prevent mice from entering.",
+    "Maintain cleanliness to make check-out easier.",
+    "In case of accidental damage, notify host immediately via text."
+  ],
+  "gallery": [
+    "Hero.png","1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png","9.png",
+    "10.png","11.png","12.png","13.png","14.png","15.png","16.png","17.png","18.png","19.png",
+    "20.png","21.png","22.png","23.png","24.png","25.png","26.png","27.png","28.png","29.png","30.png"
+  ]
+}
