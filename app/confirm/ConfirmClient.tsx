@@ -1,7 +1,7 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useMemo } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 type ConfirmPayload = {
   reservationNumber?: string;
@@ -41,7 +41,7 @@ function money(v?: number, ccy = 'CAD') {
 
 const BRAND = '#211F45';
 
-export default function ConfirmPage() {
+export default function ConfirmClient() { 
   const router = useRouter();
   const params = useSearchParams();
 

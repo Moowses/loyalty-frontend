@@ -1,13 +1,12 @@
-// app/confirm/page.tsx
-'use client';
+import { Suspense } from "react";
+import ConfirmClient from "./ConfirmClient";
 
-import { useSearchParams } from 'next/navigation';
-import ConfirmClient from './ConfirmClient';
+export const dynamic = "force-dynamic"; // or: export const revalidate = 0;
 
-export default function Page() {
-  const searchParams = useSearchParams();
-  
-  return <ConfirmClient />;
+export default function ConfirmPage() {
+  return (
+    <Suspense fallback={<div />}>
+      <ConfirmClient />
+    </Suspense>
+  );
 }
-
-// Remove the layout.tsx suspense if you have it, or keep it simple
