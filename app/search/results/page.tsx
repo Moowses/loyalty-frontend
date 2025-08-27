@@ -1290,7 +1290,7 @@ function getHotelImage(name?: string) {
                           
 
                             {/* View rates button (go to Hotel Info) */}
-                            <button
+                                 <button
                                   onClick={() => {
                                     const params = new URLSearchParams({
                                       hotelId: String(room.hotelId || ''),
