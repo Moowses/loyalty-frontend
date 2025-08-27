@@ -56,7 +56,7 @@ type Day = { date: Date; currentMonth: boolean };
 
 const CANADIAN_LOCATIONS = [
   // Provinces and Territories
-  { label: "Ontario, Canada", lat: 51.2538, lng: -85.3232 },
+  { label: "Prince County,  Prince Edward Island", lat: 46.5855648, lng: -63.9578476 },
   { label: "Quebec, Canada", lat: 52.9399, lng: -73.5491 },
   { label: "British Columbia, Canada", lat: 53.7267, lng: -127.6476 },
   { label: "Alberta, Canada", lat: 53.9333, lng: -116.5765 },

@@ -1291,12 +1291,14 @@ function getHotelImage(name?: string) {
 
                             {/* View rates button (go to Hotel Info) */}
                                  <button
-                                  onClick={() => {
+                                    onClick={() => {
+                                      
                                     const params = new URLSearchParams({
                                       hotelId: String(room.hotelId || ''),
                                       hotelNo: String(room.hotelNo || ''),
                                       roomTypeId: String(room.roomTypeId || ''),
 
+                                      // dates / party
                                       checkIn: startDate,
                                       checkOut: endDate,
                                       adult: String(adults),
@@ -1304,21 +1306,26 @@ function getHotelImage(name?: string) {
                                       infant: String(infants),
                                       pet: pet ? 'yes' : 'no',
 
+                                      // seed UI
                                       total: String(room.totalPrice || 0),
                                       petFee: String(room.petFeeAmount || 0),
                                       currency: room.currencyCode || 'CAD',
 
+                                      // helps hotel page re-price without another geocode
                                       lat: String(room.lat ?? ''),
                                       lng: String(room.lng ?? ''),
 
-                                      name: room.hotelName || room.RoomType || '',
+                                      // name for meta/images (make safe)
+                                     name: room.hotelName || room.RoomType || '',
+
                                     });
                                     router.push(`/hotel/${room.hotelId}?${params.toString()}`);
-                                  }}
-                                  className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
-                                >
-                                  SELECT
-                                </button>
+
+                                    }}
+                                     className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
+                                  >
+                                    View rates
+                                  </button>
 
 
                           </div>
