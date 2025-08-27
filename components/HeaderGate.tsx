@@ -10,7 +10,8 @@ const SHOW_ON: RegExp[] = [
   /^\/$/,                     // home
   /^\/results/,               // results
   /^\/booking(?!\/confirm)/,  // booking but NOT /booking/confirm
-  /^\/confirm/,               // confirmation page
+  ///^\/confirm/,               // confirmation page
+  /^\/dashboard/,               // confirmation page
   // (optional) hide header on auth pages by NOT listing `/signin` or `/join`
 ];
 
