@@ -22,6 +22,7 @@ const iconRetinaUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2
 const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png';
 
 
+
 /* ================= Icons ================= */
 const PinIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
@@ -53,6 +54,41 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
 type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
+const CANADIAN_LOCATIONS = [
+  // Provinces and Territories
+  { label: "Ontario, Canada", lat: 51.2538, lng: -85.3232 },
+  { label: "Quebec, Canada", lat: 52.9399, lng: -73.5491 },
+  { label: "British Columbia, Canada", lat: 53.7267, lng: -127.6476 },
+  { label: "Alberta, Canada", lat: 53.9333, lng: -116.5765 },
+  { label: "Manitoba, Canada", lat: 53.7609, lng: -98.8139 },
+  { label: "Saskatchewan, Canada", lat: 52.9399, lng: -106.4509 },
+  { label: "Nova Scotia, Canada", lat: 44.6820, lng: -63.7443 },
+  { label: "New Brunswick, Canada", lat: 46.5653, lng: -66.4619 },
+  { label: "Newfoundland and Labrador, Canada", lat: 53.1355, lng: -57.6604 },
+  { label: "Prince Edward Island, Canada", lat: 46.5107, lng: -63.4168 },
+  { label: "Northwest Territories, Canada", lat: 64.8255, lng: -124.8457 },
+  { label: "Yukon, Canada", lat: 64.2823, lng: -135.0000 },
+  { label: "Nunavut, Canada", lat: 70.2998, lng: -83.1076 },
+
+  // Major Cities near your properties
+  { label: "Toronto, Ontario", lat: 43.6532, lng: -79.3832 },
+  { label: "Ottawa, Ontario", lat: 45.4215, lng: -75.6972 },
+  { label: "Minden, Ontario", lat: 44.9256, lng: -78.7250 }, // Near 7 Anson Street
+  { label: "Harcourt, Ontario", lat: 44.7833, lng: -78.3667 }, // Near Diamond Lake properties
+  { label: "Charlottetown, Prince Edward Island", lat: 46.2382, lng: -63.1311 }, // Near PEI properties
+  { label: "Albany, Prince Edward Island", lat: 46.2570, lng: -63.4470 }, // Exact area of your properties
+  { label: "Montreal, Quebec", lat: 45.5017, lng: -73.5673 },
+  { label: "Vancouver, British Columbia", lat: 49.2827, lng: -123.1207 },
+  { label: "Calgary, Alberta", lat: 51.0447, lng: -114.0719 },
+  { label: "Edmonton, Alberta", lat: 53.5461, lng: -113.4938 },
+  { label: "Winnipeg, Manitoba", lat: 49.8951, lng: -97.1384 },
+  { label: "Halifax, Nova Scotia", lat: 44.6488, lng: -63.5752 },
+  { label: "Fredericton, New Brunswick", lat: 45.9636, lng: -66.6431 },
+  { label: "St. John's, Newfoundland", lat: 47.5615, lng: -52.7126 },
+  { label: "Whitehorse, Yukon", lat: 60.7212, lng: -135.0568 },
+  { label: "Yellowknife, Northwest Territories", lat: 62.4540, lng: -114.3718 },
+  { label: "Iqaluit, Nunavut", lat: 63.7467, lng: -68.5170 }
+];
 /* ================= Destination Picker ================= */
 function DestinationPicker({
   isMobile,
@@ -106,30 +142,54 @@ function DestinationPicker({
     };
   }, [open, isMobile]);
 
-  useEffect(() => {
-    if (!open || !query.trim()) {
-      setResults([]);
-      return;
-    }
-    const id = setTimeout(async () => {
-      try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(
-          query,
-        )}`;
-        const res = await fetch(url);
-        const data = await res.json();
-       setResults(
-          data.map((d: any) => ({
-            label: d.display_name.split(',').slice(0,2).join(', '), // show only "City, State" part
-            lat: +d.lat,
-            lon: +d.lon
-          }))
-        );
+ // In your DestinationPicker component, modify the search effect:
+useEffect(() => {
+  if (!open || !query.trim()) {
+    setResults([]);
+    return;
+  }
+  
+  const id = setTimeout(async () => {
+    try {
+      // First, check if query matches any Canadian locations
+      const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
+        loc.label.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 3); // Show top 3 Canadian matches first
 
-      } catch {}
-    }, 250);
-    return () => clearTimeout(id);
-  }, [query, open]);
+      // Then search OpenStreetMap for more specific results
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(
+        query + ', Canada' // Bias towards Canadian results
+      )}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      const osmResults = data.map((d: any) => ({
+        label: d.display_name.split(',').slice(0, 3).join(', '), // Show more context
+        lat: +d.lat,
+        lon: +d.lon
+      }));
+
+      // Combine results with Canadian matches first
+      setResults([...canadianMatches.map(loc => ({
+        label: loc.label,
+        lat: loc.lat,
+        lon: loc.lng
+      })), ...osmResults].slice(0, 6));
+    } catch (error) {
+      console.error('Search error:', error);
+      // Fallback to just Canadian locations
+      const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
+        loc.label.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 6);
+      setResults(canadianMatches.map(loc => ({
+        label: loc.label,
+        lat: loc.lat,
+        lon: loc.lng
+      })));
+    }
+  }, 250);
+  return () => clearTimeout(id);
+}, [query, open]);
 
   // Event bridge so parent can open this modal
   useEffect(() => {
@@ -255,24 +315,27 @@ function DestinationPicker({
                 <div className="text-sm font-medium text-gray-900">Use current location</div>
               </div>
               
-              {query && (
+              
+              {!query && (
                 <>
                   <div className="mx-2 my-2 border-t" />
-                  <div className="max-h-72 overflow-auto">
-                    {results.map((r, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                        onClick={() => choose(r)}
-                      >
-                        <PinIcon className="w-4 h-4 mt-1 " />
-                        <div className="text-sm text-[#F05A28]">{r.label}</div>
-                      </div>
-                    ))}
-                    {results.length === 0 && (
-                      <div className="px-3 py-4 text-sm text-gray-500">No matches…</div>
-                    )}
+                  <div className="text-xs uppercase tracking-wide text-gray-500 px-3 py-1">
+                    Popular in Canada
                   </div>
+                  {CANADIAN_LOCATIONS.slice(0, 4).map((location, index) => (
+                    <div
+                      key={index}
+                      className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
+                      onClick={() => choose({
+                        label: location.label,
+                        lat: location.lat,
+                        lon: location.lng
+                      })}
+                    >
+                      <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
+                      <div className="text-sm text-gray-900">{location.label}</div>
+                    </div>
+                  ))}
                 </>
               )}
             </div>
@@ -351,36 +414,92 @@ function MobileResults({
   onPick: (p: Place) => void;
 }) {
   const [list, setList] = useState<Array<{ label: string; lat: number; lon: number }>>([]);
+  
   useEffect(() => {
     let cancel = false;
     const run = async () => {
       try {
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=10&q=${encodeURIComponent(
-          query,
+        // First get Canadian matches
+        const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
+          loc.label.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 3);
+
+        // Then search OSM
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=7&q=${encodeURIComponent(
+          query + ', Canada'
         )}`;
         const res = await fetch(url);
         const data = await res.json();
-        if (!cancel) setList(data.map((d: any) => ({ label: d.display_name, lat: +d.lat, lon: +d.lon })));
-      } catch {}
+        
+        const osmResults = data.map((d: any) => ({
+          label: d.display_name.split(',').slice(0, 3).join(', '),
+          lat: +d.lat,
+          lon: +d.lon
+        }));
+
+        if (!cancel) {
+          setList([
+            ...canadianMatches.map(loc => ({
+              label: loc.label,
+              lat: loc.lat,
+              lon: loc.lng
+            })),
+            ...osmResults
+          ].slice(0, 10));
+        }
+      } catch (error) {
+        // Fallback to Canadian locations only
+        const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
+          loc.label.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 10);
+        if (!cancel) {
+          setList(canadianMatches.map(loc => ({
+            label: loc.label,
+            lat: loc.lat,
+            lon: loc.lng
+          })));
+        }
+      }
     };
-    run();
+    
+    if (query.trim()) {
+      run();
+    } else {
+      // Show popular Canadian destinations when query is empty
+      setList(CANADIAN_LOCATIONS.slice(0, 6).map(loc => ({
+        label: loc.label,
+        lat: loc.lat,
+        lon: loc.lng
+      })));
+    }
+    
     return () => {
       cancel = true;
     };
   }, [query]);
+  
   return (
     <div className="max-h-72 overflow-auto">
+      {query && list.length === 0 && (
+        <div className="px-1 py-4 text-sm text-gray-500">Searching…</div>
+      )}
+      
+      {!query && (
+        <div className="text-xs uppercase tracking-wide text-gray-500 px-1 py-2">
+          Popular Canadian Destinations
+        </div>
+      )}
+      
       {list.map((r, i) => (
         <div
           key={i}
           className="flex items-start gap-3 px-1 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
           onClick={() => onPick({ label: r.label, lat: r.lat, lng: r.lon })}
         >
-          <PinIcon className="w-4 h-4 mt-1" />
+          <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
           <div className="text-sm text-black">{r.label}</div>
         </div>
       ))}
-      {list.length === 0 && <div className="px-1 py-4 text-sm text-gray-500">Searching…</div>}
     </div>
   );
 }
