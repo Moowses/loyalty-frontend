@@ -14,7 +14,7 @@ export default function TestPayPage() {
   const configuredRef = useRef(false);
 
   const apiBase   = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-  const publicKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || '';
+  const publicKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || 'z78ur3-68sE66-c3YWM3-ZC6Q56';
 
   function configureCollect() {
     if (!window.CollectJS || configuredRef.current) return;
