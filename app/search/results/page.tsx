@@ -25,7 +25,8 @@ import {
   startOfWeek,
 } from 'date-fns';
 
-
+import fs from 'fs';
+import path from 'path';
 
 
 // Always render dynamically (avoid prerender errors for query-driven page)
@@ -447,6 +448,8 @@ function buildMonth(monthStart: Date): Day[] {
 
 
 }
+
+
 /* ───────── Filter helpers ───────── */
 
   function encodeBase64(obj: unknown) {
@@ -501,6 +504,8 @@ function ResultsContent() {
   const initialLat = params.get('lat') ? Number(params.get('lat')) : undefined;
   const initialLng = params.get('lng') ? Number(params.get('lng')) : undefined;
   const initialPet = (params.get('pet') || 'no').toLowerCase();
+
+
 
   const [dest, setDest] = useState<Place | null>(
     initialPlace ? { label: initialPlace, lat: initialLat, lng: initialLng } : null
@@ -807,17 +812,38 @@ function ResultsContent() {
     
     
   };
+function dashedSlug(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+}
+function condensedSlug(s: string) {
+  return s.toLowerCase().replace(/[^a-z0-9]/g, '');
+}
 
-  /* Static image mapping */
-  const imageMap: Record<string, string> = {
-    'Your Dream Getaway': '/yourdreamgetaway.png',
-    'Escape From Life': '/escapefromlife.png',
-    'The Perfect Getaway': '/perfectgetaway.png',
-    'Spa Getaway': '/spagetaway.png',
-    'Fern Woods Escape': '/spagetaway.png',
-    'Scandinavian-Inspired Tiny Home Experience': '/spagetaway.png',
-  };
-  const getHotelImage = (name?: string) => (name && imageMap[name]) || '';
+/** Exact folder names in /public/properties */
+const slugMap: Record<string, string> = {
+  'Your Dream Getaway': 'your-dream-getaway',
+  'Escape From Life': 'escape-from-life',
+  'The Perfect Getaway': 'the-perfect-getaway',
+  'Scandinavian-Inspired Tiny Home Experience': 'tiny-home-experience',
+  'Fern Woods Escape': 'fern-woods-escape',
+  'Nordic Spa Retreat PEI': 'nordic-spa-retreat-pei', // adjust if your folder differs
+  // add more here as you add folders
+};
+
+/** Return the correct static image path (with fallbacks) */
+function getHotelImage(name?: string) {
+  if (!name) return '';
+  const exact = slugMap[name];
+  // 1) prefer explicit mapping
+  if (exact) return `/properties/${exact}/hero.png`;
+  // 2) otherwise try derived slugs used elsewhere in the app
+  const dashed = dashedSlug(name);
+  const condensed = condensedSlug(name);
+  return `/properties/${dashed}/hero.png`; // UI will still render if this 404s
+  // (If you want, you can try `/properties/${condensed}/hero.png` as a second
+  // candidate via onError in <Image>; see next snippet.)
+}
+
 
    
 
@@ -1188,12 +1214,21 @@ function ResultsContent() {
                 {imgSrc ? (
                   <div className="relative w-full h-44 md:h-44 rounded-lg overflow-hidden bg-gray-100">
                     <Image
-                      src={imgSrc}
-                      alt={room.hotelName || 'Hotel'}
-                      fill
-                      className="object-cover"
-                      priority
-                    />
+                        src={imgSrc}
+                        alt={room.hotelName || 'Hotel'}
+                        fill
+                        className="object-cover"
+                        priority
+                        onError={(e) => {
+                          const el = e.currentTarget as HTMLImageElement;
+                          // if we were using dashed, try condensed once
+                          const name = room.hotelName || '';
+                          const c = `/properties/${condensedSlug(name)}/hero.png`;
+                          if (el.src.endsWith('/hero.png') && !el.src.includes('/' + condensedSlug(name) + '/')) {
+                            el.src = c;
+                          }
+                        }}
+                      />
                   </div>
                 ) : (
                   <div className="w-full h-44 bg-gray-200 flex items-center justify-center rounded-lg">
@@ -1252,33 +1287,47 @@ function ResultsContent() {
                                 CAD / Night
                               </div>
                             </div>
-
-                            {/* Book button */}
                           
 
-                            <button
-                            onClick={() => {
-                              const params = new URLSearchParams({
-                                hotelNo: String(room.hotelNo || ''),   // use the code from API (e.g., "SITHE")
-                                startTime: startDate,
-                                endTime: endDate,
-                                adults: String(adults),
-                                children: String(children),
-                                infants: String(infants),
-                                pets: pet ? '1' : '0',                 // backend expects number-ish for /confirm
-                                currency: room.currencyCode || 'CAD',
-                              });
+                            {/* View rates button (go to Hotel Info) */}
+                                 <button
+                                    onClick={() => {
+                                      
+                                    const params = new URLSearchParams({
+                                      hotelId: String(room.hotelId || ''),
+                                      hotelNo: String(room.hotelNo || ''),
+                                      roomTypeId: String(room.roomTypeId || ''),
 
-                              if (!params.get('hotelNo')) {
-                                console.error('Missing hotelNo on result item:', room);
-                                return;
-                              }
+                                      // dates / party
+                                      checkIn: startDate,
+                                      checkOut: endDate,
+                                      adult: String(adults),
+                                      child: String(children),
+                                      infant: String(infants),
+                                      pet: pet ? 'yes' : 'no',
 
-                              router.push(`/booking?${params.toString()}`); // goes straight to /booking/page.tsx
-                            }}
-                            >
-                              Book Now
-                            </button>
+                                      // seed UI
+                                      total: String(room.totalPrice || 0),
+                                      petFee: String(room.petFeeAmount || 0),
+                                      currency: room.currencyCode || 'CAD',
+
+                                      // helps hotel page re-price without another geocode
+                                      lat: String(room.lat ?? ''),
+                                      lng: String(room.lng ?? ''),
+
+                                      // name for meta/images (make safe)
+                                     name: room.hotelName || room.RoomType || '',
+
+                                    });
+                                    router.push(`/hotel/${room.hotelId}?${params.toString()}`);
+
+                                    }}
+                                    className="..."
+                                  >
+                                    View rates
+                                  </button>
+
+
                           </div>
                         </div>
                       </div>
