@@ -121,17 +121,6 @@ function DestinationPicker({
       window.removeEventListener('resize', calc);
     };
   }, [open, isMobile]);
-
-useEffect(() => {
-  if (!open || !query.trim()) {
-    setResults([]);
-    return;
-  }
-
-  const id = setTimeout(async () => {
-    const q = query.toLowerCase();
-
-    // --- Quick-pick config (must match labels in ONTARIO_CENTROIDS) ---
   const QUICK_CITY_LABELS = [
   'Toronto, Ontario',
   'Ottawa, Ontario',
@@ -147,6 +136,18 @@ function quickPick(label: (typeof QUICK_CITY_LABELS)[number]) {
   if (!c) return;
   finalizePick({ label: c.label, lat: c.lat, lng: c.lng });
 }
+
+useEffect(() => {
+  if (!open || !query.trim()) {
+    setResults([]);
+    return;
+  }
+
+  const id = setTimeout(async () => {
+    const q = query.toLowerCase();
+
+    // --- Quick-pick config (must match labels in ONTARIO_CENTROIDS) ---
+  
 
     // Normalize lon->lng when clicking a typed suggestion
     function choose(r: { label: string; lat: number; lon: number }) {
@@ -343,18 +344,16 @@ function quickPick(label: (typeof QUICK_CITY_LABELS)[number]) {
                 <>
                   <div className="mx-2 my-2 border-t" />
                   <div className="max-h-72 overflow-auto">
-                    {results.map((r, i) => (
-                      <div
-                        key={i}
-                        className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                        onClick={() =>
-                          finalizePick({ label: r.label, lat: r.lat, lng: r.lon }) 
-                        }
-                      >
-                        <PinIcon className="w-4 h-4 mt-1" />
-                        <div className="text-sm text-black">{r.label}</div>
-                      </div>
-                    ))}
+                   {results.map((r, i) => (
+                    <div
+                      key={`${r.label}-${r.lat}-${r.lon}`}           // stable key (less list churn)
+                      className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
+                      onMouseDown={() => finalizePick({ label: r.label, lat: r.lat, lng: r.lon })} // fires before blur
+                    >
+                      <PinIcon className="w-4 h-4 mt-1" />
+                      <div className="text-sm text-black">{r.label}</div>
+                    </div>
+                  ))}
                   </div>
                 </>
               )}
