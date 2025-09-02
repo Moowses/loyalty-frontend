@@ -3,6 +3,9 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
+import { HOTEL_POINTS } from '@/data/hotels';
+import { ONTARIO_CENTROIDS } from '@/data/centroids';
+
 import {
   addDays,
   addMonths,
@@ -54,33 +57,7 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
 type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
-const CANADIAN_LOCATIONS = [
-  // Ontario properties (6 locations)
-  { label: "Prince Edward", lat: 44.031827, lng: -77.246933 }, // Near 7 Anson Street
-  { label: "Minden, Ontario", lat: 44.9256, lng: -78.7250 }, // Near 7 Anson Street
-  { label: "Harcourt, Ontario", lat: 44.7833, lng: -78.3667 }, // Near Diamond Lake properties
-  { label: "Haliburton, Ontario", lat: 45.0450, lng: -78.5080 }, // Central to Ontario properties
-  { label: "Bancroft, Ontario", lat: 45.0575, lng: -77.8570 }, // Near Harcourt area
-  { label: "Peterborough, Ontario", lat: 44.3091, lng: -78.3198 }, // Major city near all Ontario properties
-  
-  // Prince Edward Island properties (2 locations)
-  { label: "Albany, Prince Edward Island", lat: 46.2570, lng: -63.4470 }, // Exact location of properties
-  { label: "Charlottetown, Prince Edward Island", lat: 46.2382, lng: -63.1311 }, // Major city near PEI properties
-  { label: "Summerside, Prince Edward Island", lat: 46.3955, lng: -63.7870 }, // Another PEI city
-  
-  // Nearby regions with more cottages
-  { label: "Muskoka, Ontario", lat: 45.0334, lng: -79.3163 }, // Popular cottage country
-  { label: "Kawartha Lakes, Ontario", lat: 44.3501, lng: -78.7460 }, // Cottage region near properties
-  
-  // Major cities for reference
-  { label: "Toronto, Ontario", lat: 43.6532, lng: -78.3832 },
-  { label: "Ottawa, Ontario", lat: 45.4215, lng: -75.6972 },
-  
-  
-  // Provinces for broader search
-  { label: "Ontario, Canada", lat: 51.2538, lng: -85.3232 },
-  { label: "Prince Edward Island, Canada", lat: 46.5107, lng: -63.4168 }
-];
+
 /* ================= Destination Picker ================= */
 function DestinationPicker({
   isMobile,
@@ -140,48 +117,61 @@ useEffect(() => {
     setResults([]);
     return;
   }
-  
+
   const id = setTimeout(async () => {
     try {
-      // First, check if query matches any Canadian locations
-      const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
-        loc.label.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 3); // Show top 3 Canadian matches first
+      const q = query.toLowerCase();
 
-      // Then search OpenStreetMap for more specific results
-      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&q=${encodeURIComponent(
-        query + ', Canada' // Bias towards Canadian results
-      )}`;
-      const res = await fetch(url);
-      const data = await res.json();
-      
-      const osmResults = data.map((d: any) => ({
-        label: d.display_name.split(',').slice(0, 3).join(', '), // Show more context
-        lat: +d.lat,
-        lon: +d.lon
-      }));
+      // 1) Your hotels first (only those with lat/lng defined)
+const hotelMatches = HOTEL_POINTS
+  .filter((h: AnyHotel) => hotelHaystack(h).includes(q))
+  .filter(hasCoords)
+  .slice(0, 5)
+  .map((h: AnyHotel & { lat: number; lng: number }) => ({
+    label: hotelTitle(h),
+    lat: h.lat,
+    lon: h.lng,
+  }));
 
-      // Combine results with Canadian matches first
-      setResults([...canadianMatches.map(loc => ({
-        label: loc.label,
-        lat: loc.lat,
-        lon: loc.lng
-      })), ...osmResults].slice(0, 6));
-    } catch (error) {
-      console.error('Search error:', error);
-      // Fallback to just Canadian locations
-      const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
-        loc.label.toLowerCase().includes(query.toLowerCase())
-      ).slice(0, 6);
-      setResults(canadianMatches.map(loc => ({
-        label: loc.label,
-        lat: loc.lat,
-        lon: loc.lng
-      })));
+
+
+      // 2) Ontario centroids (fallback)
+      const centroidMatches = ONTARIO_CENTROIDS
+        .filter(c => c.label.toLowerCase().includes(q))
+        .slice(0, 5)
+        .map(c => ({ label: c.label, lat: c.lat, lon: c.lng }));
+
+      // 3) OSM (Canada-biased) – optional
+      let osmResults: Array<{ label: string; lat: number; lon: number }> = [];
+      try {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=6&countrycodes=ca&addressdetails=1&q=${encodeURIComponent(query)}`;
+        const res = await fetch(url);
+        const data = await res.json();
+        osmResults = (Array.isArray(data) ? data : []).map((d: any) => {
+          const city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || '';
+          const state = d.address?.state || d.address?.region || '';
+          const label = [city, state].filter(Boolean).join(', ') || (d.display_name?.split(',').slice(0, 2).join(', ') ?? '');
+          return { label, lat: +d.lat, lon: +d.lon };
+        });
+      } catch {}
+
+      // Merge (hotels → centroids → OSM) and de-dupe by label
+      const merged: Record<string, { label: string; lat: number; lon: number }> = {};
+      [...hotelMatches, ...centroidMatches, ...osmResults].forEach(x => (merged[x.label] = x));
+      setResults(Object.values(merged).slice(0, 6));
+    } catch {
+      // Fallback: centroids only
+      const centroidMatches = ONTARIO_CENTROIDS
+        .filter(c => c.label.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 6)
+        .map(c => ({ label: c.label, lat: c.lat, lon: c.lng }));
+      setResults(centroidMatches);
     }
   }, 250);
+
   return () => clearTimeout(id);
 }, [query, open]);
+
 
   // Event bridge so parent can open this modal
   useEffect(() => {
@@ -308,28 +298,25 @@ useEffect(() => {
               </div>
               
               
-              {!query && (
+             {!query && (
                 <>
                   <div className="mx-2 my-2 border-t" />
                   <div className="text-xs uppercase tracking-wide text-gray-500 px-3 py-1">
-                    Popular in Canada
+                    Popular in Ontario
                   </div>
-                  {CANADIAN_LOCATIONS.slice(0, 4).map((location, index) => (
+                  {ONTARIO_CENTROIDS.slice(0, 4).map((c) => (
                     <div
-                      key={index}
+                      key={c.label}
                       className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-                      onClick={() => choose({
-                        label: location.label,
-                        lat: location.lat,
-                        lon: location.lng
-                      })}
+                      onClick={() => choose({ label: c.label, lat: c.lat, lon: c.lng })}
                     >
                       <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
-                      <div className="text-sm text-gray-900">{location.label}</div>
+                      <div className="text-sm text-gray-900">{c.label}</div>
                     </div>
                   ))}
                 </>
               )}
+
             </div>
           </>,
           document.body,
@@ -398,6 +385,33 @@ useEffect(() => {
 }
 
 /* helper: mobile results list */
+
+type AnyHotel = {
+  name?: string;
+  label?: string;
+  address?: string;
+  city?: string;
+  region?: string;
+  lat?: number;
+  lng?: number;
+};
+
+const hasCoords = (h: AnyHotel): h is Required<Pick<AnyHotel, 'lat' | 'lng'>> & AnyHotel =>
+  typeof h.lat === 'number' && Number.isFinite(h.lat) &&
+  typeof h.lng === 'number' && Number.isFinite(h.lng);
+
+const hotelHaystack = (h: AnyHotel) =>
+  `${h.name ?? ''} ${h.label ?? ''} ${h.address ?? ''} ${h.city ?? ''} ${h.region ?? ''}`
+    .toLowerCase();
+
+const hotelTitle = (h: AnyHotel) => {
+  const title = h.name ?? h.label ?? 'Hotel';
+  const cityRegion = [h.city, h.region].filter((x): x is string => !!x).join(', ');
+  return cityRegion ? `${title} (${cityRegion})` : title;
+};
+
+
+
 function MobileResults({
   query,
   onPick,
@@ -407,68 +421,62 @@ function MobileResults({
 }) {
   const [list, setList] = useState<Array<{ label: string; lat: number; lon: number }>>([]);
   
-  useEffect(() => {
-    let cancel = false;
-    const run = async () => {
-      try {
-        // First get Canadian matches
-        const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
-          loc.label.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 3);
+ useEffect(() => {
+  let cancel = false;
 
-        // Then search OSM
-        const url = `https://nominatim.openstreetmap.org/search?format=json&limit=7&q=${encodeURIComponent(
-          query + ', Canada'
-        )}`;
-        const res = await fetch(url);
-        const data = await res.json();
-        
-        const osmResults = data.map((d: any) => ({
-          label: d.display_name.split(',').slice(0, 3).join(', '),
-          lat: +d.lat,
-          lon: +d.lon
-        }));
+  const run = async () => {
+    const q = query.toLowerCase();
 
-        if (!cancel) {
-          setList([
-            ...canadianMatches.map(loc => ({
-              label: loc.label,
-              lat: loc.lat,
-              lon: loc.lng
-            })),
-            ...osmResults
-          ].slice(0, 10));
-        }
-      } catch (error) {
-        // Fallback to Canadian locations only
-        const canadianMatches = CANADIAN_LOCATIONS.filter(loc =>
-          loc.label.toLowerCase().includes(query.toLowerCase())
-        ).slice(0, 10);
-        if (!cancel) {
-          setList(canadianMatches.map(loc => ({
-            label: loc.label,
-            lat: loc.lat,
-            lon: loc.lng
-          })));
-        }
-      }
-    };
-    
-    if (query.trim()) {
-      run();
-    } else {
-      // Show popular Canadian destinations when query is empty
-      setList(CANADIAN_LOCATIONS.slice(0, 6).map(loc => ({
-        label: loc.label,
-        lat: loc.lat,
-        lon: loc.lng
-      })));
-    }
-    
-    return () => {
-      cancel = true;
-    };
-  }, [query]);
+    // 1) Hotels first (only with coords)
+    // 1) Hotels first (only with coords)
+const hotelMatches = HOTEL_POINTS
+  .filter((h: AnyHotel) => hotelHaystack(h).includes(q))
+  .filter(hasCoords)
+  .slice(0, 4)
+  .map((h: AnyHotel & { lat: number; lng: number }) => ({
+    label: hotelTitle(h),
+    lat: h.lat,
+    lon: h.lng,
+  }));
+
+
+
+    // 2) Ontario centroids (fallback)
+    const centroidMatches = ONTARIO_CENTROIDS
+      .filter(c => c.label.toLowerCase().includes(q))
+      .slice(0, 4)
+      .map(c => ({ label: c.label, lat: c.lat, lon: c.lng }));
+
+    // 3) OSM (Canada-biased)
+    let osmResults: Array<{ label: string; lat: number; lon: number }> = [];
+    try {
+      const url = `https://nominatim.openstreetmap.org/search?format=json&limit=7&countrycodes=ca&addressdetails=1&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url);
+      const data = await res.json();
+      osmResults = (Array.isArray(data) ? data : []).map((d: any) => {
+        const city = d.address?.city || d.address?.town || d.address?.village || d.address?.county || '';
+        const state = d.address?.state || d.address?.region || '';
+        const label = [city, state].filter(Boolean).join(', ') || (d.display_name?.split(',').slice(0, 3).join(', ') ?? '');
+        return { label, lat: +d.lat, lon: +d.lon };
+      });
+    } catch {}
+
+    // Merge & de-dupe
+    const merged: Record<string, { label: string; lat: number; lon: number }> = {};
+    [...hotelMatches, ...centroidMatches, ...osmResults].forEach(x => (merged[x.label] = x));
+
+    if (!cancel) setList(Object.values(merged).slice(0, 10));
+  };
+
+  if (query.trim()) run();
+  else {
+    // default quick picks when empty
+    setList(ONTARIO_CENTROIDS.slice(0, 6).map(c => ({ label: c.label, lat: c.lat, lon: c.lng })));
+  }
+
+  return () => { cancel = true; };
+}, [query]);
+
   
   return (
     <div className="max-h-72 overflow-auto">
