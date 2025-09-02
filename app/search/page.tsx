@@ -296,6 +296,25 @@ const hotelMatches = HOTEL_POINTS
                 </span>
                 <div className="text-sm font-medium text-gray-900">Use current location</div>
               </div>
+              {/* show matches when user types */}
+{query && (
+  <div className="mt-1">
+    {results.length === 0 ? (
+      <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>
+    ) : (
+      results.map((r) => (
+        <div
+          key={`${r.label}-${r.lat}-${r.lon}`}
+          className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
+          onClick={() => choose(r)}
+        >
+          <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
+          <div className="text-sm text-gray-900">{r.label}</div>
+        </div>
+      ))
+    )}
+  </div>
+)}
               
               
              {!query && (
