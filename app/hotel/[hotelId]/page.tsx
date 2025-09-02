@@ -17,7 +17,7 @@ type Meta = {
   tagline?: string;
   descriptionShort?: string;
   descriptionLong?: string[];
-  amenities?: string[];
+  amenities?: string[] | Record<string, string[]>;
   houseRules?: string[];
   gallery?: string[];
 };
@@ -100,6 +100,19 @@ export default function HotelInfoPage() {
   const sDashed     = slugify(displayName);
   const sCondensed  = slugCondensed(displayName);
   const [meta, setMeta] = useState<Meta | null>(null);
+  // Normalize amenities from either an array or grouped object (general, kitchenDining, etc.)
+const amenitiesList = useMemo(() => {
+  const a = (meta as any)?.amenities;
+  if (!a) return [] as string[];
+  if (Array.isArray(a)) return a.filter(Boolean);
+  if (typeof a === 'object') {
+    return Object.values(a)
+      .flatMap(v => (Array.isArray(v) ? v : []))
+      .filter(Boolean);
+  }
+  return [] as string[];
+}, [meta]);
+
  
 
   useEffect(() => {
@@ -420,23 +433,25 @@ router.push(`/booking?${params.toString()}`);
               Show more
             </button>
           )}
-
-          {!!meta?.amenities?.length && (
-            <div className="mt-10">
-              <h2 className="text-xl font-semibold mb-3">Amenities</h2>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
-                {meta.amenities.slice(0,8).map((a,i)=>(<Row key={i} Icon={amenityIcon(a)} text={a} />))}
-              </div>
-              {meta.amenities.length > 8 && (
-                <button
-                  onClick={()=>setShowAmenities(true)}
-                  className="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full border text-sm"
-                >
-                  Show all {meta.amenities.length} amenities
-                </button>
-              )}
+        {!!amenitiesList.length && (
+          <div className="mt-10">
+            <h2 className="text-xl font-semibold mb-3">Amenities</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
+              {amenitiesList.slice(0,8).map((a,i)=>(
+                <Row key={i} Icon={amenityIcon(a)} text={a} />
+              ))}
             </div>
-          )}
+            {amenitiesList.length > 8 && (
+              <button
+                onClick={()=>setShowAmenities(true)}
+                className="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full border text-sm"
+              >
+                Show all {amenitiesList.length} amenities
+              </button>
+            )}
+          </div>
+        )}
+
 
           {!!meta?.houseRules?.length && (
             <div className="mt-10">
@@ -595,19 +610,24 @@ router.push(`/booking?${params.toString()}`);
       ) : null}
 
       {/* AMENITIES MODAL */}
-      {showAmenities && meta?.amenities?.length ? (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl w-full max-w-xl p-6 max-h-[80vh] overflow-y-auto">
-            <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-semibold">Amenities</h3>
-              <button onClick={()=>setShowAmenities(false)} className="p-1 text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-            <div className="divide-y">
-              {meta.amenities.map((a,i)=>(<div key={i} className="py-2"><Row Icon={amenityIcon(a)} text={a} /></div>))}
-            </div>
+    {showAmenities && amenitiesList.length ? (
+  <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl w-full max-w-xl p-6 max-h-[80vh] overflow-y-auto">
+      <div className="flex items-center justify-between mb-2">
+        <h3 className="text-xl font-semibold">Amenities</h3>
+        <button onClick={()=>setShowAmenities(false)} className="p-1 text-gray-500 hover:text-gray-700">✕</button>
+      </div>
+      <div className="divide-y">
+        {amenitiesList.map((a,i)=>(
+          <div key={i} className="py-2">
+            <Row Icon={amenityIcon(a)} text={a} />
           </div>
-        </div>
-      ) : null}
+        ))}
+      </div>
+    </div>
+  </div>
+) : null}
+
 
       {/* HOUSE RULES MODAL */}
       {showRules && meta?.houseRules?.length ? (

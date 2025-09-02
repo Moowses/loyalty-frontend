@@ -435,6 +435,55 @@ function DestinationPicker({
   );
 }
 
+function isPlaceholderRoom(item: any) {
+  const rt = String(item?.RoomType ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const roomTypeId = String(item?.roomTypeId ?? '').trim();
+
+  const noAvailText = /(no\s+(rooms?\s+)?available|no\s+availability|sold\s*out)/i.test(rt);
+
+  const total = Number(item?.totalPrice ?? 0);
+  const daily = item?.dailyPrices;
+  const dailyIsZero =
+    daily == null
+      ? false
+      : typeof daily === 'string'
+        ? Number(daily) <= 0
+        : typeof daily === 'number'
+          ? daily <= 0
+          : typeof daily === 'object'
+            ? Object.keys(daily).length === 0
+            : false;
+
+  return noAvailText || total <= 0 || dailyIsZero || roomTypeId.length === 0;
+}
+
+
+
+
+
+function safeArrayData(apiData: any): any[] | null {
+  // Accept both shapes:
+  // 1) { data: "No available rooms" }
+  // 2) { data: [ ... ] }
+  const payload = apiData?.data?.data;
+  if (Array.isArray(payload)) return payload;
+  if (typeof payload === 'string') return null; // signal "no hotels in area"
+  return Array.isArray(apiData) ? apiData : null;
+}
+
+function toRad(x: number) { return (x * Math.PI) / 180; }
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return R * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
+}
+
+
+
 /* ───────── Calendar helpers ───────── */
 function buildMonth(monthStart: Date): Day[] {
   const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: 0 });
@@ -689,12 +738,18 @@ function ResultsContent() {
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string>('');
 
+const visibleRooms = useMemo(
+  () => (rooms || []).filter((r: any) => !isPlaceholderRoom(r)),
+  [rooms]
+);
+
+
   const lat = dest?.lat?.toString() || '';
   const lng = dest?.lng?.toString() || '';
   const startDate = checkIn ? fmtParam(checkIn) : '';
   const endDate = checkOut ? fmtParam(checkOut) : '';
 
- useEffect(() => {
+useEffect(() => {
   const run = async () => {
     const start = checkIn ? fmtParam(checkIn) : '';
     const end   = checkOut ? fmtParam(checkOut) : '';
@@ -719,7 +774,7 @@ function ResultsContent() {
     } as const;
 
     try {
-      // Province-level search: fan out to anchor points and merge
+      // ── Province-level search: fan out to anchor points and merge ──
       const provinceAnchors = anchorsForProvince(dest.label);
       if (provinceAnchors) {
         const responses = await Promise.all(
@@ -743,23 +798,39 @@ function ResultsContent() {
         // Merge & de-dupe
         const merged: any[] = [];
         for (const r of responses) {
-          if (r?.success && r.data?.data) merged.push(...r.data.data);
+          const arr = safeArrayData(r);
+          if (arr === null) continue; // this anchor returned string "No available rooms"
+          merged.push(...arr);
         }
         const unique = dedupeBy(
           merged,
           (x: any) => `${x.hotelId || x.hotelNo}-${x.roomTypeId || x.RoomType || ''}`
         );
 
-        if (unique.length) {
-          setRooms(unique);
+        // Filter placeholders
+        const filtered = unique.filter((x: any) => !isPlaceholderRoom(x));
+
+        // Sort by distance then price
+        const qLat = dest!.lat!;
+        const qLng = dest!.lng!;
+        filtered.sort((a: any, b: any) => {
+          const da = haversineKm(qLat, qLng, Number(a.lat), Number(a.lng));
+          const db = haversineKm(qLat, qLng, Number(b.lat), Number(b.lng));
+          if (da !== db) return da - db;
+          return Number(a.totalPrice ?? a.dailyPrices ?? 0) - Number(b.totalPrice ?? b.dailyPrices ?? 0);
+        });
+
+        if (filtered.length) {
+          setRooms(filtered);
+          setFetchError('');
         } else {
           setRooms([]);
-          setFetchError(`No availability found in ${dest.label}.`);
+          setFetchError(`No available rooms for these dates nearby in ${dest.label}.`);
         }
-        return; // done
+        return; // IMPORTANT: stop here if we handled province fan-out
       }
 
-      // City-level search: single lat/lng
+      // ── City-level search: single lat/lng ──
       const latStr = dest?.lat?.toString() || '';
       const lngStr = dest?.lng?.toString() || '';
       if (!latStr || !lngStr) {
@@ -777,23 +848,42 @@ function ResultsContent() {
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
       );
-      const data = await res.json();
-      if (data.success && data.data?.data) {
-        setRooms(data.data.data);
-      } else {
+      const j = await res.json();
+      const arr = safeArrayData(j);
+
+      if (arr === null) {
+        // API returned "No available rooms" (string) for this location (no hotels in area)
         setRooms([]);
-        setFetchError('No availability found.');
+        setFetchError('No available hotels in this area. Try another location.');
+      } else {
+        const filtered = arr.filter((x: any) => !isPlaceholderRoom(x));
+        if (!filtered.length) {
+          setRooms([]);
+          setFetchError('No available rooms for these dates nearby. Try changing your dates or filters.');
+        } else {
+          const qLat = dest!.lat!;
+          const qLng = dest!.lng!;
+          filtered.sort((a: any, b: any) => {
+            const da = haversineKm(qLat, qLng, Number(a.lat), Number(a.lng));
+            const db = haversineKm(qLat, qLng, Number(b.lat), Number(b.lng));
+            if (da !== db) return da - db;
+            return Number(a.totalPrice ?? a.dailyPrices ?? 0) - Number(b.totalPrice ?? b.dailyPrices ?? 0);
+          });
+          setRooms(filtered);
+          setFetchError('');
+        }
       }
-    } catch {
+    } catch (err) {
+      console.error('availability fetch error', err);
       setRooms([]);
-      setFetchError('Failed to fetch availability.');
+      setFetchError('Something went wrong while fetching availability.');
     } finally {
       setLoading(false);
     }
   };
 
   run();
-  // IMPORTANT: depend on dest (label/lat/lng), dates, and guest vars
+  // Depend on dest (label/lat/lng), dates, and guest vars
 }, [checkIn, checkOut, dest, adults, children, infants, pet]);
 
 
@@ -826,8 +916,8 @@ const slugMap: Record<string, string> = {
   'The Perfect Getaway': 'the-perfect-getaway',
   'Scandinavian-Inspired Tiny Home Experience': 'tiny-home-experience',
   'Fern Woods Escape': 'fern-woods-escape',
-  'Nordic Spa Retreat PEI': 'nordic-spa-retreat-pei', // adjust if your folder differs
-  // add more here as you add folders
+  'Nordic Spa Retreat PEI': 'nordic-spa-retreat-pei',
+  'Nordic Spa Getaway on Stoney Lake': 'nordic-spa-get-away-on-stoney-lake', 
 };
 
 /** Return the correct static image path (with fallbacks) */
@@ -1169,73 +1259,107 @@ function getHotelImage(name?: string) {
           document.body
         )}
 
-      {/* Results header */}
-      <div className="flex items-center justify-between mb-3">
-        {!loading && !fetchError ? (
-          <p className="text-gray-700">
-            Showing {rooms.length} {rooms.length === 1 ? 'Result' : 'Results'}
-          </p>
-        ) : (
-          <div />
-        )}
-      </div>
+{/* Results header / Empty state */}
+{!loading && visibleRooms.length === 0 && (
+  <div className="mt-8 rounded-2xl border border-gray-200 p-8 text-center">
+    <div className="text-xl font-semibold text-gray-900 mb-1">
+      {fetchError || 'No results'}
+    </div>
+    <div className="text-sm text-gray-600">
+      {fetchError?.includes('area')
+        ? 'Try another city or landmark.'
+        : 'Try adjusting your dates or clearing the Pet filter.'}
+    </div>
+    <div className="mt-4 flex items-center justify-center gap-3">
+      <button
+        type="button"
+        onClick={() => { /* open dates popover */ }}
+        className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50"
+      >
+        Change dates
+      </button>
+      {/* Show only if pet is on */}
+      {pet && (
+        <button
+          type="button"
+          onClick={() => setPet(false)}
+          className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50"
+        >
+          Clear Pet filter
+        </button>
+      )}
+    </div>
+  </div>
+)}
 
-      {/* Loading / Error */}
-      {loading && <p className="py-8">Loading availability...</p>}
-      {fetchError && <p className="py-4 text-red-600">{fetchError}</p>}
+{/* Loading */}
+{loading && <p className="py-8">Loading availability...</p>}
+{/* (Optional) Avoid echoing fetchError again below, since the empty-state already shows it */}
 
       {/* Results list */}
-      <div className="space-y-6">
-        {rooms.map((room: any) => {
-          const nightsCount =
-            checkIn && checkOut ? Math.max(1, differenceInCalendarDays(checkOut, checkIn)) : 0;
-            const imgSrc = getHotelImage(room.hotelName);
-            const toNum = (v: any) => {
-              if (v == null) return 0;
-              const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
-              return Number.isFinite(n) ? n : 0;
-            };
+    <div className="space-y-6">
+  {visibleRooms.map((room: any) => {
+    // Belt & suspenders — never render placeholders
+    if (
+      isPlaceholderRoom(room) ||
+      Number(room?.totalPrice ?? 0) <= 0 ||
+      !String(room?.roomTypeId ?? '').trim()
+    ) {
+      return null;
+    }
 
-            const roomTotal = toNum(room.totalPrice);                 // rooms only
-            const petFee = toNum(room.petFeeAmount);                  // can be "0" or number
-            const grandTotal = roomTotal + petFee;                    // rooms + pet
-            const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
-            const currency = room.currencyCode || 'USD';
-            const money = (n: number) =>
-              new Intl.NumberFormat('en-CA', { style: 'currency', currency }).format(n);
+    const nightsCount =
+      checkIn && checkOut ? Math.max(1, differenceInCalendarDays(checkOut, checkIn)) : 0;
 
-          return (
-            <div
-              key={`${room.roomTypeId}-${room.hotelId}-${room.hotelName}`}
-              className="flex flex-col md:flex-row border rounded-xl p-4 shadow-sm bg-white"
-            >
-              {/* Image */}
-              <div className="md:w-72 w-full md:mr-6 mb-3 md:mb-0">
-                {imgSrc ? (
-                  <div className="relative w-full h-44 md:h-44 rounded-lg overflow-hidden bg-gray-100">
-                    <Image
-                        src={imgSrc}
-                        alt={room.hotelName || 'Hotel'}
-                        fill
-                        className="object-cover"
-                        priority
-                        onError={(e) => {
-                          const el = e.currentTarget as HTMLImageElement;
-                          // if we were using dashed, try condensed once
-                          const name = room.hotelName || '';
-                          const c = `/properties/${condensedSlug(name)}/hero.png`;
-                          if (el.src.endsWith('/hero.png') && !el.src.includes('/' + condensedSlug(name) + '/')) {
-                            el.src = c;
-                          }
-                        }}
-                      />
-                  </div>
-                ) : (
-                  <div className="w-full h-44 bg-gray-200 flex items-center justify-center rounded-lg">
-                    <span className="text-gray-500 text-sm">No Image</span>
-                  </div>
-                )}
-              </div>
+    const imgSrc = getHotelImage(room.hotelName);
+
+    const toNum = (v: any) => {
+      if (v == null) return 0;
+      const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
+      return Number.isFinite(n) ? n : 0;
+    };
+
+    const roomTotal = toNum(room.totalPrice); // rooms only
+    const petFee = toNum(room.petFeeAmount);  // can be "0" or number
+    const grandTotal = roomTotal + petFee;    // rooms + pet
+    const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+
+    const currency = room.currencyCode || 'CAD';
+    // Return number-only string (no currency symbol) so we can control labels consistently
+    const money = (n: number) =>
+      new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
+
+    return (
+      <div
+        key={`${room.roomTypeId}-${room.hotelId}-${room.hotelName}`}
+        className="flex flex-col md:flex-row border rounded-xl p-4 shadow-sm bg-white"
+      >
+        {/* Image */}
+        <div className="md:w-72 w-full md:mr-6 mb-3 md:mb-0">
+          {imgSrc ? (
+            <div className="relative w-full h-44 md:h-44 rounded-lg overflow-hidden bg-gray-100">
+              <Image
+                src={imgSrc}
+                alt={room.hotelName || 'Hotel'}
+                fill
+                className="object-cover"
+                priority
+                onError={(e) => {
+                  const el = e.currentTarget as HTMLImageElement;
+                  const name = room.hotelName || '';
+                  const c = `/properties/${condensedSlug(name)}/hero.png`;
+                  if (el.src.endsWith('/hero.png') && !el.src.includes('/' + condensedSlug(name) + '/')) {
+                    el.src = c;
+                  }
+                }}
+              />
+            </div>
+          ) : (
+            <div className="w-full h-44 bg-gray-200 flex items-center justify-center rounded-lg">
+              <span className="text-gray-500 text-sm">No Image</span>
+            </div>
+          )}
+        </div>
 
               {/* Info + CTA */}
               

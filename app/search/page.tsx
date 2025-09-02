@@ -55,39 +55,31 @@ type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
 const CANADIAN_LOCATIONS = [
-  // Provinces and Territories
-  { label: "Prince County,  Prince Edward Island", lat: 46.5855648, lng: -63.9578476 },
-  { label: "Quebec, Canada", lat: 52.9399, lng: -73.5491 },
-  { label: "British Columbia, Canada", lat: 53.7267, lng: -127.6476 },
-  { label: "Alberta, Canada", lat: 53.9333, lng: -116.5765 },
-  { label: "Manitoba, Canada", lat: 53.7609, lng: -98.8139 },
-  { label: "Saskatchewan, Canada", lat: 52.9399, lng: -106.4509 },
-  { label: "Nova Scotia, Canada", lat: 44.6820, lng: -63.7443 },
-  { label: "New Brunswick, Canada", lat: 46.5653, lng: -66.4619 },
-  { label: "Newfoundland and Labrador, Canada", lat: 53.1355, lng: -57.6604 },
-  { label: "Prince Edward Island, Canada", lat: 46.5107, lng: -63.4168 },
-  { label: "Northwest Territories, Canada", lat: 64.8255, lng: -124.8457 },
-  { label: "Yukon, Canada", lat: 64.2823, lng: -135.0000 },
-  { label: "Nunavut, Canada", lat: 70.2998, lng: -83.1076 },
-
-  // Major Cities near your properties
-  { label: "Toronto, Ontario", lat: 43.6532, lng: -79.3832 },
-  { label: "Ottawa, Ontario", lat: 45.4215, lng: -75.6972 },
+  // Ontario properties (6 locations)
+  { label: "Prince Edward", lat: 44.031827, lng: -77.246933 }, // Near 7 Anson Street
   { label: "Minden, Ontario", lat: 44.9256, lng: -78.7250 }, // Near 7 Anson Street
   { label: "Harcourt, Ontario", lat: 44.7833, lng: -78.3667 }, // Near Diamond Lake properties
-  { label: "Charlottetown, Prince Edward Island", lat: 46.2382, lng: -63.1311 }, // Near PEI properties
-  { label: "Albany, Prince Edward Island", lat: 46.2570, lng: -63.4470 }, // Exact area of your properties
-  { label: "Montreal, Quebec", lat: 45.5017, lng: -73.5673 },
-  { label: "Vancouver, British Columbia", lat: 49.2827, lng: -123.1207 },
-  { label: "Calgary, Alberta", lat: 51.0447, lng: -114.0719 },
-  { label: "Edmonton, Alberta", lat: 53.5461, lng: -113.4938 },
-  { label: "Winnipeg, Manitoba", lat: 49.8951, lng: -97.1384 },
-  { label: "Halifax, Nova Scotia", lat: 44.6488, lng: -63.5752 },
-  { label: "Fredericton, New Brunswick", lat: 45.9636, lng: -66.6431 },
-  { label: "St. John's, Newfoundland", lat: 47.5615, lng: -52.7126 },
-  { label: "Whitehorse, Yukon", lat: 60.7212, lng: -135.0568 },
-  { label: "Yellowknife, Northwest Territories", lat: 62.4540, lng: -114.3718 },
-  { label: "Iqaluit, Nunavut", lat: 63.7467, lng: -68.5170 }
+  { label: "Haliburton, Ontario", lat: 45.0450, lng: -78.5080 }, // Central to Ontario properties
+  { label: "Bancroft, Ontario", lat: 45.0575, lng: -77.8570 }, // Near Harcourt area
+  { label: "Peterborough, Ontario", lat: 44.3091, lng: -78.3198 }, // Major city near all Ontario properties
+  
+  // Prince Edward Island properties (2 locations)
+  { label: "Albany, Prince Edward Island", lat: 46.2570, lng: -63.4470 }, // Exact location of properties
+  { label: "Charlottetown, Prince Edward Island", lat: 46.2382, lng: -63.1311 }, // Major city near PEI properties
+  { label: "Summerside, Prince Edward Island", lat: 46.3955, lng: -63.7870 }, // Another PEI city
+  
+  // Nearby regions with more cottages
+  { label: "Muskoka, Ontario", lat: 45.0334, lng: -79.3163 }, // Popular cottage country
+  { label: "Kawartha Lakes, Ontario", lat: 44.3501, lng: -78.7460 }, // Cottage region near properties
+  
+  // Major cities for reference
+  { label: "Toronto, Ontario", lat: 43.6532, lng: -78.3832 },
+  { label: "Ottawa, Ontario", lat: 45.4215, lng: -75.6972 },
+  
+  
+  // Provinces for broader search
+  { label: "Ontario, Canada", lat: 51.2538, lng: -85.3232 },
+  { label: "Prince Edward Island, Canada", lat: 46.5107, lng: -63.4168 }
 ];
 /* ================= Destination Picker ================= */
 function DestinationPicker({

@@ -1,8 +1,8 @@
 {
   "hotelId": "276302",
-  "hotelNo": "SLFR",
-  "name": "Nordic Spa Getaway on Stoney Lake",
-  "brandName": "Nordic Spa Getaway on Stoney Lake",
+  "hotelNo": "GSL",
+  "name": "Getaway on Stoney Lake",
+  "brandName": "Getaway on Stoney Lake",
   "tagline": "Cottage • 10 guests • 3 bedrooms • 1 bath • Sofa bed",
   "descriptionShort": "Spacious 1500 sq/ft. Hot Tub, Sauna and Cold Plunge. Great time to reconnect with your partner and rejuvenate. Or make this the ultimate family vacation. Free wifi & cable. Tesla EV charger on site. Bring adapter if needed. Great cell coverage. Gas, restaurant, convenience, LCBO & boat launch all within 10 minutes.",
   "descriptionLong": [
@@ -11,8 +11,8 @@
     "Enjoy the entire property to yourself. A remote area on the lake, you can see your neighbours in the distance.",
     "Electronic coded locks. Codes provided on booking. Fully appointed."
   ],
-  "hotelName": "Nordic Spa Getaway on Stoney Lake",
-  "slug": "nordicspagetawayonstoneylake",
+  "hotelName": "Getaway on Stoney Lake",
+  "slug": "getaway-on-stoney-lake",
   "bedrooms": 3,
   "bathrooms": 1,
   "capacity": 10,
