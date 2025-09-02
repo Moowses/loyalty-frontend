@@ -728,7 +728,7 @@ function SearchBar() {
         params.lng = String(dest.lng);
       }
 
-      const url = `/search/results?${new URLSearchParams(params).toString()}`;
+      const url = `/results?${new URLSearchParams(params).toString()}`;
 
       // keep iframe-friendly redirect
       if (window.top) {
