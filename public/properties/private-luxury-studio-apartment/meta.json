@@ -1,0 +1,76 @@
+{
+  "hotelId": "425353",
+  "hotelNo": "PLS4",
+  "name": "Private Luxury Studio Apartment - Unit 4",
+  "brandName": "Private Luxury Studio Apartment",
+  "tagline": "Studio • 2 guests • 1 bedroom • 1 bath",
+  "descriptionShort": "Luxuriously appointed bachelor apartment, ideal for couples or business travelers tired of ordinary hotels. Recently renovated, it features a modern kitchen, stylish bathroom, queen-size bed, and a dining area perfect for two or for entertaining a few friends. Enjoy free parking, high-speed Wi-Fi, and a private entrance—all in a prime Whitby location.",
+  "descriptionLong": [
+    "Luxuriously appointed bachelor apartment, ideal for couples or business travelers tired of ordinary hotels. Recently renovated, it features a modern kitchen, stylish bathroom, queen-size bed, and a dining area perfect for two or for entertaining a few friends.",
+    "Enjoy free parking, high-speed Wi-Fi, and a private entrance for maximum seclusion—all in a prime Whitby location close to the waterfront, marina, Iroquois Park, GO transit, and downtown."
+  ],
+  "hotelName": "Private Luxury Studio Apartment - Unit 4",
+  "slug": "private-luxury-studio-apartment",
+  "bedrooms": 1,
+  "bathrooms": 1,
+  "capacity": 2,
+  "type": "Studio",
+  "rating": 4.7,
+  "shortDescription": "Luxurious bachelor apartment with modern kitchen and prime Whitby location...",
+  "longDescription": "Full detailed copy for the modal…",
+  "amenities": {
+    "general": [
+      "Air conditioning",
+      "Internet",
+      "Wireless",
+      "Laptop Friendly workspace",
+      "TV",
+      "Linens",
+      "WiFi speed (500+ Mbps)"
+    ],
+    "kitchenDining": [
+      "Kitchen",
+      "Toaster",
+      "Microwave",
+      "Oven",
+      "Electric kettle",
+      "Stove",
+      "Refrigerator",
+      "Dining table",
+      "Coffee",
+      "Freezer",
+      "Wine glasses"
+    ],
+    "policy": [
+      "Pets allowed",
+      "Suitable for children",
+      "Suitable for infants",
+      "Long term stays allowed"
+    ],
+    "safety": [
+      "Smoke detector",
+      "Carbon Monoxide Detector",
+      "First aid kit",
+      "Fire Extinguisher"
+    ],
+    "parking": [
+      "Free parking"
+    ],
+    "bathroom": [
+      "Conditioner",
+      "Shower gel"
+    ]
+  },
+  "houseRules": [
+    "Check-in: 3 pm",
+    "Check-out: 10 am",
+    "Children: allowed",
+    "Infants: allowed",
+    "Pets: allowed",
+    "Parties and events: not allowed",
+    "Smoking inside: not allowed"
+  ],
+  "gallery": [
+    "hero.png","1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png","9.png","10.png","11.png","12.png","13.png","14.png","15.png","16.png","17.png","18.png","19.png"
+  ]
+}

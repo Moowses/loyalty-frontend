@@ -987,7 +987,7 @@ useEffect(() => {
       lng,
       pet: pet ? 'yes' : 'no', // NEW added august 13 
     });
-    router.push(`/search/results?${query.toString()}`);
+    router.push(`/results?${query.toString()}`);
     
     
   };

@@ -1,0 +1,68 @@
+{
+  "hotelId": "425356",
+  "hotelNo": "BGVPA",
+  "name": "2 Bedroom Garden View Private Apartment",
+  "brandName": "Garden View Apartments",
+  "tagline": "Apartment • 4 guests • 2 bedrooms • 1 bath",
+  "descriptionShort": "Spacious and newly renovated 2-bedroom apartment in the heart of Whitby. Features a private entrance, free parking, high-speed Wi-Fi, and patio doors opening to a large private backyard. The kitchen is fully equipped for entertaining, while the master bedroom offers a queen pillow-top bed and the second bedroom a cozy double.",
+  "descriptionLong": [
+    "Spacious and newly renovated 2-bedroom apartment in the heart of Whitby. Features a private entrance, free parking, high-speed Wi-Fi, and patio doors opening to a large private backyard.",
+    "The kitchen is fully equipped for entertaining, while the master bedroom offers a queen pillow-top bed and the second bedroom a cozy double.",
+    "Walking distance to the waterfront, marina, Iroquois Park Sports Centre, transit, and downtown—an ideal alternative to hotels."
+  ],
+  "hotelName": "2 Bedroom Garden View Private Apartment",
+  "slug": "2-bedroom-garden-view-private-apartment",
+  "bedrooms": 2,
+  "bathrooms": 1,
+  "capacity": 4,
+  "type": "Apartment",
+  "rating": 4.6,
+  "shortDescription": "Spacious 2-bedroom apartment in Whitby with backyard and modern amenities...",
+  "longDescription": "Full detailed copy for the modal…",
+  "amenities": {
+    "general": [
+      "Air conditioning",
+      "Internet",
+      "Wireless",
+      "Shampoo",
+      "Iron",
+      "Laptop Friendly workspace",
+      "TV",
+      "Towels",
+      "WiFi speed (500+ Mbps)"
+    ],
+    "kitchenDining": [
+      "Kitchen"
+    ],
+    "policy": [
+      "Pets allowed",
+      "Suitable for children",
+      "Suitable for infants",
+      "Long term stays allowed"
+    ],
+    "safety": [
+      "Smoke detector",
+      "Carbon Monoxide Detector",
+      "First aid kit",
+      "Fire Extinguisher"
+    ],
+    "parking": [
+      "Free parking"
+    ]
+  },
+  "houseRules": [
+    "Check-in: 3 pm",
+    "Check-out: 10 am",
+    "Children: allowed",
+    "Infants: allowed",
+    "Pets: allowed",
+    "Parties and events: not allowed",
+    "Smoking inside: not allowed"
+  ],
+  "gallery": [
+    "hero.png",
+    "1.png","2.png","3.png","4.png","5.png","6.png","7.png","8.png","9.png","10.png",
+    "11.png","12.png","13.png","14.png","15.png","16.png","17.png","18.png","19.png","20.png",
+    "21.png","22.png","23.png","24.png","25.png","26.png","27.png","28.png","29.png"
+  ]
+}
