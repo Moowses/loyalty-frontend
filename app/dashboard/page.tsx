@@ -185,64 +185,70 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   
 
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
+ useEffect(() => {
+  let cancelled = false;
+  const controller = new AbortController();
 
-    const run = async () => {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
-
-      // Try backend
-      if (base) {
-        try {
-          const dres = await fetch(`${base}/api/user/dashboard`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            signal: controller.signal,
-          });
-          const dj = dres.ok ? await dres.json() : null;
-          if (!cancelled) setData(dj ? normalizeDashboard(dj) : null);
-        } catch {
-          if (!cancelled) setData(null);
-        }
-
-        try {
-          const rres = await fetch(`${base}/api/user/reservations`, {
-            method: 'GET',
-            credentials: 'include',
-            signal: controller.signal,
-          });
-          const rj = rres.ok ? await rres.json() : null;
-          if (!cancelled) setReservations(rj ? normalizeReservations(rj) : MOCK_RESV);
-        } catch {
-          if (!cancelled) setReservations(MOCK_RESV);
-        }
+  const run = async () => {
+   const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+    
+    if (base) {
+      const email = localStorage.getItem('email') || '';     // or from your login response
+      const token = localStorage.getItem('apiToken') || '';
+      try {
+        // 
+      const dres = await fetch(`${base}/api/user/dashboard`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ 
+            email: "2058969255@qq.com"
+          }),
+          signal: controller.signal,
+        });
+        const dj = dres.ok ? await dres.json() : null;
+        
+        if (!cancelled) setData(dj ? normalizeDashboard(dj) : null);
+      } catch {
+        if (!cancelled) setData(null);
       }
 
-      // Fallback: localStorage
-      if (!data) {
-        try {
-          const ls = localStorage.getItem('dashboardData');
-          if (ls) setData(normalizeDashboard(JSON.parse(ls)));
-        } catch {}
+      try {
+        const rres = await fetch(`${base}/api/user/reservations`, {
+          method: 'POST',
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const rj = rres.ok ? await rres.json() : null;
+        if (!cancelled) setReservations(rj ? normalizeReservations(rj) : MOCK_RESV);
+      } catch {
+        if (!cancelled) setReservations(MOCK_RESV);
       }
-      if (!reservations?.past?.length && !reservations?.upcoming?.length) {
-        try {
-          const rs = localStorage.getItem('reservations');
-          if (rs) setReservations(normalizeReservations(JSON.parse(rs)));
-        } catch {}
-      }
+    }
 
-      if (!cancelled) setLoading(false);
-    };
+    // Fallback: localStorage
+    if (!data) {
+      try {
+        const ls = localStorage.getItem('dashboardData');
+        if (ls) setData(normalizeDashboard(JSON.parse(ls)));
+      } catch {}
+    }
+    if (!reservations?.past?.length && !reservations?.upcoming?.length) {
+      try {
+        const rs = localStorage.getItem('reservations');
+        if (rs) setReservations(normalizeReservations(JSON.parse(rs)));
+      } catch {}
+    }
 
-    run();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    if (!cancelled) setLoading(false);
+  };
+
+  run();
+  return () => {
+    cancelled = true;
+    controller.abort();
+  };
+}, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleLogout = () => router.push('/');
 

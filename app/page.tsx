@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 export default function LandingPage() {
   const [isSignup, setIsSignup] = useState(false);
@@ -72,8 +73,8 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
-  const endpoint = isSignup ? 'signup' : 'login'; // ✅ Changed from 'dashboard' to 'login'
-  const apiBase = isSignup ? '/api/user' : '/api/auth'; // ✅ Different base for auth vs user
+  const endpoint = isSignup ? 'signup' : 'login'; //
+  const apiBase = isSignup ? '/api/user' : '/api/auth'; // 
 
   const payload = isSignup
     ? {
@@ -133,7 +134,23 @@ const handleSubmit = async (e: React.FormEvent) => {
     // success path
     if (!isSignup && json.dashboard) {
       localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
+     
     }
+    if (!isSignup) {
+  const email = json?.email ?? form.email;           
+  const token = json?.token ?? json?.session?.token; 
+
+  if (email) {
+    localStorage.setItem('email', email);
+    
+    document.cookie = `email=${encodeURIComponent(email)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+  }
+  if (token) {
+    localStorage.setItem('apiToken', token);
+   
+    document.cookie = `apiToken=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+  }
+}
 
     redirectAfterAuth(json.redirectUrl);
   } catch (err) {
