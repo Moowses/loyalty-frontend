@@ -175,40 +175,6 @@ function NavIcon({ href, icon, label }: { href: string; icon: React.ReactNode; l
     </Link>
   );
 }
-function SiteHeader({ onSignOut }: { onSignOut: () => void }) {
-  return (
-    <header className="sticky top-0 z-50 ">
-      <div className="h-10 bg-[#1F2042] text-white/90 text-[11px] flex items-center justify-between px-3 md:px-6">
-        <button type="button" className="inline-flex items-center gap-2 hover:text-white" onClick={() => alert('Launching chat…')}>
-          <span className="inline-block h-3 w-3 rounded-[2px] border border-white/60" />
-          CHAT WITH US
-        </button>
-        <button
-          onClick={onSignOut}
-          className="hidden sm:inline-flex items-center text-[11px] px-3 py-1 rounded-full border border-white/60 hover:bg-white hover:text-[#1F2042] transition"
-        >
-          SIGN OUT
-        </button> 
-      </div>
-
-      <div className="bg-white text-[#1F2042] border-b border-[#E6E8EF]">
-        <div className="max-w-7xl mx-auto h-16 md:h-[72px] px-3 md:px-6 flex items-center justify-between gap-4">
-             <Link href="https://dreamtripclub.com/" className="flex items-center gap-3">
-            <Image src="/dreamtripclubicon.png" alt="Dream Trip Club" width={160} height={36} className="h-8 md:h-9 w-auto object-contain" priority />
-          </Link>
-          <div className="flex items-center gap-4 md:gap-6">
-          {/*  <NavIcon href="/" icon={<FaHouse className="text-[18px]" />} label="Home" />
-            <NavIcon href="/booking" icon={<FaTicket className="text-[18px]" />} label="Bookings" />
-            <NavIcon href="/rewards" icon={<FaMedal className="text-[18px]" />} label="Rewards" />
-            <NavIcon href="/gifting" icon={<FaGift className="text-[18px]" />} label="Gifting" />
-            <NavIcon href="/account" icon={<FaUser className="text-[18px]" />} label="Account" />  */}
-            
-          </div>
-        </div>
-      </div>
-    </header>
-  );
-}
 
 /* ========= Page ========= */
 export default function DashboardPage() {
@@ -307,8 +273,8 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8FB]">
-      {/* Header (unchanged) */}
-      <SiteHeader onSignOut={handleLogout} />
+     
+      
 
       {/* ===== BODY: Light DTC layout ===== */}
       
