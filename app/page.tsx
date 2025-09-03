@@ -61,84 +61,86 @@ export default function LandingPage() {
     window.parent?.postMessage({ type: 'auth-success', redirectUrl: target }, '*');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setIsSubmitting(true);
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setError('');
+  setIsSubmitting(true);
 
-    if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
-      setError('Please agree to the marketing and data sharing consents.');
-      setIsSubmitting(false);
+  if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
+    setError('Please agree to the marketing and data sharing consents.');
+    setIsSubmitting(false);
+    return;
+  }
+
+  const endpoint = isSignup ? 'signup' : 'login'; // ✅ Changed from 'dashboard' to 'login'
+  const apiBase = isSignup ? '/api/user' : '/api/auth'; // ✅ Different base for auth vs user
+
+  const payload = isSignup
+    ? {
+        ...form,
+        communicationspreference: '111111',
+        contactpreference: 'email',
+        dateofbirth: '08/08/1988',
+        nationality: 'Canadian',
+        mailingaddress: 'N/A',
+        city: 'N/A',
+        state: 'N/A',
+        promotioncode: '',
+        flag: '@',
+        socialMediaType: '1',
+      }
+    : { email: form.email, password: form.password };
+
+  try {
+    const res = await fetch(
+      `${process.env.NEXT_PUBLIC_API_BASE_URL}${apiBase}/${endpoint}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        credentials: 'include', // 
+      }
+    );
+
+    const json = await res.json();
+    setIsSubmitting(false);
+
+    // ----- robust success detection -----
+    const successFlag =
+      json?.success === true || json?.success === 'true' || json?.result === 'success';
+
+   const loginSuccess = !isSignup && (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
+
+    const signupSuccess =
+      isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
+
+    const isSuccess = res.ok && (isSignup ? signupSuccess : loginSuccess);
+
+    if (!isSuccess) {
+      const flag = json?.result?.flag ?? json?.flag ?? '';
+      const apiMessage =
+        json?.message ||
+        json?.error ||
+        json?.errors?.[0] ||
+        (isSignup
+          ? 'Signup failed. Please review your details.'
+          : 'Invalid login. Please check your email and password.');
+
+      setError(flag ? `${apiMessage} (code ${flag})` : apiMessage);
       return;
     }
 
-    const endpoint = isSignup ? 'signup' : 'dashboard';
-    const payload = isSignup
-      ? {
-          ...form,
-          communicationspreference: '111111',
-          contactpreference: 'email',
-          dateofbirth: '08/08/1988',
-          nationality: 'Canadian',
-          mailingaddress: 'N/A',
-          city: 'N/A',
-          state: 'N/A',
-          promotioncode: '',
-          flag: '@',
-          socialMediaType: '1',
-        }
-      : { email: form.email, password: form.password };
-
-    try {
-      const res = await fetch(
-        `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/user/${endpoint}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        }
-      );
-
-      const json = await res.json();
-      setIsSubmitting(false);
-
-      // ----- robust success detection -----
-      const successFlag =
-        json?.success === true || json?.success === 'true' || json?.result === 'success';
-
-      const loginSuccess =
-        !isSignup && (Boolean(json?.dashboard) || Boolean(json?.token) || successFlag);
-
-      const signupSuccess =
-        isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
-
-      const isSuccess = res.ok && (isSignup ? signupSuccess : loginSuccess);
-
-      if (!isSuccess) {
-        const flag = json?.result?.flag ?? json?.flag ?? '';
-        const apiMessage =
-          json?.message ||
-          json?.error ||
-          json?.errors?.[0] ||
-          (isSignup
-            ? 'Signup failed. Please review your details.'
-            : 'Invalid login. Please check your email and password.');
-
-        setError(flag ? `${apiMessage} (code ${flag})` : apiMessage);
-        return;
-      }
-
-      // success path
-      if (!isSignup && json.dashboard) {
-        localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
-      }
-
-      redirectAfterAuth(json.redirectUrl);
-    } catch (err) {
-      setIsSubmitting(false);
-      setError('Failed to connect to the server.');
+    // success path
+    if (!isSignup && json.dashboard) {
+      localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
     }
-  };
+
+    redirectAfterAuth(json.redirectUrl);
+  } catch (err) {
+    setIsSubmitting(false);
+    setError('Failed to connect to the server.');
+  }
+};
 
   return (
     <div className="relative min-h-screen w-full">
