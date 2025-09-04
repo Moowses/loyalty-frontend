@@ -185,24 +185,26 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true);
   
 
- useEffect(() => {
+
+  useEffect(() => {
   let cancelled = false;
   const controller = new AbortController();
 
   const run = async () => {
-   const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
     
     if (base) {
-      const email = localStorage.getItem('email') || '';     // or from your login response
+      const email = localStorage.getItem('email') || '';
       const token = localStorage.getItem('apiToken') || '';
+      
       try {
-        // 
-      const dres = await fetch(`${base}/api/user/dashboard`, {
+        // FIXED: Use actual email, not hardcoded one
+        const dres = await fetch(`${base}/api/user/dashboard`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
           body: JSON.stringify({ 
-            email: "2058969255@qq.com"
+            email: email  // 
           }),
           signal: controller.signal,
         });
@@ -214,9 +216,15 @@ export default function DashboardPage() {
       }
 
       try {
+        // FIXED: Add proper headers and body
         const rres = await fetch(`${base}/api/user/reservations`, {
           method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
+          body: JSON.stringify({
+            email: email,
+            token: token
+          }),
           signal: controller.signal,
         });
         const rj = rres.ok ? await rres.json() : null;

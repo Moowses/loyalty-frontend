@@ -26,8 +26,23 @@ export default function SiteHeader() {
 
 const checkAuth = useCallback(async () => {
   try {
+    // First check if we have client-side data
+    const email = localStorage.getItem('email');
+    const token = localStorage.getItem('apiToken');
+    
+    if (!email || !token) {
+      setLoggedIn(false);
+      setChecking(false);
+      return;
+    }
+
+    // Then verify with server
     const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
-    if (!res.ok) return setLoggedIn(false);
+    if (!res.ok) {
+      setLoggedIn(false);
+      return;
+    }
+    
     const data = await res.json();
     setLoggedIn(Boolean(data?.loggedIn));
   } catch {
@@ -63,18 +78,31 @@ const checkAuth = useCallback(async () => {
   }, [checkAuth]);
 
   async function logout() {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
-    } finally {
-      try {
-        localStorage.setItem('dtc_auth_changed', String(Date.now()));
-      } catch {}
-      window.location.href = '/';
-    }
+  try {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Clear ALL client-side storage
+    localStorage.removeItem('email');
+    localStorage.removeItem('apiToken');
+    localStorage.removeItem('dashboardData');
+    localStorage.removeItem('dtc_auth_changed');
+    
+    // Clear all cookies
+    document.cookie.split(';').forEach(cookie => {
+      const [name] = cookie.split('=');
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    });
+
+    // Force a complete page reload to clear any cached state
+    window.location.href = '/';
+    window.location.reload(); // Force reload to clear everything
   }
+}
 
   return (
     <header className="w-full border-b border-gray-200 bg-white">

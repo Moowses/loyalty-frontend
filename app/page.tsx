@@ -67,6 +67,9 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
   setIsSubmitting(true);
 
+  // DEBUG: Log what's being submitted
+  console.log('Submitting form with email:', form.email);
+  console.log('Is signup:', isSignup);
 
   if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
     setError('Please agree to the marketing and data sharing consents.');
@@ -74,15 +77,11 @@ const handleSubmit = async (e: React.FormEvent) => {
     return;
   }
 
-  const endpoint = isSignup ? 'signup' : 'login'; //
-  const apiBase = isSignup ? '/api/user' : '/api/auth'; // 
-
-     // DEBUG: Log the exact URL
+  const endpoint = isSignup ? 'signup' : 'login';
+  const apiBase = isSignup ? '/api/user' : '/api/auth';
   const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}${apiBase}/${endpoint}`;
-  console.log('API URL:', apiUrl);
-  console.log('Environment:', process.env.NODE_ENV);
-  console.log('API Base URL env:', process.env.NEXT_PUBLIC_API_BASE_URL);
 
+  console.log('API URL:', apiUrl);
 
   const payload = isSignup
     ? {
@@ -98,9 +97,14 @@ const handleSubmit = async (e: React.FormEvent) => {
         flag: '@',
         socialMediaType: '1',
       }
-    : { email: form.email, password: form.password };
+    : { 
+        email: form.email,  // MAKE SURE this is form.email
+        password: form.password 
+      };
 
-   try {
+  console.log('Payload being sent:', payload);
+
+  try {
     const res = await fetch(apiUrl, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

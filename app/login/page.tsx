@@ -1,3 +1,4 @@
+// app/login/page.tsx
 import { Suspense } from 'react';
 import LoginClient from './LoginClient';
 
@@ -6,7 +7,13 @@ export const dynamic = 'force-dynamic';
 
 export default function Page() {
   return (
-    <Suspense fallback={null}>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <div className="w-full max-w-md bg-white rounded-xl shadow-lg p-6 text-center">
+          <div className="animate-pulse text-gray-600">Loading...</div>
+        </div>
+      </div>
+    }>
       <LoginClient />
     </Suspense>
   );
