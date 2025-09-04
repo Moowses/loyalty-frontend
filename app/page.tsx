@@ -67,6 +67,7 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
   setIsSubmitting(true);
 
+
   if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
     setError('Please agree to the marketing and data sharing consents.');
     setIsSubmitting(false);
@@ -75,6 +76,13 @@ const handleSubmit = async (e: React.FormEvent) => {
 
   const endpoint = isSignup ? 'signup' : 'login'; //
   const apiBase = isSignup ? '/api/user' : '/api/auth'; // 
+
+     // DEBUG: Log the exact URL
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}${apiBase}/${endpoint}`;
+  console.log('API URL:', apiUrl);
+  console.log('Environment:', process.env.NODE_ENV);
+  console.log('API Base URL env:', process.env.NEXT_PUBLIC_API_BASE_URL);
+
 
   const payload = isSignup
     ? {
@@ -92,16 +100,13 @@ const handleSubmit = async (e: React.FormEvent) => {
       }
     : { email: form.email, password: form.password };
 
-  try {
-    const res = await fetch(
-      `${process.env.NEXT_PUBLIC_API_BASE_URL}${apiBase}/${endpoint}`,
-      {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-        credentials: 'include', // 
-      }
-    );
+   try {
+    const res = await fetch(apiUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      credentials: 'include',
+    });
 
     const json = await res.json();
     setIsSubmitting(false);

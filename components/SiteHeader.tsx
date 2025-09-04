@@ -64,7 +64,7 @@ const checkAuth = useCallback(async () => {
 
   async function logout() {
     try {
-      await fetch(`${API_BASE}/auth/logout`, {
+      await fetch(`${API_BASE}/api/auth/logout`, {
         method: 'POST',
         credentials: 'include',
       });
