@@ -8,7 +8,7 @@ import { useRouter } from 'next/navigation';
 const BRAND = '#211F45';
 
 // Define API base - adjust as needed
-const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL2 || 'http://localhost:5000/api';
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
 interface AuthResponse {
   loggedIn: boolean;
@@ -26,7 +26,7 @@ export default function SiteHeader() {
 
 const checkAuth = useCallback(async () => {
   try {
-    const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+    const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
     if (!res.ok) return setLoggedIn(false);
     const data = await res.json();
     setLoggedIn(Boolean(data?.loggedIn));
