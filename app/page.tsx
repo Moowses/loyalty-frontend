@@ -67,38 +67,30 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
   setIsSubmitting(true);
 
-  // DEBUG: Log what's being submitted
   console.log('Submitting form with email:', form.email);
   console.log('Is signup:', isSignup);
 
-  if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
-    setError('Please agree to the marketing and data sharing consents.');
-    setIsSubmitting(false);
-    return;
-  }
-
   const endpoint = isSignup ? 'signup' : 'login';
-  const apiBase = isSignup ? '/api/user' : '/api/auth';
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}${apiBase}/${endpoint}`;
+  const apiBase = isSignup ? '/api/user/' : '/api/auth/';
+  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoint}`;
 
   console.log('API URL:', apiUrl);
 
+  // FIXED: Send only the fields that backend expects
   const payload = isSignup
     ? {
-        ...form,
-        communicationspreference: '111111',
-        contactpreference: 'email',
+        firstname: form.firstname,
+        lastname: form.lastname,
+        email: form.email,
+        mobilenumber: form.mobilenumber,
+        password: form.password,
+        country: form.country,
+        postalcode: form.postalcode,
         dateofbirth: '08/08/1988',
-        nationality: 'Canadian',
-        mailingaddress: 'N/A',
-        city: 'N/A',
-        state: 'N/A',
-        promotioncode: '',
-        flag: '@',
-        socialMediaType: '1',
+        nationality: 'Canadian'
       }
     : { 
-        email: form.email,  // MAKE SURE this is form.email
+        email: form.email,
         password: form.password 
       };
 
@@ -112,17 +104,20 @@ const handleSubmit = async (e: React.FormEvent) => {
       credentials: 'include',
     });
 
+    // Check if response is OK before parsing JSON
+    if (!res.ok) {
+      throw new Error(`HTTP error! status: ${res.status}`);
+    }
+
     const json = await res.json();
+    console.log('API response:', json);
     setIsSubmitting(false);
 
     // ----- robust success detection -----
-    const successFlag =
-      json?.success === true || json?.success === 'true' || json?.result === 'success';
+    const successFlag = json?.flag === '0' || json?.result === 'success' || json?.success === true;
 
-   const loginSuccess = !isSignup && (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
-
-    const signupSuccess =
-      isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
+    const loginSuccess = !isSignup && (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
+    const signupSuccess = isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
 
     const isSuccess = res.ok && (isSignup ? signupSuccess : loginSuccess);
 
@@ -140,31 +135,47 @@ const handleSubmit = async (e: React.FormEvent) => {
       return;
     }
 
-    // success path
-    if (!isSignup && json.dashboard) {
-      localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
-     
+    // success path - handle signup vs login differently
+    if (isSignup) {
+      // For signup success, show message and switch to login
+      setError(''); // Clear any errors
+      alert('Signup successful! Please sign in with your new account.');
+      setIsSignup(false); // Switch to login form
+      
+      // Clear form after successful signup
+      setForm({
+        firstname: '',
+        lastname: '',
+        email: '',
+        mobilenumber: '',
+        password: '',
+        country: 'Canada',
+        postalcode: '',
+      });
+    } else {
+      // For login success
+      if (json.dashboard) {
+        localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
+      }
+      
+      const email = json?.email ?? form.email;           
+      const token = json?.token ?? json?.session?.token; 
+
+      if (email) {
+        localStorage.setItem('email', email);
+        document.cookie = `email=${encodeURIComponent(email)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+      }
+      if (token) {
+        localStorage.setItem('apiToken', token);
+        document.cookie = `apiToken=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
+      }
+
+      redirectAfterAuth(json.redirectUrl);
     }
-    if (!isSignup) {
-  const email = json?.email ?? form.email;           
-  const token = json?.token ?? json?.session?.token; 
-
-  if (email) {
-    localStorage.setItem('email', email);
-    
-    document.cookie = `email=${encodeURIComponent(email)}; Path=/; Max-Age=2592000; SameSite=Lax`;
-  }
-  if (token) {
-    localStorage.setItem('apiToken', token);
-   
-    document.cookie = `apiToken=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
-  }
-}
-
-    redirectAfterAuth(json.redirectUrl);
   } catch (err) {
     setIsSubmitting(false);
     setError('Failed to connect to the server.');
+    console.error('Submission error:', err);
   }
 };
 

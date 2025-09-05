@@ -26,23 +26,8 @@ export default function SiteHeader() {
 
 const checkAuth = useCallback(async () => {
   try {
-    // First check if we have client-side data
-    const email = localStorage.getItem('email');
-    const token = localStorage.getItem('apiToken');
-    
-    if (!email || !token) {
-      setLoggedIn(false);
-      setChecking(false);
-      return;
-    }
-
-    // Then verify with server
     const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
-    if (!res.ok) {
-      setLoggedIn(false);
-      return;
-    }
-    
+    if (!res.ok) return setLoggedIn(false);
     const data = await res.json();
     setLoggedIn(Boolean(data?.loggedIn));
   } catch {
@@ -77,7 +62,7 @@ const checkAuth = useCallback(async () => {
     };
   }, [checkAuth]);
 
-  async function logout() {
+async function logout() {
   try {
     await fetch(`${API_BASE}/api/auth/logout`, {
       method: 'POST',
