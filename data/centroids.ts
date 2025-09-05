@@ -60,5 +60,20 @@ export const ONTARIO_CENTROIDS: Centroid[] = [
   { label: "Georgina, Ontario", lat: 44.2300, lng: -79.4690 },
   { label: "Brantford, Ontario", lat: 43.1394, lng: -80.2644 },
   { label: "Niagara-on-the-Lake, Ontario", lat: 43.2553, lng: -79.0713 },
-  { label: "Calabogie, Ontario", lat: 45.3047, lng: -76.7169 }
+  { label: "Calabogie, Ontario", lat: 45.3047, lng: -76.7169 },
+  { label: "Lakefield, Ontario", lat: 44.4168, lng: -78.2669 },
+  { label: "Port Hope, Ontario", lat: 43.9510, lng: -78.2930 },
+  { label: "Cobourg, Ontario", lat: 43.9594, lng: -78.1659 },
+  { label: "Port Perry, Ontario", lat: 44.1056, lng: -78.9456 },
+  { label: "Fenelon Falls, Ontario", lat: 44.5334, lng: -78.7406 },
+  { label: "Bobcaygeon, Ontario", lat: 44.5445, lng: -78.5461 },
+  { label: "Huntsville, Ontario", lat: 45.3269, lng: -79.2168 },
+  { label: "Bracebridge, Ontario", lat: 45.0370, lng: -79.3070 },
+  { label: "Gravenhurst, Ontario", lat: 44.9171, lng: -79.3743 },
+  { label: "Parry Sound, Ontario", lat: 45.3470, lng: -80.0350 },
+  { label: "Muskoka Lakes, Ontario", lat: 45.1000, lng: -79.6000 },
+  { label: "Haliburton, Ontario", lat: 45.0420, lng: -78.5090 },
+  { label: "Wasaga Beach, Ontario", lat: 44.5200, lng: -80.0167 },
+  { label: "Sauble Beach, Ontario", lat: 44.6250, lng: -81.2667 },
+  { label: "Tobermory, Ontario", lat: 45.2500, lng: -81.6667 }
 ];
