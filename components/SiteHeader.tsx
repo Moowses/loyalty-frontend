@@ -149,7 +149,7 @@ async function logout() {
           </Link>
 
           <Link
-            href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/signin'}
+            href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/#login'}
             className="flex flex-col items-center gap-1 group"
           >
             <Image src="/Navaccount.png" alt="Account" width={28} height={28} />
