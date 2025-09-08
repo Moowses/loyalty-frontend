@@ -1007,7 +1007,7 @@ const slugMap: Record<string, string> = {
   'Fern Woods Escape': 'fern-woods-escape',
   'Nordic Spa Retreat PEI': 'nordic-spa-retreat-pei',
   'Nordic Spa Getaway on Stoney Lake': 'nordic-spa-get-away-on-stoney-lake', 
-  'Gull River Escape: Nordic Spa': 'gull-river-escape-nordic-spa', 
+  'Gull River Escape Nordic Spa': 'gull-river-escape-nordic-spa', 
 };
 
 /** Return the correct static image path (with fallbacks) */
