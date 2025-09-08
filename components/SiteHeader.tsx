@@ -126,7 +126,7 @@ async function logout() {
           </Link>
 
           <Link
-            href="https://member.dreamtripclub.com/search/results"
+            href="https://dreamtripclub.com/rewards/"
             className="flex flex-col items-center gap-1 group"
           >
             <Image src="/Navrewards.png" alt="Rewards" width={28} height={28} />
@@ -138,7 +138,7 @@ async function logout() {
             </span>
           </Link>
 
-          <Link href="https://dreamtripclub.com/help" className="flex flex-col items-center gap-1 group">
+          <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-1 group">
             <Image src="/Navoffer.png" alt="Offers" width={28} height={28} />
             <span
               className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
@@ -165,7 +165,7 @@ async function logout() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-4">
           <Link
-            href="/help"
+            href="https://dreamtripclub.com/help/"
             className="text-[12px] font-semibold inline-flex items-center gap-2"
             style={{ color: BRAND }}
           >
