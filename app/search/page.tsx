@@ -227,23 +227,55 @@ const hotelMatches = HOTEL_POINTS
   }, [showDest, destQuery]);
 
   const useCurrentLocation = () => {
-    if (!navigator.geolocation) return;
-    navigator.geolocation.getCurrentPosition(async (p) => {
-      const { latitude, longitude } = p.coords;
-      try {
-        const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`;
-        const r = await fetch(url);
-        const j = await r.json();
-        finalizePick({
-          label: j.display_name || 'Current location',
-          lat: latitude,
-          lng: longitude,
-        });
-      } catch {
-        finalizePick({ label: 'Current location', lat: latitude, lng: longitude });
+  if (!navigator.geolocation) return;
+  navigator.geolocation.getCurrentPosition(async (p) => {
+    const { latitude, longitude } = p.coords;
+    try {
+      const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&addressdetails=1`;
+      const r = await fetch(url);
+      const j = await r.json();
+      
+      // Extract just the city/town name from the address
+      const address = j.address;
+      let cityName = 'Current location';
+      
+      // Try to get the most specific locality name
+      if (address.city) {
+        cityName = address.city;
+      } else if (address.town) {
+        cityName = address.town;
+      } else if (address.village) {
+        cityName = address.village;
+      } else if (address.municipality) {
+        cityName = address.municipality;
+      } else if (address.county) {
+        cityName = address.county;
+      } else if (address.state) {
+        cityName = address.state;
       }
-    });
-  };
+      
+      finalizePick({
+        label: cityName,
+        lat: latitude,
+        lng: longitude,
+      });
+    } catch {
+      // Fallback to just coordinates if reverse geocoding fails
+      finalizePick({ 
+        label: 'Current location', 
+        lat: latitude, 
+        lng: longitude 
+      });
+    }
+  }, (error) => {
+    console.error('Geolocation error:', error);
+    // Handle geolocation errors (permission denied, etc.)
+  }, {
+    timeout: 10000, // 10 second timeout
+    maximumAge: 600000, // 10 minute cache
+    enableHighAccuracy: true
+  });
+};
 
   return (
     <div className="flex-1 min-w-[220px]">
