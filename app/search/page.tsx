@@ -851,9 +851,9 @@ function SearchBar() {
                 >
                   {[
                     { label: 'Rooms',   value: rooms,   setter: setRooms,   min: 1, max: 8  },
-                    { label: 'Adults',  value: adults,  setter: setAdults,  min: 1, max: 10 },
-                    { label: 'Children',value: children,setter: setChildren,min: 0, max: 10 },
-                    { label: 'Infants', value: infants, setter: setInfants, min: 0, max: 10 },
+                    { label: 'Adults (13+)',  value: adults,  setter: setAdults,  min: 1, max: 10 },
+                    { label: 'Children (3–12)',value: children,setter: setChildren,min: 0, max: 10 },
+                    { label: 'Infants (0–2)', value: infants, setter: setInfants, min: 0, max: 10 },
                   ].map((row) => (
                     <div key={row.label} className="flex items-center justify-between py-3 border-b last:border-b-0">
                       <div className="text-[15px] font-medium text-gray-900">{row.label}</div>
@@ -1079,9 +1079,9 @@ function SearchBar() {
               </div>
               {[
                 { label: 'Rooms', value: rooms, setter: setRooms, min: 1, max: 8 },
-                { label: 'Adults', value: adults, setter: setAdults, min: 1, max: 10 },
-                { label: 'Children', value: children, setter: setChildren, min: 0, max: 10 },
-                { label: 'Infants', value: infants, setter: setInfants, min: 0, max: 10 },
+                { label: 'Adults (13+)', value: adults, setter: setAdults, min: 1, max: 10 },
+                { label: 'Children (3–12)', value: children, setter: setChildren, min: 0, max: 10 },
+                { label: 'Infants (0–2)', value: infants, setter: setInfants, min: 0, max: 10 },
               ].map((row) => (
                 <div key={row.label} className="flex items-center justify-between py-3 border-b">
                   <div className="text-base font-medium text-gray-900">{row.label}</div>
