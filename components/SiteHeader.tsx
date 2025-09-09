@@ -23,6 +23,8 @@ export default function SiteHeader() {
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
 
 const checkAuth = useCallback(async () => {
   try {
@@ -186,13 +188,13 @@ async function logout() {
           ) : (
             <>
             
-              <Link
-                href="/#login"
-                className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
-                style={{ backgroundColor: BRAND }}
-              >
-                JOIN OR SIGN IN
-              </Link>
+               <button
+              onClick={() => setShowLoginModal(true)}
+              className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
+              style={{ backgroundColor: BRAND }}
+            >
+              JOIN OR SIGN IN
+            </button>
             </>
           )}
         </div>
@@ -238,11 +240,47 @@ async function logout() {
         </div>
       </div>
 
-      {/* Mobile menu container */}
-      <div
-        id="mobile-nav"
-        className={`${open ? 'block' : 'hidden'} md:hidden border-t border-gray-200 bg-white`}
+    {/* Login Modal (right-docked, no blank header) */}
+{showLoginModal && (
+  <div className="fixed inset-0 z-[9999] flex justify-end">
+    {/* Backdrop (click to close) */}
+    <button
+      aria-label="Close login"
+      onClick={() => setShowLoginModal(false)}
+      className="absolute inset-0 w-full h-full bg-black/50"
+    />
+
+    {/* Right panel */}
+    <div
+      className="
+        relative
+        w-full max-w-[530px]
+        h-[92vh] my-0 mr-0
+        bg-white shadow-2xl rounded-l-2xl overflow-hidden
+      "
+    >
+      {/* Close button */}
+      <button
+        onClick={() => setShowLoginModal(false)}
+        className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+      {/* Iframe */}
+      <iframe
+        src="https://member.dreamtripclub.com/login"
+        className="w-full h-full border-0"
+        loading="lazy"
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
       />
+    </div>
+  </div>
+)}
     </header>
+
+    
+    
   );
 }
