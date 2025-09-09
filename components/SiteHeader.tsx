@@ -64,6 +64,8 @@ const checkAuth = useCallback(async () => {
     };
   }, [checkAuth]);
 
+  
+
 async function logout() {
   try {
     await fetch(`${API_BASE}/api/auth/logout`, {
@@ -92,8 +94,8 @@ async function logout() {
 }
 
   return (
-    <header className="w-full border-b border-gray-200 bg-white">
-      <div className="mx-auto max-w-[1280px] px-4 md:px-6 py-3 grid grid-cols-[auto_1fr_auto] items-center gap-4">
+    <header className="w-full border-b border-gray-200 bg-white ">
+      <div className="mx-auto max-w-[1690px] px-6 md:px-8 py-2 md:py-3 lg:py-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 md:h-[90px]">
         {/* Brand */}
         <Link href="https://dreamtripclub.com" className="flex items-center gap-3 shrink-0">
           <Image
@@ -106,11 +108,11 @@ async function logout() {
         </Link>
 
         {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-end justify-center gap-8">
-          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navreservation.png" alt="Reserve" width={28} height={28} />
+        <nav className="hidden lg:flex items-center items-end justify-center gap-10 ">
+          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-2 group">
+            <Image src="/Navreservation.png" alt="Reserve" width={24} height={24} />
             <span
-              className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
+              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
               style={{ color: BRAND }}
             >
               Reserve
@@ -119,21 +121,21 @@ async function logout() {
 
           <Link
             href="https://dreamtripclub.com/rewards/"
-            className="flex flex-col items-center gap-1 group"
+            className="flex flex-col items-center gap-2 group"
           >
-            <Image src="/Navrewards.png" alt="Rewards" width={28} height={28} />
+            <Image src="/Navrewards.png" alt="Rewards" width={24} height={24} />
             <span
-              className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
+              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
               style={{ color: BRAND }}
             >
               Rewards
             </span>
           </Link>
 
-          <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navoffer.png" alt="Offers" width={28} height={28} />
+          <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-2 group">
+            <Image src="/Navoffer.png" alt="Offers" width={24} height={24} />
             <span
-              className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
+              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
               style={{ color: BRAND }}
             >
               Offers
@@ -142,11 +144,11 @@ async function logout() {
 
           <Link
             href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/#login'}
-            className="flex flex-col items-center gap-1 group"
+            className="flex flex-col items-center gap-2 group"
           >
-            <Image src="/Navaccount.png" alt="Account" width={28} height={28} />
+            <Image src="/Navaccount.png" alt="Account" width={24} height={24} />
             <span
-              className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
+              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
               style={{ color: BRAND }}
             >
               Account
@@ -158,7 +160,7 @@ async function logout() {
         <div className="hidden md:flex items-center gap-4">
           <Link
             href="https://dreamtripclub.com/help/"
-            className="text-[12px] font-semibold inline-flex items-center gap-2"
+            className="text-[10px] font-bold inline-flex items-center gap-2"
             style={{ color: BRAND }}
           >
             HELP
@@ -217,13 +219,15 @@ async function logout() {
               Log out
             </button>
           ) : (
-            <Link
-              href="/signin"
-              className="px-3 py-1.5 rounded-[12px] text-xs font-semibold text-white"
+        
+            <button
+              onClick={() => setShowLoginModal(true)}
+              className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
               style={{ backgroundColor: BRAND }}
             >
-              Join / Sign in
-            </Link>
+               Join / Sign in
+           
+            </button>
           )}
 
           <button
@@ -261,7 +265,7 @@ async function logout() {
     >
       {/* Close button */}
       <button
-        onClick={() => setShowLoginModal(false)}
+        onClick={() => setShowLoginModal(false) }
         className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
         aria-label="Close"
       >
