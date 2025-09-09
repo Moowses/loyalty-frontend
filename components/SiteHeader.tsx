@@ -7,7 +7,7 @@ import { useRouter } from 'next/navigation';
 
 const BRAND = '#211F45';
 
-// Define API base - adjust as needed
+// Define API base
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
 interface AuthResponse {
@@ -15,7 +15,7 @@ interface AuthResponse {
   user?: {
     id: string;
     email: string;
-    // ... other properties
+    // token if needed. 
   };
 }
 
@@ -40,13 +40,13 @@ const checkAuth = useCallback(async () => {
   useEffect(() => {
     checkAuth();
 
-    // Re-check when tab becomes visible
+    // Re check when tab becomes visible
     const onVis = () => {
       if (document.visibilityState === 'visible') checkAuth();
     };
     document.addEventListener('visibilitychange', onVis);
 
-    // Cross-tab auth change broadcast
+    // Cross tab auth change broadcast
     const onStorage = (e: StorageEvent) => {
       if (e.key === 'dtc_auth_changed') checkAuth();
     };
@@ -105,16 +105,6 @@ async function logout() {
 
         {/* Desktop Nav */}
         <nav className="hidden lg:flex items-end justify-center gap-8">
-          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
-            <Image src="/Navhome.png" alt="Home" width={28} height={28} />
-            <span
-              className="text-[10px] font-semibold tracking-[0.08em] uppercase group-hover:underline"
-              style={{ color: BRAND }}
-            >
-              Home
-            </span>
-          </Link>
-
           <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-1 group">
             <Image src="/Navreservation.png" alt="Reserve" width={28} height={28} />
             <span
@@ -195,19 +185,13 @@ async function logout() {
             </button>
           ) : (
             <>
-              <Link
-                href="/#login"
-                className="px-4 py-2 rounded-[12px] text-sm font-semibold border hover:bg-[#211F45]/5"
-                style={{ color: BRAND, borderColor: BRAND }}
-              >
-                JOIN
-              </Link>
+            
               <Link
                 href="/#login"
                 className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
                 style={{ backgroundColor: BRAND }}
               >
-                SIGN IN
+                JOIN OR SIGN IN
               </Link>
             </>
           )}
@@ -254,7 +238,7 @@ async function logout() {
         </div>
       </div>
 
-      {/* Mobile menu container (keep for future expansion) */}
+      {/* Mobile menu container */}
       <div
         id="mobile-nav"
         className={`${open ? 'block' : 'hidden'} md:hidden border-t border-gray-200 bg-white`}

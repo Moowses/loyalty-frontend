@@ -144,7 +144,7 @@ export default function MiniDashboard() {
   return (
     <div className="bg-white rounded-xl shadow-lg p-6">
       {/* Greeting banner (simplified from main dashboard) */}
-      <div className="w-full bg-[#93AFB9] text-white rounded-md px-4 py-4 mb-6 flex items-center gap-3">
+      <div className="w-full bg-[#93AFB9] text-white rounded-md px-4 py-4 mb-7 flex items-center gap-3">
         <div className="h-10 w-10 rounded-full border-2 border-white/70 grid place-items-center">
           <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-white" viewBox="0 0 20 20" fill="currentColor">
             <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />

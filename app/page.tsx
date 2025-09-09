@@ -67,12 +67,15 @@ const handleSubmit = async (e: React.FormEvent) => {
   setError('');
   setIsSubmitting(true);
 
-  console.log('Submitting form with email:', form.email);
-  console.log('Is signup:', isSignup);
 
-  const endpoint = isSignup ? 'signup' : 'login';
-  const apiBase = isSignup ? '/api/user/' : '/api/auth/';
-  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoint}`;
+  //const endpoint = isSignup ? 'signup' : 'login';
+  //const apiBase = isSignup ? '/api/user/' : '/api/auth/';
+//  const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoint}`;
+
+const endpoint = isSignup ? 'signup' : 'login';
+const apiBase = '/api/auth/';
+const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoint}`;
+
 
   console.log('API URL:', apiUrl);
 

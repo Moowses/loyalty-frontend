@@ -21,7 +21,7 @@ export default function LoginClient() {
   const router = useRouter();
   const search = useSearchParams();
   const redirectPath = search.get('redirect') || '/dashboard';
-
+  const [showSignupSuccess1, setShowSignupSuccess1] = useState(false);
   const [isSignup, setIsSignup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [rememberMe, setRememberMe] = useState(true);
@@ -109,7 +109,7 @@ export default function LoginClient() {
     try {
       // FIXED: Use correct endpoints
       const endpoint = isSignup ? 'signup' : 'login';
-      const apiPath = isSignup ? '/api/user' : '/api/auth';
+      const apiPath = '/api/auth';
       
       const payload = isSignup
         ? {
@@ -138,6 +138,7 @@ export default function LoginClient() {
       setIsSubmitting(false);
 
       // Robust success detection (matches your main page)
+      
       const successFlag = json?.success === true || json?.success === 'true' || json?.result === 'success';
       const loginSuccess = !isSignup && (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
       const signupSuccess = isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
@@ -182,7 +183,16 @@ export default function LoginClient() {
           
         } else {
           // For signups, you might still want to redirect
-          redirectAfterAuth(json.redirectUrl);
+        setShowSignupSuccess1(true);
+  
+          // Auto-return to login after 3 seconds
+          setTimeout(() => {
+            setIsSignup(false);
+            setShowSignupSuccess1(false);
+            
+            // Pre-fill the email field for convenience
+            setForm(prev => ({ ...prev, email: form.email }));
+          }, 3000);
         }
     } catch (err) {
       setIsSubmitting(false);
@@ -214,6 +224,12 @@ export default function LoginClient() {
                 {error}
               </div>
             )}
+            
+          {showSignupSuccess1 && (
+            <div className="mb-4 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
+               Success! Your account has been created. Returning to login...
+            </div>
+          )}
 
             {/* FORM */}
             <form onSubmit={handleSubmit} className="space-y-4">
@@ -378,7 +394,7 @@ export default function LoginClient() {
                   onClick={(e) => e.preventDefault()}
                   className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
                 >
-                  Activate account.
+                 
                 </a>
               </div>
             )}
