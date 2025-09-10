@@ -60,70 +60,95 @@ function Card({
   );
 }
 
+
+
 export default function MiniDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [memberNumber, setMemberNumber] = useState('');
 
-  useEffect(() => {
-    const fetchData = async () => {
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
-      const email = localStorage.getItem('email') || '';
-      const token = localStorage.getItem('apiToken') || '';
+useEffect(() => {
+  const fetchData = async () => {
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+    const email = localStorage.getItem('email') || '';
 
-      if (base && email) {
-        try {
-          // Try to fetch fresh data from API
-          const dres = await fetch(`${base}/api/user/dashboard`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            credentials: 'include',
-            body: JSON.stringify({ email }),
-          });
-          
-          if (dres.ok) {
-            const dj = await dres.json();
-            setData(normalizeDashboard(dj));
-            setLoading(false);
-            return;
-          }
-        } catch (error) {
-          console.error('API fetch failed:', error);
-        }
-      }
-
-      // Fallback to localStorage data
+    // helper: persist + emit
+    const persist = (dash: DashboardData) => {
       try {
-        const ls = localStorage.getItem('dashboardData');
-        if (ls) {
-          setData(normalizeDashboard(JSON.parse(ls)));
-        } else {
-          // Create basic data from email
-          const email = localStorage.getItem('email') || '';
-          const name = email.split('@')[0] || 'Member';
-          setData({
-            name,
-            membershipNo: '—',
-            tier: 'Member',
-            totalPoints: 0,
-            stays: 0,
-            pointsToNextTier: 10000,
-            transactions: []
-          });
+        localStorage.setItem('dashboardData', JSON.stringify(dash));
+        if (dash.membershipNo) {
+          localStorage.setItem('membershipno', String(dash.membershipNo));
         }
-      } catch (error) {
-        console.error('Local storage parse failed:', error);
-      } finally {
-        setLoading(false);
-      }
+      } catch {}
+      setMemberNumber(String(dash.membershipNo || ''));
+      // Let parent (booking page) know if this runs in a popup/iframe
+      window.parent?.postMessage(
+        { type: 'member-data', membershipNo: dash.membershipNo, name: dash.name, tier: dash.tier },
+        '*'
+      );
     };
 
-    fetchData();
-  }, []);
+    try {
+      // 1) Fresh API (best)
+      if (base && email) {
+        const dres = await fetch(`${base}/api/user/dashboard`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify({ email }),
+        });
+
+        if (dres.ok) {
+          const dj = await dres.json();
+          const dash = normalizeDashboard(dj);
+          setData(dash);
+          persist(dash);
+          setLoading(false);
+          return;
+        }
+      }
+
+      // 2) Fallback: cached dashboard
+      const ls = localStorage.getItem('dashboardData');
+      if (ls) {
+        const dash = normalizeDashboard(JSON.parse(ls));
+        setData(dash);
+        persist(dash); // refresh cache/emit for consistency
+      } else {
+        // 3) Last resort: skeleton using email + any cached membershipno
+        const name = email.split('@')[0] || 'Member';
+        const cachedMember = localStorage.getItem('membershipno') || '';
+        const dash: DashboardData = {
+          name,
+          membershipNo: cachedMember || '—',
+          tier: 'Member',
+          totalPoints: 0,
+          stays: 0,
+          pointsToNextTier: 10000,
+          transactions: [],
+        };
+        setData(dash);
+        persist(dash);
+      }
+    } catch (error) {
+      console.error('MiniDashboard hydrate error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchData();
+}, []);
+
+
+
 
   const handleLogout = () => {
     localStorage.removeItem('email');
     localStorage.removeItem('apiToken');
     localStorage.removeItem('dashboardData');
+    localStorage.removeItem('membershipno');
+     //remove cache
     document.cookie = 'email=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'apiToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.location.reload();

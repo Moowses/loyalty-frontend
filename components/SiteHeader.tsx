@@ -10,6 +10,7 @@ const BRAND = '#211F45';
 // Define API base
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
+
 interface AuthResponse {
   loggedIn: boolean;
   user?: {
@@ -20,6 +21,7 @@ interface AuthResponse {
 }
 
 export default function SiteHeader() {
+  
   const [open, setOpen] = useState(false);
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
@@ -64,7 +66,25 @@ const checkAuth = useCallback(async () => {
     };
   }, [checkAuth]);
 
-  
+
+
+  useEffect(() => {
+  const onMsg = (ev: MessageEvent) => {
+    if (!ev?.data?.type) return;
+
+    if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
+      setShowLoginModal(false);
+      try { localStorage.setItem('dtc_auth_changed', String(Date.now())); } catch {}
+      checkAuth();
+      // small delay so the modal visually closes before reload
+      setTimeout(() => window.location.reload(), 50);
+    }
+  };
+  window.addEventListener('message', onMsg);
+  return () => window.removeEventListener('message', onMsg);
+}, [checkAuth]);
+
+
 
 async function logout() {
   try {
@@ -80,6 +100,7 @@ async function logout() {
     localStorage.removeItem('apiToken');
     localStorage.removeItem('dashboardData');
     localStorage.removeItem('dtc_auth_changed');
+    localStorage.removeItem('membershipno');
     
     // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
@@ -274,7 +295,7 @@ async function logout() {
 
       {/* Iframe */}
       <iframe
-        src="https://member.dreamtripclub.com/login"
+        src="http://localhost:3000/login"
         className="w-full h-full border-0"
         loading="lazy"
         sandbox="allow-scripts allow-forms allow-same-origin allow-popups"

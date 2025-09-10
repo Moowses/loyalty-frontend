@@ -109,6 +109,25 @@ export default function BookingPage() {
   const [consentEmail, setConsentEmail] = useState(false);
   const [consentSms, setConsentSms]     = useState(false);
 
+  // poppulate member number from cache if available or localstorage
+
+  useEffect(() => {
+  try {
+    const ls = localStorage.getItem('dashboardData');
+    if (ls) {
+      const dash = JSON.parse(ls);
+      const m = dash?.membershipNo || dash?.membershipno || dash?.membershipNumber;
+      if (m) setMemberNumber(String(m));
+    } else {
+      const cachedMember = localStorage.getItem('membershipno');
+      if (cachedMember) setMemberNumber(String(cachedMember));
+    }
+  } catch (e) {
+    console.error('Failed to load member number:', e);
+  }
+}, []);
+
+
   // --- Fetch FINAL price from /availability ---
   useEffect(() => {
     (async () => {
@@ -424,7 +443,7 @@ export default function BookingPage() {
                 <Field label="First Name*" value={firstName} onChange={setFirstName} required />
                 <Field label="Last Name*" value={lastName} onChange={setLastName} required />
                 <Field label="Email Address*" type="email" value={email} onChange={setEmail} required />
-                <Field label="Member Number" value={memberNumber} onChange={setMemberNumber} />
+                <Field label="Member Number" value={memberNumber} onChange={setMemberNumber} disabled={!!memberNumber}/>
                 <div>
                   <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country*</label>
                   <select
