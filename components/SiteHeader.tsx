@@ -117,7 +117,7 @@ async function logout() {
 
   return (
     <header className="w-full border-b border-gray-200 bg-white ">
-      <div className="mx-auto max-w-[1160px] px-6 md:px-8 py-2 md:py-3 lg:py-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 md:h-[90px]">
+      <div className="mx-auto max-w-[1160px] px-6 md:px-8 py-2 md:py-3 lg:py-4 grid grid-cols-[auto_1fr_auto] items-center gap-6 md:h-[95px]">
         {/* Brand */}
         <Link href="https://dreamtripclub.com" className="flex items-center gap-3 shrink-0">
           <Image
@@ -201,22 +201,24 @@ async function logout() {
 
 
         {/* Desktop CTAs */}
-        <div className="hidden md:flex items-center gap-4">
-          <Link
+        <div className="hidden md:flex items-center gap-5">
+         <Link
           href="https://dreamtripclub.com/help/"
           className="text-[10px] font-bold inline-flex items-center gap-2 transition-colors duration-200 text-[#211F45] hover:text-[#EB6923]"
         >
           HELP
-          <span
-            className="inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors duration-200 text-[#211F45] border-[#211F45] group-hover:text-[#EB6923] group-hover:border-[#EB6923] hover:text-[#EB6923] hover:border-[#EB6923]"
-          >
-            ?
-          </span>
+          <Image
+            src="/Navhelp.png"
+            alt="Help"
+            width={21}   // 5x5 px (Tailwind 5 = 1.25rem ≈ 20px)
+            height={21}
+            className="transition-transform duration-200 group-hover:-translate-y-1"
+          />
         </Link>
 
           {checking ? (
             <div
-              className="px-4 py-2 rounded-[12px] text-sm font-semibold border opacity-50"
+              className="px-4 py-2.5 rounded-[12px] text-sm font-semibold border opacity-50"
               style={{ color: BRAND, borderColor: BRAND }}
             >
               …
@@ -224,7 +226,7 @@ async function logout() {
           ) : loggedIn ? (
             <button
               onClick={logout}
-             className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
+             className="px-4 py-2.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
               style={{ backgroundColor: BRAND }}
             >
               LOG OUT
@@ -234,7 +236,7 @@ async function logout() {
             
                <button
               onClick={() => setShowLoginModal(true)}
-            className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
+            className="px-7 py-2.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
               style={{ backgroundColor: BRAND }}
             >
               JOIN OR SIGN IN
