@@ -223,7 +223,7 @@ async function logout() {
           ) : loggedIn ? (
             <button
               onClick={logout}
-              className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
+             className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
               style={{ backgroundColor: BRAND }}
             >
               LOG OUT
@@ -233,7 +233,7 @@ async function logout() {
             
                <button
               onClick={() => setShowLoginModal(true)}
-              className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
+            className="px-4 py-2 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
               style={{ backgroundColor: BRAND }}
             >
               JOIN OR SIGN IN
