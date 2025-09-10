@@ -10,14 +10,11 @@ declare global {
   interface Window {
     CollectJS?: {
       configure: (cfg: any) => void;
-      tokenize: (
-        opts: { amount?: number },
-        onSuccess: (resp: any) => void,
-        onError?: (err: any) => void
-      ) => void;
+      startPaymentRequest?: () => void;  // add this
     };
   }
 }
+
 
 type Quote = {
   quoteId: string;
@@ -306,8 +303,7 @@ const configureCollect = useCallback(() => {
      
        //paymentRequest: { enabled: false },
 
-      // Tie Collect.js to your submit button
-      paymentSelector: "#bookNowBtn",
+     // paymentSelector: "#bookNowBtn",
 
       // Hand the token back to app code
       callback: (resp: any) => {
@@ -325,8 +321,6 @@ const configureCollect = useCallback(() => {
   }
 }, []);
 
-
-
   // Load Collect.js script and configure
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -338,10 +332,10 @@ const configureCollect = useCallback(() => {
     return () => clearTimeout(timer);
   }, [configureCollect]);
 
-  // --- Booking Handler ---
 // --- Booking Handler ---
 const onBookNow = async (e: React.FormEvent) => {
   e.preventDefault();
+  if (paying) return;        
   setErr('');
 
   if (!quote) {
@@ -377,7 +371,7 @@ const onBookNow = async (e: React.FormEvent) => {
 
       try {
         (window as any).CollectJS.startPaymentRequest?.();
-        document.getElementById("bookNowBtn")?.click();
+        
       } catch (err) {
         reject(new Error("Unable to start payment request."));
       }
@@ -705,7 +699,7 @@ function Field({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;s
+  onChange: (v: string) => void;
   required?: boolean;
   disabled?: boolean;
   type?: string;
