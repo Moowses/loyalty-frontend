@@ -202,18 +202,16 @@ async function logout() {
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-4">
           <Link
-            href="https://dreamtripclub.com/help/"
-            className="text-[10px] font-bold inline-flex items-center gap-2"
-            style={{ color: BRAND }}
+          href="https://dreamtripclub.com/help/"
+          className="text-[10px] font-bold inline-flex items-center gap-2 transition-colors duration-200 text-[#211F45] hover:text-[#EB6923]"
+        >
+          HELP
+          <span
+            className="inline-flex h-5 w-5 items-center justify-center rounded-full border transition-colors duration-200 text-[#211F45] border-[#211F45] group-hover:text-[#EB6923] group-hover:border-[#EB6923] hover:text-[#EB6923] hover:border-[#EB6923]"
           >
-            HELP
-            <span
-              className="inline-flex h-5 w-5 items-center justify-center rounded-full border"
-              style={{ borderColor: BRAND, color: BRAND }}
-            >
-              ?
-            </span>
-          </Link>
+            ?
+          </span>
+        </Link>
 
           {checking ? (
             <div
