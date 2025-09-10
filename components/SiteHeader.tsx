@@ -180,7 +180,7 @@ async function logout() {
 
   {/* Account */}
   <Link
-    href={loggedIn ? "https://member.dreamtripclub.com/dashboard" : "/#login"}
+    href={loggedIn ? "https://member.dreamtripclub.com/dashboard" : "/dashboard"}
     className="flex flex-col items-center gap-2 group transition-transform duration-200"
   >
     <Image
