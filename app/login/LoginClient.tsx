@@ -149,7 +149,7 @@ export default function LoginClient() {
         const apiMessage = json?.message || json?.error || json?.errors?.[0] || 
           (isSignup ? 'Signup failed. Please review your details.' : 'Invalid login. Please check your credentials.');
         
-        setError(flag ? `${apiMessage} (code ${flag})` : apiMessage);
+        setError(flag ? `${apiMessage}` : apiMessage);
         return;
       }
 

@@ -6,6 +6,9 @@ import Image from 'next/image';
 
 interface DashboardData {
   name: string;
+  firstName: string;
+  lastName: string;
+  primaryEmail: string;
   membershipNo: string;
   tier: string;
   totalPoints: number;
@@ -14,13 +17,14 @@ interface DashboardData {
   transactions?: any[];
 }
 
-/* ========= Normalizer (same as main dashboard) ========= */
+/* ========= Normalizer (updated to extract firstName, lastName, primaryEmail) ========= */
 function normalizeDashboard(json: any): DashboardData {
   const rec = json?.dashboard ?? (Array.isArray(json?.data) ? json.data[0] : json) ?? {};
 
-  const firstname = rec.firstname ?? rec.firstName ?? rec.name?.split?.(' ')?.[0] ?? '';
-  const lastname = rec.lastname ?? rec.lastName ?? '';
-  const name = (firstname || lastname) ? `${firstname} ${lastname}`.trim() : (rec.name ?? 'Member');
+  const firstName = rec.firstname ?? rec.firstName ?? rec.name?.split?.(' ')?.[0] ?? '';
+  const lastName = rec.lastname ?? rec.lastName ?? '';
+  const name = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (rec.name ?? 'Member');
+  const primaryEmail = rec.primaryemail ?? rec.primaryEmail ?? rec.email ?? '';
 
   const membershipNo = rec.membershipno ?? rec.membershipNo ?? rec.membership ?? rec.membershipNumber ?? '—';
   const tier = rec.membershiptier ?? rec.tier ?? rec.membershipTier ?? 'Member';
@@ -35,7 +39,7 @@ function normalizeDashboard(json: any): DashboardData {
     points: Number(t.points ?? t.META_POINTSAMOUNT ?? t.amount ?? 0),
   }));
 
-  return { name, membershipNo, tier, totalPoints, transactions, stays, pointsToNextTier };
+  return { name, firstName, lastName, primaryEmail, membershipNo, tier, totalPoints, transactions, stays, pointsToNextTier };
 }
 
 /* ========= UI Components (simplified from main dashboard) ========= */
@@ -60,95 +64,115 @@ function Card({
   );
 }
 
-
-
 export default function MiniDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [memberNumber, setMemberNumber] = useState('');
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+      const email = localStorage.getItem('email') || '';
 
-useEffect(() => {
-  const fetchData = async () => {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
-    const email = localStorage.getItem('email') || '';
+      // helper: persist + emit
+      const persist = (dash: DashboardData) => {
+        try {
+          localStorage.setItem('dashboardData', JSON.stringify(dash));
+          if (dash.membershipNo) {
+            localStorage.setItem('membershipno', String(dash.membershipNo));
+          }
+          if (dash.firstName) {
+            localStorage.setItem('firstname', String(dash.firstName));
+          }
+          if (dash.lastName) {
+            localStorage.setItem('lastname', String(dash.lastName));
+          }
+          if (dash.primaryEmail) {
+            localStorage.setItem('primaryemail', String(dash.primaryEmail));
+          }
+        } catch {}
+        // Let parent (booking page) know if this runs in a popup/iframe
+        window.parent?.postMessage(
+          { 
+            type: 'member-data', 
+            membershipNo: dash.membershipNo, 
+            name: dash.name, 
+            firstName: dash.firstName,
+            lastName: dash.lastName,
+            primaryEmail: dash.primaryEmail,
+            tier: dash.tier 
+          },
+          '*'
+        );
+      };
 
-    // helper: persist + emit
-    const persist = (dash: DashboardData) => {
       try {
-        localStorage.setItem('dashboardData', JSON.stringify(dash));
-        if (dash.membershipNo) {
-          localStorage.setItem('membershipno', String(dash.membershipNo));
+        // 1) Fresh API (best)
+        if (base && email) {
+          const dres = await fetch(`${base}/api/user/dashboard`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            credentials: 'include',
+            body: JSON.stringify({ email }),
+          });
+
+          if (dres.ok) {
+            const dj = await dres.json();
+            const dash = normalizeDashboard(dj);
+            setData(dash);
+            persist(dash);
+            setLoading(false);
+            return;
+          }
         }
-      } catch {}
-      setMemberNumber(String(dash.membershipNo || ''));
-      // Let parent (booking page) know if this runs in a popup/iframe
-      window.parent?.postMessage(
-        { type: 'member-data', membershipNo: dash.membershipNo, name: dash.name, tier: dash.tier },
-        '*'
-      );
-    };
 
-    try {
-      // 1) Fresh API (best)
-      if (base && email) {
-        const dres = await fetch(`${base}/api/user/dashboard`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          credentials: 'include',
-          body: JSON.stringify({ email }),
-        });
-
-        if (dres.ok) {
-          const dj = await dres.json();
-          const dash = normalizeDashboard(dj);
+        // 2) Fallback: cached dashboard
+        const ls = localStorage.getItem('dashboardData');
+        if (ls) {
+          const dash = normalizeDashboard(JSON.parse(ls));
+          setData(dash);
+          persist(dash); // refresh cache/emit for consistency
+        } else {
+          // 3) Last resort: skeleton using email + any cached membershipno
+          const name = email.split('@')[0] || 'Member';
+          const cachedMember = localStorage.getItem('membershipno') || '';
+          const cachedFirstName = localStorage.getItem('firstname') || '';
+          const cachedLastName = localStorage.getItem('lastname') || '';
+          const cachedEmail = localStorage.getItem('primaryemail') || email;
+          
+          const dash: DashboardData = {
+            name,
+            firstName: cachedFirstName,
+            lastName: cachedLastName,
+            primaryEmail: cachedEmail,
+            membershipNo: cachedMember || '—',
+            tier: 'Member',
+            totalPoints: 0,
+            stays: 0,
+            pointsToNextTier: 10000,
+            transactions: [],
+          };
           setData(dash);
           persist(dash);
-          setLoading(false);
-          return;
         }
+      } catch (error) {
+        console.error('MiniDashboard hydrate error:', error);
+      } finally {
+        setLoading(false);
       }
+    };
 
-      // 2) Fallback: cached dashboard
-      const ls = localStorage.getItem('dashboardData');
-      if (ls) {
-        const dash = normalizeDashboard(JSON.parse(ls));
-        setData(dash);
-        persist(dash); // refresh cache/emit for consistency
-      } else {
-        // 3) Last resort: skeleton using email + any cached membershipno
-        const name = email.split('@')[0] || 'Member';
-        const cachedMember = localStorage.getItem('membershipno') || '';
-        const dash: DashboardData = {
-          name,
-          membershipNo: cachedMember || '—',
-          tier: 'Member',
-          totalPoints: 0,
-          stays: 0,
-          pointsToNextTier: 10000,
-          transactions: [],
-        };
-        setData(dash);
-        persist(dash);
-      }
-    } catch (error) {
-      console.error('MiniDashboard hydrate error:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  fetchData();
-}, []);
-
-
-
+    fetchData();
+  }, []);
 
   const handleLogout = () => {
     localStorage.removeItem('email');
     localStorage.removeItem('apiToken');
     localStorage.removeItem('dashboardData');
     localStorage.removeItem('membershipno');
-     //remove cache
+    localStorage.removeItem('firstname');
+    localStorage.removeItem('lastname');
+    localStorage.removeItem('primaryemail');
+    //remove cache
     document.cookie = 'email=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     document.cookie = 'apiToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
     window.location.reload();
@@ -177,7 +201,7 @@ useEffect(() => {
         </div>
         <div>
           <div className="text-[20px] font-semibold leading-tight">
-            Hello {data?.name?.split(' ')[0] ?? data?.name ?? 'Member'}
+            Hello {data?.firstName ?? data?.name?.split(' ')[0] ?? data?.name ?? 'Member'}
           </div>
           <div className="text-[14px] text-white/95">
             Member Number: <span className="font-medium">{data?.membershipNo ?? '—'}</span>
