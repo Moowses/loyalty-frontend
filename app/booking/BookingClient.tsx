@@ -109,10 +109,14 @@ export default function BookingPage() {
   const [consentEmail, setConsentEmail] = useState(false);
   const [consentSms, setConsentSms]     = useState(false);
 
+  //modal for payment confirmation
+
+const [payModalOpen, setPayModalOpen] = useState(false);
+const [payStage, setPayStage] = useState<'idle'|'verifying'|'declined'|'approved'>('idle');
+const [payMessage, setPayMessage] = useState<string>('');
+
   // poppulate member number from cache if available or localstorage
 
- // Populate guest details from cache if available in localStorage
-// Populate guest details from cache if available in localStorage
 useEffect(() => {
   try {
     const ls = localStorage.getItem('dashboardData');
@@ -298,8 +302,8 @@ const configureCollect = useCallback(() => {
         cvv: { selector: "#cvv", placeholder: "CVV" },
       },
 
-      // (Optional) Quiet the Apple/Google Pay abstraction in dev:
-      paymentRequest: { enabled: false },
+     
+       //paymentRequest: { enabled: false },
 
       // Tie Collect.js to your submit button
       paymentSelector: "#bookNowBtn",
@@ -334,56 +338,58 @@ const configureCollect = useCallback(() => {
   }, [configureCollect]);
 
   // --- Booking Handler ---
-  const onBookNow = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setErr('');
+ const onBookNow = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setErr('');
 
-    if (!quote) {
-      setErr('Missing price check. Please return to results.');
-      return;
-    }
-    if (!available) {
-      setErr('This room is not available for your dates.');
-      return;
-    }
-    if (!firstName || !lastName || !email || !country || !address1 || !city || !state || !zip) {
-      setErr('Please fill in all required fields.');
-      return;
-    }
-    if (!window.CollectJS) {
+  if (!quote) {
+    setErr('Missing price check. Please return to results.');
+    return;
+  }
+  if (!available) {
+    setErr('This room is not available for your dates.');
+    return;
+  }
+  if (!firstName || !lastName || !email || !country || !address1 || !city || !state || !zip) {
+    setErr('Please fill in all required fields.');
+    return;
+  }
+  if (!window.CollectJS) {
     setErr('Payment fields not ready. Please wait a moment and try again.');
     return;
-    }
-
-    try {
-      setPaying(true);
-
-      // 1) Tokenize card
-    const paymentToken = await new Promise<string>((resolve, reject) => {
-  if (!window.CollectJS) {
-    reject(new Error("Payment fields not ready. Please wait a moment and try again."));
-    return;
   }
-
-  (window as any).__collectResolve = (resp: any) => {
-    const tok = resp?.payment_token || resp?.token;
-    if (tok) resolve(tok);
-    else reject(new Error(resp?.error?.message || resp?.error || "Tokenization failed"));
-  };
 
   try {
-    // Directly start Collect.js' payment request (works even without Apple/Google Pay)
-    (window as any).CollectJS.startPaymentRequest?.();
-    // Fallback: programmatically click the bound button (triggers paymentSelector)
-    const btn = document.getElementById("bookNowBtn") as HTMLButtonElement | null;
-    if (btn) btn.click();
-  } catch (err) {
-    reject(new Error("Unable to start payment request."));
-  }
-});
+    setPaying(true);
 
-     
-        // 2) Confirm on backend
+    // --- Show "verifying" modal
+    setPayModalOpen(true);
+    setPayStage('verifying');
+    setPayMessage('Verifying payment… Please wait.');
+
+    // --- 1) Tokenize (callback pattern)
+    const paymentToken = await new Promise<string>((resolve, reject) => {
+      if (!window.CollectJS) {
+        reject(new Error('Payment fields not ready. Please wait a moment and try again.'));
+        return;
+      }
+
+      (window as any).__collectResolve = (resp: any) => {
+        const tok = resp?.payment_token || resp?.token;
+        if (tok) resolve(tok);
+        else reject(new Error(resp?.error?.message || resp?.error || 'Tokenization failed'));
+      };
+
+      try {
+        (window as any).CollectJS.startPaymentRequest?.();
+        const btn = document.getElementById('bookNowBtn') as HTMLButtonElement | null;
+        if (btn) btn.click();
+      } catch {
+        reject(new Error('Unable to start payment request.'));
+      }
+    });
+
+    // --- 2) Confirm on backend
     const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
     const res = await fetch(`${base}/api/booking/confirm`, {
       method: 'POST',
@@ -400,51 +406,64 @@ const configureCollect = useCallback(() => {
       }),
     });
 
-    // try to read JSON (even if status is 402 or 500)
+    // Parse JSON even on 4xx
     let j: any = null;
-    try {
-      j = await res.json();
-    } catch {
-      // ignore if no JSON body
-    }
+    try { j = await res.json(); } catch { /* ignore */ }
 
-    // if backend says not ok
     if (!res.ok) {
       const serverMsg =
         j?.message ||
         j?.error ||
         (res.status === 402
-          ? 'Your card was declined. Please try a different card.'
+          ? 'Your card was declined by the issuer (Do Not Honor). Please try a different card or call your bank.'
           : '');
+
+      // Show decline in the modal and stop
+      setPayStage('declined');
+      setPayMessage(serverMsg || `Payment failed (HTTP ${res.status}).`);
       throw new Error(serverMsg || `HTTP error! status: ${res.status}`);
     }
 
-    // if ok but backend sets success = false
     if (!j?.success) {
+      setPayStage('declined');
+      setPayMessage(j?.message || 'Payment / reservation failed.');
       throw new Error(j?.message || 'Payment / reservation failed');
     }
 
+    // --- 3) Success → briefly show "approved", then redirect
+    setPayStage('approved');
+    setPayMessage('Payment approved! Finalizing your reservation…');
 
-      // 3) Redirect to confirmation page
-      const payload = {
-        reservationNumber: j?.reservation?.reservationNumber || '',
-        hotelName: quote.roomTypeName || 'Your Dream Getaway',
-        arrivalDate: startTime, departureDate: endTime,
-        guests: { adult: adults, child: children, infant: infants, pet: petYN },
-        charges: { base: Number(quote.grossAmount), petFee: Number(quote.petFeeAmount || 0), total, currency: quote.currency },
-        payment: { transactionId: j?.payment?.transactionId || '' },
-        rewards: { earned: j?.rewards?.earned || 0 }
-      };
-      
-      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-      router.push(`/booking/confirm?payload=${encodeURIComponent(b64)}`);
-    } catch (e: any) {
-      console.error('Booking error:', e);
+    const payload = {
+      reservationNumber: j?.reservation?.reservationNumber || '',
+      hotelName: quote.roomTypeName || 'Your Dream Getaway',
+      arrivalDate: startTime,
+      departureDate: endTime,
+      guests: { adult: adults, child: children, infant: infants, pet: petYN },
+      charges: {
+        base: Number(quote.grossAmount),
+        petFee: Number(quote.petFeeAmount || 0),
+        total,
+        currency: quote.currency
+      },
+      payment: { transactionId: j?.payment?.transactionId || '' },
+      rewards: { earned: j?.rewards?.earned || 0 }
+    };
+
+    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+    router.push(`/booking/confirm?payload=${encodeURIComponent(b64)}`);
+  } catch (e: any) {
+    console.error('Booking error:', e);
+    // If modal already shows decline, keep its message; otherwise show inline error.
+    if (payStage !== 'declined') {
       setErr(e?.message || 'Checkout failed. Please try again.');
-    } finally {
-      setPaying(false);
     }
-  };
+  } finally {
+    setPaying(false);
+    // Do not close modal here on decline; user will close it via the button.
+  }
+};
+
 
   if (loading) return <div className="mx-auto max-w-4xl p-6">Loading…</div>;
   if (err) return <div className="mx-auto max-w-4xl p-6 text-red-600">{err}</div>;
@@ -658,6 +677,46 @@ const configureCollect = useCallback(() => {
           </section>
         </div>
       </div>
+      {payModalOpen && (
+      <div className="fixed inset-0 z-[1000] flex items-center justify-center bg-black/50">
+        <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-xl">
+          <div className="flex items-center gap-3">
+            {payStage === 'verifying' && (
+              <div className="h-5 w-5 animate-spin rounded-full border-2 border-gray-300 border-t-gray-700" />
+            )}
+            <h3 className="text-lg font-semibold">
+              {payStage === 'verifying' && 'Verifying payment'}
+              {payStage === 'declined' && 'Payment declined'}
+              {payStage === 'approved' && 'Payment approved'}
+            </h3>
+          </div>
+
+      <p className="mt-3 text-sm text-gray-700">{payMessage}</p>
+
+      {payStage === 'declined' && (
+        <div className="mt-5 flex items-center justify-end gap-2">
+          <button
+            onClick={() => setPayModalOpen(false)}
+            className="rounded-md border border-gray-300 px-4 py-2 text-sm"
+          >
+            Change card
+          </button>
+          <button
+            onClick={() => {
+              setPayStage('idle');
+              setPayMessage('');
+              setPayModalOpen(false);
+            }}
+            className="rounded-md bg-[#F59E0B] px-4 py-2 text-sm text-white hover:opacity-95"
+          >
+            Try again
+          </button>
+        </div>
+      )}
+    </div>
+  </div>
+)}
+
 
       <style jsx>{`
         #ccnumber, #ccexp, #cvv { 
