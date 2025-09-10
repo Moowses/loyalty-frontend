@@ -210,7 +210,7 @@ async function logout() {
           <Image
             src="/navhelpsvg.svg"
             alt="Help"
-            width={21}   // 5x5 px (Tailwind 5 = 1.25rem ≈ 20px)
+            width={21}  
             height={21}
             className="transition-transform duration-200 group-hover:-translate-y-1"
           />

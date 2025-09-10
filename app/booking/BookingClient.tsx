@@ -277,31 +277,37 @@ useEffect(() => {
   const tokenizationKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || "z78ur3-68sE66-c3YWM3-ZC6Q56";
 
   const configureCollect = useCallback(() => {
-    if (!window.CollectJS || configuredRef.current) return;
-    
-    // Check if DOM elements exist
-    if (!document.querySelector("#ccnumber") || !document.querySelector("#ccexp") || !document.querySelector("#cvv")) {
-      console.log('Collect.js fields not found in DOM');
-      return;
-    }
+  if (!window.CollectJS || configuredRef.current) return;
 
-    try {
-      window.CollectJS.configure({
-        variant: "inline",
-        fields: {
-          ccnumber: { selector: "#ccnumber", placeholder: "Card number" },
-          ccexp:    { selector: "#ccexp",    placeholder: "MM / YY" },
-          cvv:      { selector: "#cvv",      placeholder: "CVV" },
-        },
-        styleSniffer: "off",
-        
-      });
-      configuredRef.current = true;
-      console.log('Collect.js configured successfully');
-    } catch (error) {
-      console.error('Collect.js configuration error:', error);
-    }
-  }, []);
+  if (!document.querySelector("#ccnumber") || !document.querySelector("#ccexp") || !document.querySelector("#cvv")) {
+    console.log('Collect.js fields not found in DOM');
+    return;
+  }
+
+  try {
+    window.CollectJS.configure({
+      variant: "inline",
+      fields: {
+        ccnumber: { selector: "#ccnumber", placeholder: "Card number" },
+        ccexp:    { selector: "#ccexp",    placeholder: "MM / YY" },
+        cvv:      { selector: "#cvv",      placeholder: "CVV" },
+      },
+      // optional: tie Collect.js to your submit button’s selector
+      paymentSelector: "#bookNowBtn",
+      // IMPORTANT: receive token here
+      callback: (resp: any) => {
+        // We’ll resolve a waiting Promise from onBookNow (see next step)
+        (window as any).__collectJsResolve?.(resp);
+      },
+      styleSniffer: "off",
+    });
+    configuredRef.current = true;
+    console.log('Collect.js configured successfully');
+  } catch (error) {
+    console.error('Collect.js configuration error:', error);
+  }
+}, []);
+
 
   // Load Collect.js script and configure
   useEffect(() => {
@@ -332,8 +338,8 @@ useEffect(() => {
       return;
     }
     if (!window.CollectJS) {
-      setErr('Payment fields not ready. Please wait a moment and try again.');
-      return;
+    setErr('Payment fields not ready. Please wait a moment and try again.');
+    return;
     }
 
     try {
@@ -585,6 +591,7 @@ useEffect(() => {
               {err && <div className="text-sm text-red-600 p-2 bg-red-50 rounded">{err}</div>}
 
               <button
+                id="bookNowBtn"
                 type="submit"
                 disabled={paying || !available || nights <= 0}
                 className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
