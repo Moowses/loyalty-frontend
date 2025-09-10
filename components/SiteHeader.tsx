@@ -128,54 +128,76 @@ async function logout() {
           />
         </Link>
 
-        {/* Desktop Nav */}
-        <nav className="hidden lg:flex items-center items-end justify-center gap-10 ">
-          <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-2 group">
-            <Image src="/Navreservation.png" alt="Reserve" width={24} height={24} />
-            <span
-              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
-              style={{ color: BRAND }}
-            >
-              Reserve
-            </span>
-          </Link>
+       {/* Desktop Nav */}
+<nav className="hidden lg:flex items-center items-end justify-center gap-10 ">
+  {/* Reserve */}
+  <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+    <Image
+      src="/Navreservation.png"
+      alt="Reserve"
+      width={24}
+      height={24}
+      className="transition-transform duration-200 group-hover:-translate-y-1"
+    />
+    <span
+      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
+      >
+      Reserve
+    </span>
+  </Link>
 
-          <Link
-            href="https://dreamtripclub.com/rewards/"
-            className="flex flex-col items-center gap-2 group"
-          >
-            <Image src="/Navrewards.png" alt="Rewards" width={24} height={24} />
-            <span
-              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
-              style={{ color: BRAND }}
-            >
-              Rewards
-            </span>
-          </Link>
+  {/* Rewards */}
+  <Link href="https://dreamtripclub.com/rewards/" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+    <Image
+      src="/Navrewards.png"
+      alt="Rewards"
+      width={24}
+      height={24}
+      className="transition-transform duration-200 group-hover:-translate-y-1"
+    />
+    <span
+      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
+      >
+      Rewards
+    </span>
+  </Link>
 
-          <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-2 group">
-            <Image src="/Navoffer.png" alt="Offers" width={24} height={24} />
-            <span
-              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
-              style={{ color: BRAND }}
-            >
-              Offers
-            </span>
-          </Link>
+  {/* Offers */}
+  <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+    <Image
+      src="/Navoffer.png"
+      alt="Offers"
+      width={24}
+      height={24}
+      className="transition-transform duration-200 group-hover:-translate-y-1"
+    />
+  <span
+      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
+      >
+      Offers
+    </span>
+  </Link>
 
-          <Link
-            href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/#login'}
-            className="flex flex-col items-center gap-2 group"
-          >
-            <Image src="/Navaccount.png" alt="Account" width={24} height={24} />
-            <span
-              className="text-[9px] font-bold tracking-[0.01em] uppercase group-hover:underline"
-              style={{ color: BRAND }}
-            >
-              Account
-            </span>
-          </Link>
-        </nav>
+  {/* Account */}
+  <Link
+    href={loggedIn ? "https://member.dreamtripclub.com/dashboard" : "/#login"}
+    className="flex flex-col items-center gap-2 group transition-transform duration-200"
+  >
+    <Image
+      src="/Navaccount.png"
+      alt="Account"
+      width={24}
+      height={24}
+      className="transition-transform duration-200 group-hover:-translate-y-1"
+    />
+    <span
+      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
+      >
+      Account
+    </span>
+  </Link>
+</nav>
+
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-4">
