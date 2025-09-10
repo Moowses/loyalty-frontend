@@ -183,48 +183,69 @@ export default function DashboardPage() {
   const [data, setData] = useState<Dashboard | null>(null);
   const [reservations, setReservations] = useState<ReservationsPayload>(MOCK_RESV);
   const [loading, setLoading] = useState(true);
-  
+ 
 
 
-  useEffect(() => {
+ useEffect(() => {
   let cancelled = false;
   const controller = new AbortController();
 
   const run = async () => {
+    // 🔒 Fast client-side gate
+    const email = localStorage.getItem('email');
+    if (!email) {
+      if (!cancelled) {
+        setLoading(false);
+        alert('You must log in first.');
+      }
+      // redirect away (home / WP)
+      try { router.push('https://dreamtripclub.com'); } catch {}
+      return; // ⛔ stop here — don't load dashboard
+    }
+
     const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
-    
+
+    // (optional, safer) also verify cookie session:
+    // if (base) {
+    //   try {
+    //     const meRes = await fetch(`${base}/api/auth/me`, { credentials: 'include' });
+    //     const me = await meRes.json().catch(() => ({}));
+    //     if (!me?.loggedIn) {
+    //       setLoading(false);
+    //       alert('Your session expired. Please log in again.');
+    //       router.push('https://dreamtripclub.com');
+    //       return;
+    //     }
+    //   } catch {}
+    // }
+
+    // ... your existing API calls below ...
+    // NOTE: remove the old `const email = localStorage.getItem('email') || ''`
+    // since we already have `email` above and we know it exists
+
     if (base) {
-      const email = localStorage.getItem('email') || '';
       const token = localStorage.getItem('apiToken') || '';
-      
+
       try {
-        // FIXED: Use actual email, not hardcoded one
         const dres = await fetch(`${base}/api/user/dashboard`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ 
-            email: email  // 
-          }),
+          body: JSON.stringify({ email }),
           signal: controller.signal,
         });
         const dj = dres.ok ? await dres.json() : null;
-        
         if (!cancelled) setData(dj ? normalizeDashboard(dj) : null);
       } catch {
         if (!cancelled) setData(null);
       }
 
       try {
-        // FIXED: Add proper headers and body
         const rres = await fetch(`${base}/api/user/reservations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({
-            email: email,
-            token: token
-          }),
+          body: JSON.stringify({ email, token }),
           signal: controller.signal,
         });
         const rj = rres.ok ? await rres.json() : null;
@@ -234,7 +255,7 @@ export default function DashboardPage() {
       }
     }
 
-    // Fallback: localStorage
+    // Fallbacks (unchanged)
     if (!data) {
       try {
         const ls = localStorage.getItem('dashboardData');
@@ -256,7 +277,8 @@ export default function DashboardPage() {
     cancelled = true;
     controller.abort();
   };
-}, []); // eslint-disable-line react-hooks/exhaustive-deps
+}, [router]); // keep router in deps
+
 
   const handleLogout = () => router.push('/');
 
