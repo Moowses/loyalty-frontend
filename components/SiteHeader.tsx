@@ -257,8 +257,8 @@ async function logout() {
           ) : loggedIn ? (
             <button
               onClick={logout}
-              className="px-3 py-1.5 rounded-[12px] text-xs font-semibold border"
-              style={{ color: BRAND, borderColor: BRAND }}
+              className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
+               style={{ backgroundColor: BRAND }}
             >
               Log out
             </button>

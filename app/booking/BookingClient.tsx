@@ -111,19 +111,45 @@ export default function BookingPage() {
 
   // poppulate member number from cache if available or localstorage
 
-  useEffect(() => {
+ // Populate guest details from cache if available in localStorage
+// Populate guest details from cache if available in localStorage
+useEffect(() => {
   try {
     const ls = localStorage.getItem('dashboardData');
     if (ls) {
       const dash = JSON.parse(ls);
-      const m = dash?.membershipNo || dash?.membershipno || dash?.membershipNumber;
+      
+      // Extract data from the dashboard response structure
+      const userData = dash?.data?.[0] || dash;
+      
+      const m = userData?.membershipno || userData?.membershipNo || userData?.membershipNumber;
       if (m) setMemberNumber(String(m));
+      
+      // Populate first name, last name, and email
+      const fn = userData?.firstname || userData?.firstName;
+      if (fn) setFirstName(String(fn));
+      
+      const ln = userData?.lastname || userData?.lastName;
+      if (ln) setLastName(String(ln));
+      
+      const em = userData?.primaryemail || userData?.primaryEmail || userData?.email;
+      if (em) setEmail(String(em));
     } else {
+      // Fallback to individual localStorage items
       const cachedMember = localStorage.getItem('membershipno');
       if (cachedMember) setMemberNumber(String(cachedMember));
+      
+      const cachedFirstName = localStorage.getItem('firstname');
+      if (cachedFirstName) setFirstName(String(cachedFirstName));
+      
+      const cachedLastName = localStorage.getItem('lastname');
+      if (cachedLastName) setLastName(String(cachedLastName));
+      
+      const cachedEmail = localStorage.getItem('primaryemail');
+      if (cachedEmail) setEmail(String(cachedEmail));
     }
   } catch (e) {
-    console.error('Failed to load member number:', e);
+    console.error('Failed to load guest details:', e);
   }
 }, []);
 
@@ -463,10 +489,7 @@ export default function BookingPage() {
                     <option value="Other">Other</option>
                   </select>
                 </div>
-                <div className="flex items-center gap-2 text-sm text-gray-700">
-                  <input id="smsOpt" type="checkbox" className="h-4 w-4 rounded border-gray-300" checked={smsOpt} onChange={e => setSmsOpt(e.target.checked)} />
-                  <label htmlFor="smsOpt">Send my confirmation details by SMS.</label>
-                </div>
+              
                 <Field label="Address 1*" value={address1} onChange={setAddress1} required />
                 <Field label="Address 2" value={address2} onChange={setAddress2} />
                 <Field label="City*" value={city} onChange={setCity} required />
@@ -547,9 +570,7 @@ export default function BookingPage() {
                     <span>I agree to receive email communications</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300"
-                      checked={consentSms} onChange={e => setConsentSms(e.target.checked)} />
-                    <span>I agree to receive SMS communications</span>
+                    
                   </label>
                 </div>
               </div>
