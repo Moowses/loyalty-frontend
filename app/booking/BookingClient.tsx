@@ -276,11 +276,16 @@ useEffect(() => {
   const configuredRef = useRef(false);
   const tokenizationKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || "z78ur3-68sE66-c3YWM3-ZC6Q56";
 
-  const configureCollect = useCallback(() => {
+const configureCollect = useCallback(() => {
   if (!window.CollectJS || configuredRef.current) return;
 
-  if (!document.querySelector("#ccnumber") || !document.querySelector("#ccexp") || !document.querySelector("#cvv")) {
-    console.log('Collect.js fields not found in DOM');
+  // ensure payment fields exist
+  if (
+    !document.querySelector("#ccnumber") ||
+    !document.querySelector("#ccexp") ||
+    !document.querySelector("#cvv")
+  ) {
+    console.log("Collect.js fields not found in DOM");
     return;
   }
 
@@ -289,24 +294,32 @@ useEffect(() => {
       variant: "inline",
       fields: {
         ccnumber: { selector: "#ccnumber", placeholder: "Card number" },
-        ccexp:    { selector: "#ccexp",    placeholder: "MM / YY" },
-        cvv:      { selector: "#cvv",      placeholder: "CVV" },
+        ccexp: { selector: "#ccexp", placeholder: "MM / YY" },
+        cvv: { selector: "#cvv", placeholder: "CVV" },
       },
-      // optional: tie Collect.js to your submit button’s selector
+
+      // (Optional) Quiet the Apple/Google Pay abstraction in dev:
+      paymentRequest: { enabled: false },
+
+      // Tie Collect.js to your submit button
       paymentSelector: "#bookNowBtn",
-      // IMPORTANT: receive token here
+
+      // Hand the token back to app code
       callback: (resp: any) => {
-        // We’ll resolve a waiting Promise from onBookNow (see next step)
-        (window as any).__collectJsResolve?.(resp);
+        (window as any).__collectResolve?.(resp);
+        (window as any).__collectResolve = undefined;
       },
+
       styleSniffer: "off",
     });
+
     configuredRef.current = true;
-    console.log('Collect.js configured successfully');
+    console.log("Collect.js configured successfully");
   } catch (error) {
-    console.error('Collect.js configuration error:', error);
+    console.error("Collect.js configuration error:", error);
   }
 }, []);
+
 
 
   // Load Collect.js script and configure
@@ -346,30 +359,28 @@ useEffect(() => {
       setPaying(true);
 
       // 1) Tokenize card
-      const paymentToken = await new Promise<string>((resolve, reject) => {
-        const amt = Number(quote?.grandTotal ?? quote?.grossAmount ?? 0) || 0;
+    const paymentToken = await new Promise<string>((resolve, reject) => {
+  if (!window.CollectJS) {
+    reject(new Error("Payment fields not ready. Please wait a moment and try again."));
+    return;
+  }
 
-        if (!window.CollectJS) {
-          return reject(new Error("Payment fields not ready. Please try again."));
-        }
+  (window as any).__collectResolve = (resp: any) => {
+    const tok = resp?.payment_token || resp?.token;
+    if (tok) resolve(tok);
+    else reject(new Error(resp?.error?.message || resp?.error || "Tokenization failed"));
+  };
 
-        window.CollectJS.tokenize(
-          { amount: amt },
-          (resp: any) => {
-            console.log('Tokenization response:', resp);
-            const tok: string | undefined = resp?.payment_token || resp?.token;
-            if (tok) {
-              resolve(tok);
-            } else {
-              reject(new Error(resp?.error?.message || resp?.error || "Tokenization failed"));
-            }
-          },
-          (err: any) => {
-            console.error('Tokenization error:', err);
-            reject(new Error(err?.message || "Tokenization error"));
-          }
-        );
-      });
+  try {
+    // Directly start Collect.js' payment request (works even without Apple/Google Pay)
+    (window as any).CollectJS.startPaymentRequest?.();
+    // Fallback: programmatically click the bound button (triggers paymentSelector)
+    const btn = document.getElementById("bookNowBtn") as HTMLButtonElement | null;
+    if (btn) btn.click();
+  } catch (err) {
+    reject(new Error("Unable to start payment request."));
+  }
+});
 
       // 2) Confirm on backend
       const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
