@@ -208,7 +208,7 @@ async function logout() {
         >
           HELP
           <Image
-            src="/navhelp.png"
+            src="/navhelpsvg.svg"
             alt="Help"
             width={21}   // 5x5 px (Tailwind 5 = 1.25rem ≈ 20px)
             height={21}
