@@ -117,7 +117,7 @@ async function logout() {
 
   return (
     <header className="w-full border-b border-gray-200 bg-white ">
-      <div className="mx-auto max-w-[1690px] px-6 md:px-8 py-2 md:py-3 lg:py-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 md:h-[90px]">
+      <div className="mx-auto max-w-[1160px] px-6 md:px-8 py-2 md:py-3 lg:py-4 grid grid-cols-[auto_1fr_auto] items-center gap-4 md:h-[90px]">
         {/* Brand */}
         <Link href="https://dreamtripclub.com" className="flex items-center gap-3 shrink-0">
           <Image
