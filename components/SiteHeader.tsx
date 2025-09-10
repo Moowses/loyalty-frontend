@@ -92,6 +92,7 @@ async function logout() {
       method: 'POST',
       credentials: 'include',
     });
+    sessionStorage.setItem('justLoggedOut', 'true');
   } catch (error) {
     console.error('Logout error:', error);
   } finally {
@@ -109,7 +110,7 @@ async function logout() {
     });
 
     // Force a complete page reload to clear any cached state
-    window.location.href = '/';
+    window.location.href = 'https://dreamtripclub.com';
     window.location.reload(); // Force reload to clear everything
   }
 }

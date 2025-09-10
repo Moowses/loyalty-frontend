@@ -190,18 +190,27 @@ export default function DashboardPage() {
   let cancelled = false;
   const controller = new AbortController();
 
-  const run = async () => {
-    // 🔒 Fast client-side gate
-    const email = localStorage.getItem('email');
-    if (!email) {
-      if (!cancelled) {
-        setLoading(false);
-        alert('You must log in first.');
+const run = async () => {
+  const email = localStorage.getItem('email');
+
+  if (!email) {
+    if (!cancelled) {
+      setLoading(false);
+
+      // check if this is because of logout
+      const justLoggedOut = sessionStorage.getItem('justLoggedOut');
+      if (justLoggedOut) {
+        sessionStorage.removeItem('justLoggedOut');
+        router.push('https://dreamtripclub.com'); // 
+      } else {
+        setTimeout(() => {
+          alert('You must log in first.');
+          router.push('https://dreamtripclub.com');
+        }, 3000);
       }
-      // redirect away (home / WP)
-      try { router.push('https://dreamtripclub.com'); } catch {}
-      return; // ⛔ stop here — don't load dashboard
     }
+    return;
+  }
 
     const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
 
