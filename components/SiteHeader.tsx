@@ -285,13 +285,16 @@ async function logout() {
       "
     >
       {/* Close button */}
-      <button
-        onClick={() => setShowLoginModal(false) }
-        className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
-        aria-label="Close"
-      >
-        ×
-      </button>
+     <button
+  onClick={() => {
+    setShowLoginModal(false);
+    setTimeout(() => window.location.reload(), 50);
+  }}
+  className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
+  aria-label="Close"
+>
+  ×
+</button>
 
       {/* Iframe */}
       <iframe
