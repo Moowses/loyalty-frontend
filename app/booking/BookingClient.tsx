@@ -382,29 +382,48 @@ const configureCollect = useCallback(() => {
   }
 });
 
-      // 2) Confirm on backend
-      const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-      const res = await fetch(`${base}/api/booking/confirm`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          quote,
-          guest: {
-            firstName, lastName, email,
-            phone: '',
-            country, city, address: `${address1}${address2 ? ', ' + address2 : ''}`,
-            membershipNo: memberNumber || '',
-          },
-          payment: { token: paymentToken },
-        }),
-      });
+     
+        // 2) Confirm on backend
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+    const res = await fetch(`${base}/api/booking/confirm`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        quote,
+        guest: {
+          firstName, lastName, email,
+          phone: '',
+          country, city, address: `${address1}${address2 ? ', ' + address2 : ''}`,
+          membershipNo: memberNumber || '',
+        },
+        payment: { token: paymentToken },
+      }),
+    });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+    // try to read JSON (even if status is 402 or 500)
+    let j: any = null;
+    try {
+      j = await res.json();
+    } catch {
+      // ignore if no JSON body
+    }
 
-      const j = await res.json();
-      if (!j.success) throw new Error(j.message || 'Payment / reservation failed');
+    // if backend says not ok
+    if (!res.ok) {
+      const serverMsg =
+        j?.message ||
+        j?.error ||
+        (res.status === 402
+          ? 'Your card was declined. Please try a different card.'
+          : '');
+      throw new Error(serverMsg || `HTTP error! status: ${res.status}`);
+    }
+
+    // if ok but backend sets success = false
+    if (!j?.success) {
+      throw new Error(j?.message || 'Payment / reservation failed');
+    }
+
 
       // 3) Redirect to confirmation page
       const payload = {
