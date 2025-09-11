@@ -69,6 +69,7 @@ export default function MiniDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   
+  
   useEffect(() => {
     const fetchData = async () => {
       const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');

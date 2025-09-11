@@ -31,8 +31,6 @@ export default function LoginClient() {
   // slide mode: login | signup | reset
     const [isReset, setIsReset] = useState(false);
     const [rpEmail, setRpEmail] = useState('');
-    const [rpPass1, setRpPass1] = useState('');
-    const [rpPass2, setRpPass2] = useState('');
     const [rpBusy, setRpBusy] = useState(false);
     const [rpMsg, setRpMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
@@ -277,131 +275,109 @@ return (
         <MiniDashboard />
       ) : (
         <>
-          {/* RESET PASSWORD SLIDE - Moved to top level */}
-          {isReset ? (
-            <>
-              <div className="mb-4">
-                <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">
-                  Reset your password
-                </h1>
-                <p className="mt-2 text-[14px] font-semibold text-neutral-900">
-                  Enter your account email and your new password.
-                </p>
-              </div>
+         {/* RESET PASSWORD SLIDE - Email-only request */}
+{isReset ? (
+  <>
+    <div className="mb-4">
+      <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">
+        Reset your password
+      </h1>
+      <p className="mt-2 text-[14px] font-semibold text-neutral-900">
+        Enter your account email, and we’ll send you a reset link.
+      </p>
+    </div>
 
-              {rpMsg && (
-                <div
-                  className={`mb-4 rounded-md border px-3 py-2 text-sm ${
-                    rpMsg.type === 'ok'
-                      ? 'border-green-300 bg-green-50 text-green-800'
-                      : 'border-red-300 bg-red-50 text-red-800'
-                  }`}
-                >
-                  {rpMsg.text}
-                </div>
-              )}
+    {rpMsg && (
+      <div
+        className={`mb-4 rounded-md border px-3 py-2 text-sm ${
+          rpMsg.type === 'ok'
+            ? 'border-green-300 bg-green-50 text-green-800'
+            : 'border-red-300 bg-red-50 text-red-800'
+        }`}
+      >
+        {rpMsg.text}
+      </div>
+    )}
 
-              <form
-                onSubmit={async (e) => {
-                  e.preventDefault();
-                  setRpMsg(null);
-                  if (!rpEmail || !rpPass1) {
-                    setRpMsg({ type: 'err', text: 'Please enter your email and a new password.' });
-                    return;
-                  }
-                  if (rpPass1 !== rpPass2) {
-                    setRpMsg({ type: 'err', text: 'Passwords do not match.' });
-                    return;
-                  }
-                  try {
-                    setRpBusy(true);
-                    const res = await fetch(
-                      `${apiBase}/api/auth/reset-password`,
-                      {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ email: rpEmail, newPassword: rpPass1 }),
-                      }
-                    );
-                    const json = await res.json().catch(() => ({}));
-                    if (!res.ok || json?.success !== true) {
-                      setRpMsg({ type: 'err', text: json?.message || 'Password reset failed. Please try again.' });
-                    } else {
-                      setRpMsg({ type: 'ok', text: json?.message || 'Password reset successful. You can now sign in.' });
-                      // Pre-fill login email and slide back after a moment
-                      setForm((prev) => ({ ...prev, email: rpEmail }));
-                      setTimeout(() => {
-                        setIsReset(false);
-                        setRpMsg(null);
-                      }, 1500);
-                    }
-                  } catch {
-                    setRpMsg({ type: 'err', text: 'Network error. Please try again.' });
-                  } finally {
-                    setRpBusy(false);
-                  }
-                }}
-                className="space-y-4"
-              >
-                <div>
-                  <label className="mb-1 block text-sm text-neutral-700">Email</label>
-                  <input
-                    type="email"
-                    value={rpEmail}
-                    onChange={(e) => setRpEmail(e.target.value)}
-                    required
-                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm text-neutral-700">New Password</label>
-                  <input
-                    type="password"
-                    value={rpPass1}
-                    onChange={(e) => setRpPass1(e.target.value)}
-                    required
-                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                  />
-                </div>
-                <div>
-                  <label className="mb-1 block text-sm text-neutral-700">Confirm New Password</label>
-                  <input
-                    type="password"
-                    value={rpPass2}
-                    onChange={(e) => setRpPass2(e.target.value)}
-                    required
-                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                  />
-                </div>
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault();
+        setRpMsg(null);
+        if (!rpEmail) {
+          setRpMsg({ type: 'err', text: 'Please enter your email.' });
+          return;
+        }
+        try {
+          setRpBusy(true);
+          const res = await fetch(`${apiBase}/api/auth/request-password-reset`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: rpEmail.trim().toLowerCase() }),
+          });
+          const json = await res.json().catch(() => ({}));
+          if (!res.ok || json?.success !== true) {
+            setRpMsg({ type: 'err', text: json?.message || 'Request failed. Please try again.' });
+          } else {
+            setRpMsg({
+              type: 'ok',
+              text: json?.message || `Reset link sent to ${rpEmail}.`,
+            });
+            // Optionally return to sign-in after a short pause
+            setTimeout(() => {
+              setIsReset(false);
+              setRpMsg(null);
+            }, 2000);
+          }
+        } catch {
+          setRpMsg({ type: 'err', text: 'Network error. Please try again.' });
+        } finally {
+          setRpBusy(false);
+        }
+      }}
+      className="space-y-4"
+    >
+      <div>
+        <label className="mb-1 block text-sm text-neutral-700">Email</label>
+        <input
+          type="email"
+          value={rpEmail}
+          onChange={(e) => setRpEmail(e.target.value)}
+          required
+          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+          placeholder="you@example.com"
+        />
+      </div>
 
-                <div className="flex items-center gap-3 pt-1">
-                  <button
-                    type="submit"
-                    disabled={rpBusy}
-                    className={`w-[160px] rounded-full px-5 py-2.5 text-sm font-bold text-white ${
-                      rpBusy ? 'bg-neutral-400' : 'bg-[#211F45] hover:opacity-90'
-                    }`}
-                  >
-                    {rpBusy ? 'Processing…' : 'Reset Password'}
-                  </button>
+      <div className="flex items-center gap-3 pt-1">
+        <button
+          type="submit"
+          disabled={rpBusy}
+          className={`w-[160px] rounded-full px-5 py-2.5 text-sm font-bold text-white ${
+            rpBusy ? 'bg-neutral-400' : 'bg-[#211F45] hover:opacity-90'
+          }`}
+        >
+          {rpBusy ? 'Sending…' : 'Send Reset Link'}
+        </button>
 
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsReset(false);     // back to login
-                      setRpMsg(null);
-                    }}
-                    className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
-                  >
-                    Back to Sign In
-                  </button>
-                </div>
-              </form>
+        <button
+          type="button"
+          onClick={() => {
+            setIsReset(false);   // back to login
+            setRpMsg(null);
+          }}
+          className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+        >
+          Back to Sign In
+        </button>
+      </div>
+    </form>
 
-              {/* Divider */}
-              <hr className="my-6 border-neutral-200" />
-            </>
-          ) : (
+    {/* Divider */}
+    <hr className="my-6 border-neutral-200" />
+  </>
+) : (
+  /* LOGIN/SIGNUP FORMS - Only show when not in reset mode */
+
             /* LOGIN/SIGNUP FORMS - Only show when not in reset mode */
             <>
               {/* Your existing login form JSX */}
@@ -588,8 +564,6 @@ return (
                     e.preventDefault();
                     setRpMsg(null);
                     setRpEmail(form.email || localStorage.getItem('login_email') || '');
-                    setRpPass1(form.password  || localStorage.getItem('login_Pass') || '');
-                    setRpPass2(form.password  || localStorage.getItem('login_Pass') || '');
                     setIsReset(true);     // slide to reset screen
                     setIsSignup(false);   // ensure signup slide is off
                   }}
