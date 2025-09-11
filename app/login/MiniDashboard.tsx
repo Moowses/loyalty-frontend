@@ -181,7 +181,7 @@ async function handleLogout() {
     localStorage.removeItem('dashboardData');
 
     window.parent?.postMessage({ type: 'logout-complete' }, '*');
-    window.location.replace('https://dreamtripclub.com');
+    window.location.reload();
   }
 }
 
