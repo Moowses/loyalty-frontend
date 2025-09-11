@@ -43,6 +43,36 @@ function normalizeDashboard(json: any): DashboardData {
   return { name, firstName, lastName, primaryEmail, membershipNo, tier, totalPoints, transactions, stays, pointsToNextTier };
 }
 
+const CLEAR_KEYS = [
+  // canonical blob
+  'dashboardData',
+
+  // canonical (camelCase) keys used by booking
+  'email', 'firstName', 'lastName', 'membershipNo',
+
+  // legacy lowercase keys kept for back-compat
+  'primaryemail', 'firstname', 'lastname', 'membershipno',
+
+  // misc
+  'apiToken', 'dtc_auth_changed', 'login_email', 'login_password', 'remember_me'
+];
+
+function clearAllClientStorage() {
+  try {
+    CLEAR_KEYS.forEach(k => {
+      localStorage.removeItem(k);
+      sessionStorage.removeItem(k);
+    });
+    // best-effort cookie clear for this origin
+    document.cookie.split(';').forEach(c => {
+      const [name] = c.split('=');
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    });
+  } catch (e) {
+    console.warn('clear storage error', e);
+  }
+}
+
 /* ========= UI Components (simplified from main dashboard) ========= */
 function Card({
   title,
@@ -171,36 +201,30 @@ export default function MiniDashboard() {
     fetchData();
   }, []);
 
-  async function handleLogout () {
-     try {
-    await fetch(`${API_BASE}/api/auth/logout`, {
-      method: 'POST',
-      credentials: 'include',
-    });
-    sessionStorage.setItem('justLoggedOut', 'true');
-  } catch (error) {
-    console.error('Logout error:', error);
+async function handleLogout() {
+  try {
+    // 1) server logout on API (expires auth cookies)
+    await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
+    // 2) same-origin clear on MEMBER to wipe localStorage/IDB/cookies/cache there
+    await fetch('/api/client-clear', { method: 'POST', credentials: 'include' });
+  } catch (e) {
+    console.error('Logout error:', e);
   } finally {
-    // Clear ALL client-side storage
-    localStorage.removeItem('email');
-     localStorage.removeItem('firstname');
-    localStorage.removeItem('lastname');
-    localStorage.removeItem('apiToken');
-    localStorage.removeItem('dashboardData');
-    localStorage.removeItem('dtc_auth_changed');
-    localStorage.removeItem('membershipno');
-    
-    // Clear all cookies
+    // belt & suspenders immediate clear (safe to keep)
+    clearAllClientStorage();
+    window.parent?.postMessage({ type: 'logout-complete' }, '*');
+    window.location.replace('https://dreamtripclub.com');
+     // Clear all cookies
     document.cookie.split(';').forEach(cookie => {
       const [name] = cookie.split('=');
       document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
     });
 
-    // Force a complete page reload to clear any cached state
-    window.location.href = 'https://dreamtripclub.com';
-    window.location.reload(); // Force reload to clear everything
   }
-  };
+}
+   
+
+ 
 
   if (loading) {
     return (
