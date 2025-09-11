@@ -16,6 +16,7 @@ interface DashboardData {
   pointsToNextTier?: number;
   transactions?: any[];
 }
+const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
 /* ========= Normalizer (updated to extract firstName, lastName, primaryEmail) ========= */
 function normalizeDashboard(json: any): DashboardData {
@@ -92,10 +93,7 @@ export default function MiniDashboard() {
     if (dash.primaryEmail) localStorage.setItem('primaryemail', String(dash.primaryEmail));
 
     // Cross-subdomain cookies: iframe (dreamtripclub.com) + member app (member.dreamtripclub.com)
-    if (dash.membershipNo) setCookie('membershipNo', String(dash.membershipNo));
-    if (dash.firstName)    setCookie('firstName', String(dash.firstName));
-    if (dash.lastName)     setCookie('lastName', String(dash.lastName));
-    if (dash.primaryEmail) setCookie('email', String(dash.primaryEmail));
+
   } catch {}
 
   // Let parent (WordPress) know too
@@ -173,18 +171,33 @@ export default function MiniDashboard() {
     fetchData();
   }, []);
 
-  const handleLogout = () => {
+  async function handleLogout () {
+     try {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+    sessionStorage.setItem('justLoggedOut', 'true');
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    // Clear ALL client-side storage
     localStorage.removeItem('email');
     localStorage.removeItem('apiToken');
     localStorage.removeItem('dashboardData');
+    localStorage.removeItem('dtc_auth_changed');
     localStorage.removeItem('membershipno');
-    localStorage.removeItem('firstname');
-    localStorage.removeItem('lastname');
-    localStorage.removeItem('primaryemail');
-    //remove cache
-    document.cookie = 'email=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    document.cookie = 'apiToken=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
-    window.location.reload();
+    
+    // Clear all cookies
+    document.cookie.split(';').forEach(cookie => {
+      const [name] = cookie.split('=');
+      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+    });
+
+    // Force a complete page reload to clear any cached state
+    window.location.href = 'https://dreamtripclub.com';
+    window.location.reload(); // Force reload to clear everything
+  }
   };
 
   if (loading) {
