@@ -40,6 +40,14 @@ const MOCK_DASH: Dashboard = {
 };
 const MOCK_RESV: ReservationsPayload = { upcoming: [], past: [] };
 
+// cookie helper
+const getCookie = (name: string): string => {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(
+    new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)')
+  );
+  return m ? decodeURIComponent(m[1]) : '';
+};
 /* ========= Normalizers ========= */
 function normalizeDashboard(json: any): Dashboard {
   const rec =
@@ -190,52 +198,63 @@ export default function DashboardPage() {
   let cancelled = false;
   const controller = new AbortController();
 
-const run = async () => {
-  const membershipno = localStorage.getItem('membershipno');
+  const HOME = 'https://dreamtripclub.com';
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || '';
 
-  if (!membershipno) {
-    if (!cancelled) {
-      setLoading(false);
-
-      // check if this is because of logout
-      const justLoggedOut = sessionStorage.getItem('justLoggedOut');
-      if (justLoggedOut) {
-        sessionStorage.removeItem('justLoggedOut');
-        router.push('https://dreamtripclub.com'); // 
-      } else {
-        setTimeout(() => {
-          alert('You must log in first.');
-          router.push('https://dreamtripclub.com');
-        }, 3000);
-      }
+  const safeRedirect = (becauseLogout = false) => {
+    if (cancelled) return;
+    setLoading(false);
+    if (becauseLogout || sessionStorage.getItem('justLoggedOut')) {
+      sessionStorage.removeItem('justLoggedOut');
+      router.replace(HOME);
+      return;
     }
-    return;
-  }
+    setTimeout(() => {
+      alert('You must log in first.');
+      router.replace(HOME);
+    }, 3000);
+  };
 
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '');
+  const run = async () => {
+    // 1) Read email from cookie (set by MiniDashboard). This is our primary hint.
+    const cookieEmail = getCookie('dtc_email');
 
-    // (optional, safer) also verify cookie session:
-    // if (base) {
-    //   try {
-    //     const meRes = await fetch(`${base}/api/auth/me`, { credentials: 'include' });
-    //     const me = await meRes.json().catch(() => ({}));
-    //     if (!me?.loggedIn) {
-    //       setLoading(false);
-    //       alert('Your session expired. Please log in again.');
-    //       router.push('https://dreamtripclub.com');
-    //       return;
-    //     }
-    //   } catch {}
-    // }
+    // 2) Authoritative session check via backend (uses HttpOnly dtc_session)
+    let loggedIn = false;
+    try {
+      if (base) {
+        const meRes = await fetch(`${base}/api/auth/me`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const me = await meRes.json().catch(() => ({}));
+        loggedIn = !!me?.loggedIn;
+      }
+    } catch {
+      // network error → fall back to cookie hint
+      loggedIn = !!cookieEmail;
+    }
 
-    // ... your existing API calls below ...
-    // NOTE: remove the old `const email = localStorage.getItem('email') || ''`
-    // since we already have `email` above and we know it exists
+    if (!loggedIn) {
+      safeRedirect(false);
+      return;
+    }
 
-    if (base) {
-      const token = localStorage.getItem('apiToken') || '';
+    // 3) Proceed to load dashboard data
+    // Prefer cookie email; fallback to legacy localStorage if missing
+    const email = cookieEmail || localStorage.getItem('email') || '';
 
-      try {
+    if (!email) {
+      safeRedirect(false);
+      return;
+    }
+
+    // Legacy token support (will be omitted if not present)
+    const legacyToken = localStorage.getItem('apiToken') || '';
+
+    try {
+      if (base) {
+        // Dashboard
         const dres = await fetch(`${base}/api/user/dashboard`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -245,40 +264,33 @@ const run = async () => {
         });
         const dj = dres.ok ? await dres.json() : null;
         if (!cancelled) setData(dj ? normalizeDashboard(dj) : null);
-      } catch {
-        if (!cancelled) setData(null);
-      }
 
-      try {
+        // Reservations (send token only if legacy still needs it)
         const rres = await fetch(`${base}/api/user/reservations`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
-          body: JSON.stringify({ email, token }),
+          body: JSON.stringify(legacyToken ? { email, token: legacyToken } : { email }),
           signal: controller.signal,
         });
         const rj = rres.ok ? await rres.json() : null;
         if (!cancelled) setReservations(rj ? normalizeReservations(rj) : MOCK_RESV);
-      } catch {
-        if (!cancelled) setReservations(MOCK_RESV);
       }
+    } catch {
+      if (!cancelled) {
+        // Fallbacks
+        try {
+          const ls = localStorage.getItem('dashboardData');
+          if (ls) setData(normalizeDashboard(JSON.parse(ls)));
+        } catch {}
+        try {
+          const rs = localStorage.getItem('reservations');
+          if (rs) setReservations(normalizeReservations(JSON.parse(rs)));
+        } catch {}
+      }
+    } finally {
+      if (!cancelled) setLoading(false);
     }
-
-    // Fallbacks (unchanged)
-    if (!data) {
-      try {
-        const ls = localStorage.getItem('dashboardData');
-        if (ls) setData(normalizeDashboard(JSON.parse(ls)));
-      } catch {}
-    }
-    if (!reservations?.past?.length && !reservations?.upcoming?.length) {
-      try {
-        const rs = localStorage.getItem('reservations');
-        if (rs) setReservations(normalizeReservations(JSON.parse(rs)));
-      } catch {}
-    }
-
-    if (!cancelled) setLoading(false);
   };
 
   run();
@@ -286,7 +298,8 @@ const run = async () => {
     cancelled = true;
     controller.abort();
   };
-}, [router]); // keep router in deps
+}, [router]);
+
 
 
   const handleLogout = () => router.push('/');
