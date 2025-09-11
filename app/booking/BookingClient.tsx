@@ -118,6 +118,7 @@ const [payMessage, setPayMessage] = useState('');
 useEffect(() => {
   try {
     const ls = localStorage.getItem('dashboardData');
+    console.log(ls)
     if (ls) {
       const dash = JSON.parse(ls);
       

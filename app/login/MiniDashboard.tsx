@@ -22,7 +22,7 @@ function normalizeDashboard(json: any): DashboardData {
   const rec = json?.dashboard ?? (Array.isArray(json?.data) ? json.data[0] : json) ?? {};
 
   const firstName = rec.firstname ?? rec.firstName ?? rec.name?.split?.(' ')?.[0] ?? '';
-  const lastName = rec.lastname ?? rec.lastName ?? '';
+  const lastName = rec.lastname ?? rec.lastName ?? (rec.name ? rec.name.split(' ').slice(1).join(' ') : '') ??'';
   const name = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : (rec.name ?? 'Member');
   const primaryEmail = rec.primaryemail ?? rec.primaryEmail ?? rec.email ?? '';
 
@@ -74,36 +74,45 @@ export default function MiniDashboard() {
       const email = localStorage.getItem('email') || '';
 
       // helper: persist + emit
-      const persist = (dash: DashboardData) => {
-        try {
-          localStorage.setItem('dashboardData', JSON.stringify(dash));
-          if (dash.membershipNo) {
-            localStorage.setItem('membershipno', String(dash.membershipNo));
-          }
-          if (dash.firstName) {
-            localStorage.setItem('firstname', String(dash.firstName));
-          }
-          if (dash.lastName) {
-            localStorage.setItem('lastname', String(dash.lastName));
-          }
-          if (dash.primaryEmail) {
-            localStorage.setItem('primaryemail', String(dash.primaryEmail));
-          }
-        } catch {}
-        // Let parent (booking page) know if this runs in a popup/iframe
-        window.parent?.postMessage(
-          { 
-            type: 'member-data', 
-            membershipNo: dash.membershipNo, 
-            name: dash.name, 
-            firstName: dash.firstName,
-            lastName: dash.lastName,
-            primaryEmail: dash.primaryEmail,
-            tier: dash.tier 
-          },
-          '*'
-        );
-      };
+     const persist = (dash: DashboardData) => {
+  try {
+    // Keep a canonical blob for quick reads elsewhere
+    localStorage.setItem('dashboardData', JSON.stringify(dash));
+
+    // Canonical keys (recommended for booking)
+    if (dash.membershipNo) localStorage.setItem('membershipNo', String(dash.membershipNo));
+    if (dash.firstName)    localStorage.setItem('firstName', String(dash.firstName));
+    if (dash.lastName)     localStorage.setItem('lastName', String(dash.lastName));
+    if (dash.primaryEmail) localStorage.setItem('email', String(dash.primaryEmail));
+
+    // Legacy (back-compat with any existing code still reading lowercase keys)
+    if (dash.membershipNo) localStorage.setItem('membershipno', String(dash.membershipNo));
+    if (dash.firstName)    localStorage.setItem('firstname', String(dash.firstName));
+    if (dash.lastName)     localStorage.setItem('lastname', String(dash.lastName));
+    if (dash.primaryEmail) localStorage.setItem('primaryemail', String(dash.primaryEmail));
+
+    // Cross-subdomain cookies: iframe (dreamtripclub.com) + member app (member.dreamtripclub.com)
+    if (dash.membershipNo) setCookie('membershipNo', String(dash.membershipNo));
+    if (dash.firstName)    setCookie('firstName', String(dash.firstName));
+    if (dash.lastName)     setCookie('lastName', String(dash.lastName));
+    if (dash.primaryEmail) setCookie('email', String(dash.primaryEmail));
+  } catch {}
+
+  // Let parent (WordPress) know too
+  window.parent?.postMessage(
+    {
+      type: 'member-data',
+      membershipNo: dash.membershipNo,
+      name: dash.name,
+      firstName: dash.firstName,
+      lastName: dash.lastName,
+      primaryEmail: dash.primaryEmail,
+      tier: dash.tier,
+    },
+    '*'
+  );
+};
+
 
       try {
         // 1) Fresh API (best)
