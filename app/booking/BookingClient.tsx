@@ -106,7 +106,11 @@ export default function BookingPage() {
   const [consentEmail, setConsentEmail] = useState(false);
   const [consentSms, setConsentSms]     = useState(false);
 
-
+const getCookie = (name: string): string => {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
+};
 
 // Modal state for payment process
 const [payModalOpen, setPayModalOpen] = useState(false);
@@ -114,51 +118,66 @@ const [payStage, setPayStage] = useState<'idle' | 'verifying' | 'declined' | 'ap
 const [payMessage, setPayMessage] = useState('');
 
   // poppulate member number from cache if available or localstorage
-
 useEffect(() => {
   try {
-    const ls = localStorage.getItem('dashboardData');
-    console.log(ls)
-    if (ls) {
-      const dash = JSON.parse(ls);
-      
-      // Extract data from the dashboard response structure
-      const userData = dash?.data?.[0] || dash;
-      
-      const m = userData?.membershipno || userData?.membershipNo || userData?.membershipNumber;
-      if (m) setMemberNumber(String(m));
-      
-      // Populate first name, last name, and email
-      const fn = userData?.firstname || userData?.firstName;
-      if (fn) setFirstName(String(fn));
-      
-      const ln = userData?.lastname || userData?.lastName;
-      if (ln) setLastName(String(ln));
-      
-      const em = userData?.primaryemail || userData?.primaryEmail || userData?.email;
-      if (em) setEmail(String(em));
-      console.log('Member number from cache or storage:', memberNumber,firstName,lastName,email);
-    } else {
-      // Fallback to individual localStorage items
-      const cachedMember = localStorage.getItem('membershipno');
-      if (cachedMember) setMemberNumber(String(cachedMember));
-      
-      const cachedFirstName = localStorage.getItem('firstname');
-      if (cachedFirstName) setFirstName(String(cachedFirstName));
-      
-      const cachedLastName = localStorage.getItem('lastname');
-      if (cachedLastName) setLastName(String(cachedLastName));
-      
-      const cachedEmail = localStorage.getItem('primaryemail');
-      if (cachedEmail) setEmail(String(cachedEmail));
-      console.log(' esle Member number from cache or storage:', cachedMember,cachedFirstName ,cachedLastName,cachedEmail);
+    // 1) Cookie-first (set by MiniDashboard with Domain=.dreamtripclub.com)
+    const cFirst = getCookie('dtc_firstName');
+    const cLast  = getCookie('dtc_lastName');
+    const cEmail = getCookie('dtc_email');
+    const cMemNo = getCookie('dtc_membershipNo');
+
+    if (cFirst) setFirstName(cFirst);
+    if (cLast)  setLastName(cLast);
+    if (cEmail) setEmail(cEmail);
+    if (cMemNo) setMemberNumber(cMemNo);
+
+    // 2) Fallback: your existing localStorage approach (kept for legacy)
+    if (!cFirst || !cLast || !cEmail || !cMemNo) {
+      const ls = localStorage.getItem('dashboardData');
+      if (ls) {
+        const dash = JSON.parse(ls);
+        const userData = dash?.data?.[0] || dash;
+
+        if (!cMemNo) {
+          const m = userData?.membershipno || userData?.membershipNo || userData?.membershipNumber;
+          if (m) setMemberNumber(String(m));
+        }
+        if (!cFirst) {
+          const fn = userData?.firstname || userData?.firstName;
+          if (fn) setFirstName(String(fn));
+        }
+        if (!cLast) {
+          const ln = userData?.lastname || userData?.lastName;
+          if (ln) setLastName(String(ln));
+        }
+        if (!cEmail) {
+          const em = userData?.primaryemail || userData?.primaryEmail || userData?.email;
+          if (em) setEmail(String(em));
+        }
+      } else {
+        // legacy direct keys
+        if (!cMemNo) {
+          const cachedMember = localStorage.getItem('membershipno');
+          if (cachedMember) setMemberNumber(String(cachedMember));
+        }
+        if (!cFirst) {
+          const cachedFirstName = localStorage.getItem('firstname');
+          if (cachedFirstName) setFirstName(String(cachedFirstName));
+        }
+        if (!cLast) {
+          const cachedLastName = localStorage.getItem('lastname');
+          if (cachedLastName) setLastName(String(cachedLastName));
+        }
+        if (!cEmail) {
+          const cachedEmail = localStorage.getItem('primaryemail');
+          if (cachedEmail) setEmail(String(cachedEmail));
+        }
+      }
     }
   } catch (e) {
     console.error('Failed to load guest details:', e);
   }
-  console.log('gawas Member number from cache or storage:', memberNumber,firstName,lastName,email);
 }, []);
-
 
   // --- Fetch FINAL price from /availability ---
   useEffect(() => {

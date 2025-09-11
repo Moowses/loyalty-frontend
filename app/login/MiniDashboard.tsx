@@ -43,36 +43,6 @@ function normalizeDashboard(json: any): DashboardData {
   return { name, firstName, lastName, primaryEmail, membershipNo, tier, totalPoints, transactions, stays, pointsToNextTier };
 }
 
-const CLEAR_KEYS = [
-  // canonical blob
-  'dashboardData',
-
-  // canonical (camelCase) keys used by booking
-  'email', 'firstName', 'lastName', 'membershipNo',
-
-  // legacy lowercase keys kept for back-compat
-  'primaryemail', 'firstname', 'lastname', 'membershipno',
-
-  // misc
-  'apiToken', 'dtc_auth_changed', 'login_email', 'login_password', 'remember_me'
-];
-
-function clearAllClientStorage() {
-  try {
-    CLEAR_KEYS.forEach(k => {
-      localStorage.removeItem(k);
-      sessionStorage.removeItem(k);
-    });
-    // best-effort cookie clear for this origin
-    document.cookie.split(';').forEach(c => {
-      const [name] = c.split('=');
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    });
-  } catch (e) {
-    console.warn('clear storage error', e);
-  }
-}
-
 /* ========= UI Components (simplified from main dashboard) ========= */
 function Card({
   title,
@@ -105,28 +75,22 @@ export default function MiniDashboard() {
       const email = localStorage.getItem('email') || '';
 
       // helper: persist + emit
-     const persist = (dash: DashboardData) => {
+ const persist = (dash: DashboardData) => {
   try {
-    // Keep a canonical blob for quick reads elsewhere
+    // Set lightweight cookies for booking flow
+    const opts = "Path=/; Domain=.dreamtripclub.com; Secure; SameSite=None";
+    if (dash.firstName) document.cookie = `dtc_firstName=${encodeURIComponent(dash.firstName)}; ${opts}`;
+    if (dash.lastName)  document.cookie = `dtc_lastName=${encodeURIComponent(dash.lastName)}; ${opts}`;
+    if (dash.primaryEmail) document.cookie = `dtc_email=${encodeURIComponent(dash.primaryEmail)}; ${opts}`;
+    if (dash.membershipNo) document.cookie = `dtc_membershipNo=${encodeURIComponent(dash.membershipNo)}; ${opts}`;
+
+    // Optionally still keep dashboardData in localStorage for this iframe’s quick rendering
     localStorage.setItem('dashboardData', JSON.stringify(dash));
+  } catch (err) {
+    console.warn("Persist error:", err);
+  }
 
-    // Canonical keys (recommended for booking)
-    if (dash.membershipNo) localStorage.setItem('membershipNo', String(dash.membershipNo));
-    if (dash.firstName)    localStorage.setItem('firstName', String(dash.firstName));
-    if (dash.lastName)     localStorage.setItem('lastName', String(dash.lastName));
-    if (dash.primaryEmail) localStorage.setItem('email', String(dash.primaryEmail));
-
-    // Legacy (back-compat with any existing code still reading lowercase keys)
-    if (dash.membershipNo) localStorage.setItem('membershipno', String(dash.membershipNo));
-    if (dash.firstName)    localStorage.setItem('firstname', String(dash.firstName));
-    if (dash.lastName)     localStorage.setItem('lastname', String(dash.lastName));
-    if (dash.primaryEmail) localStorage.setItem('primaryemail', String(dash.primaryEmail));
-
-    // Cross-subdomain cookies: iframe (dreamtripclub.com) + member app (member.dreamtripclub.com)
-
-  } catch {}
-
-  // Let parent (WordPress) know too
+  // Also broadcast to parent (WordPress) if needed
   window.parent?.postMessage(
     {
       type: 'member-data',
@@ -200,31 +164,27 @@ export default function MiniDashboard() {
 
     fetchData();
   }, []);
-
 async function handleLogout() {
   try {
-    // 1) server logout on API (expires auth cookies)
     await fetch(`${API_BASE}/api/auth/logout`, { method: 'POST', credentials: 'include' });
-    // 2) same-origin clear on MEMBER to wipe localStorage/IDB/cookies/cache there
-    await fetch('/api/client-clear', { method: 'POST', credentials: 'include' });
-  } catch (e) {
-    console.error('Logout error:', e);
+  } catch (error) {
+    console.error('Logout error:', error);
   } finally {
-    // belt & suspenders immediate clear (safe to keep)
-    clearAllClientStorage();
+    // Expire cookies manually (belt & suspenders; backend also does this)
+    const expireOpts = "Path=/; Domain=.dreamtripclub.com; Max-Age=0; Secure; SameSite=None";
+    document.cookie = `dtc_firstName=; ${expireOpts}`;
+    document.cookie = `dtc_lastName=; ${expireOpts}`;
+    document.cookie = `dtc_email=; ${expireOpts}`;
+    document.cookie = `dtc_membershipNo=; ${expireOpts}`;
+
+    // Clear localStorage cache if you want
+    localStorage.removeItem('dashboardData');
+
     window.parent?.postMessage({ type: 'logout-complete' }, '*');
     window.location.replace('https://dreamtripclub.com');
-     // Clear all cookies
-    document.cookie.split(';').forEach(cookie => {
-      const [name] = cookie.split('=');
-      document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-    });
-
   }
 }
-   
 
- 
 
   if (loading) {
     return (
