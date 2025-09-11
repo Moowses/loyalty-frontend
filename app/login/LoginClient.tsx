@@ -58,20 +58,64 @@ export default function LoginClient() {
     const token = localStorage.getItem('apiToken');
     setIsLoggedIn(!!email && !!token);
   }, []);
+  const EMAIL_KEY = 'login_email';
+  const PASSWORD_KEY = 'login_password';  // unify key name
+  const REMEMBER_KEY = 'remember_me';
+  // Prefill Remember Me + saved email
+ useEffect(() => {
+  try {
+    const savedPref = localStorage.getItem(REMEMBER_KEY); // "1" or "0"
+    const savedEmail = localStorage.getItem(EMAIL_KEY) || '';
+    const savedPassword = localStorage.getItem(PASSWORD_KEY) || '';
+    if (savedPref !== null) setRememberMe(savedPref === '1');
+    if (savedEmail) setForm(prev => ({ ...prev, email: savedEmail }));
+    if (savedPref === '1' && savedPassword) {
+      setForm(prev => ({ ...prev, password: savedPassword }));
+    }
+  } catch {}
+}, []);
+
 
   const apiBase = useMemo(() => process.env.NEXT_PUBLIC_API_BASE_URL, []);
 
-  const handleInput = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-  ) => {
-    const { name, value, type, checked } = e.target as HTMLInputElement;
-    if (type === 'checkbox') {
-      if (name === 'rememberMe') setRememberMe(checked);
-      else setAgreements((prev) => ({ ...prev, [name]: checked }));
+const handleInput = (
+  e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+) => {
+  const { name, value, type, checked } = e.target as HTMLInputElement;
+
+  if (type === 'checkbox') {
+    if (name === 'rememberMe') {
+      setRememberMe(checked);
+      try {
+        localStorage.setItem(REMEMBER_KEY, checked ? '1' : '0');
+        if (!checked) {
+          localStorage.removeItem(EMAIL_KEY);
+          localStorage.removeItem(PASSWORD_KEY);
+        } else {
+          if (form.email) localStorage.setItem(EMAIL_KEY, form.email);
+          if (form.password) localStorage.setItem(PASSWORD_KEY, form.password);
+        }
+      } catch {}
     } else {
-      setForm((prev) => ({ ...prev, [name]: value }));
+      setAgreements(prev => ({ ...prev, [name]: checked }));
     }
-  };
+    return;
+  }
+
+  // text/select updates
+  setForm(prev => {
+    const next = { ...prev, [name]: value };
+    try {
+      if (rememberMe) {
+        if (name === 'email') localStorage.setItem(EMAIL_KEY, value);
+        if (name === 'password') localStorage.setItem(PASSWORD_KEY, value);
+      }
+    } catch {}
+    return next;
+  });
+};
+
+
 
   // ===== Auto-resize iframe + remove top space =====
   useEffect(() => {
@@ -189,6 +233,23 @@ export default function LoginClient() {
 
           // Show mini dashboard instead of redirecting
           setIsLoggedIn(true);
+          setForm(prev => ({
+  ...prev,
+  email: rememberMe ? prev.email : '',
+  password: '' // always clear the input field
+}));
+
+try {
+  if (!rememberMe) {
+    localStorage.removeItem(EMAIL_KEY);
+    localStorage.removeItem(PASSWORD_KEY);
+    localStorage.setItem(REMEMBER_KEY, '0');
+  } else {
+    localStorage.setItem(REMEMBER_KEY, '1');
+    if (form.email) localStorage.setItem(EMAIL_KEY, form.email);
+    if (form.password) localStorage.setItem(PASSWORD_KEY, form.password);
+  }
+} catch {}
           
         } else {
           // For signups, you might still want to redirect
@@ -440,6 +501,7 @@ return (
                   <input
                     type="email"
                     name="email"
+                    autoComplete="username"
                     value={form.email}
                     onChange={handleInput}
                     required
@@ -452,6 +514,7 @@ return (
                   <input
                     type="password"
                     name="password"
+                     autoComplete="current-password"
                     value={form.password}
                     onChange={handleInput}
                     required
@@ -525,8 +588,8 @@ return (
                     e.preventDefault();
                     setRpMsg(null);
                     setRpEmail(form.email || localStorage.getItem('login_email') || '');
-                    setRpPass1('');
-                    setRpPass2('');
+                    setRpPass1(form.password  || localStorage.getItem('login_Pass') || '');
+                    setRpPass2(form.password  || localStorage.getItem('login_Pass') || '');
                     setIsReset(true);     // slide to reset screen
                     setIsSignup(false);   // ensure signup slide is off
                   }}
