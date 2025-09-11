@@ -28,6 +28,15 @@ export default function LoginClient() {
   const [error, setError] = useState('');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
+  // slide mode: login | signup | reset
+    const [isReset, setIsReset] = useState(false);
+    const [rpEmail, setRpEmail] = useState('');
+    const [rpPass1, setRpPass1] = useState('');
+    const [rpPass2, setRpPass2] = useState('');
+    const [rpBusy, setRpBusy] = useState(false);
+    const [rpMsg, setRpMsg] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+
   const [form, setForm] = useState<FormState>({
     firstname: '',
     lastname: '',
@@ -88,7 +97,7 @@ export default function LoginClient() {
       ro.disconnect();
       clearInterval(t);
     };
-  }, [isSignup]);
+  }, [isSignup,isReset]);
 
   const redirectAfterAuth = (url?: string) => {
     const target = url || redirectPath || '/minidashboard';
@@ -200,270 +209,411 @@ export default function LoginClient() {
     }
   };
 
- return (
+return (
   <div className="w-full m-0 p-0 bg-transparent">
     <div className="mx-auto w-full max-w-md rounded-xl p-6">
       {isLoggedIn ? (
         <MiniDashboard />
       ) : (
         <>
-            {/* Your existing login form JSX */}
-            <div className="mb-4">
-              <h1 className="text-[40px] font-extrabold leading-[104.5%] tracking-[-0.0em] text-[#93AFB9]">
-                {isSignup ? 'Create Your Account' : 'Welcome to Dream Trip Club Rewards'}
-              </h1>
-              {!isSignup && (
-                <p className="mt-2 text-[15px] font-semibold text-neutral-900">
-                  Let's get you signed in!
+          {/* RESET PASSWORD SLIDE - Moved to top level */}
+          {isReset ? (
+            <>
+              <div className="mb-4">
+                <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">
+                  Reset your password
+                </h1>
+                <p className="mt-2 text-[14px] font-semibold text-neutral-900">
+                  Enter your account email and your new password.
                 </p>
-              )}
-            </div>
-
-            {error && (
-              <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
-                {error}
               </div>
-            )}
-            
-          {showSignupSuccess1 && (
-            <div className="mb-4 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
-               Success! Your account has been created. Returning to login...
-            </div>
-          )}
 
-            {/* FORM */}
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {isSignup && (
-                <>
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-700">First Name</label>
-                    <input
-                      name="firstname"
-                      value={form.firstname}
-                      onChange={handleInput}
-                      required
-                      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-700">Last Name</label>
-                    <input
-                      name="lastname"
-                      value={form.lastname}
-                      onChange={handleInput}
-                      required
-                      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                    />
-                  </div>
-                  <div>
-                    <label className="mb-1 block text-sm text-neutral-700">Mobile Number</label>
-                    <input
-                      name="mobilenumber"
-                      value={form.mobilenumber}
-                      onChange={handleInput}
-                      required
-                      className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
+              {rpMsg && (
+                <div
+                  className={`mb-4 rounded-md border px-3 py-2 text-sm ${
+                    rpMsg.type === 'ok'
+                      ? 'border-green-300 bg-green-50 text-green-800'
+                      : 'border-red-300 bg-red-50 text-red-800'
+                  }`}
+                >
+                  {rpMsg.text}
+                </div>
+              )}
+
+              <form
+                onSubmit={async (e) => {
+                  e.preventDefault();
+                  setRpMsg(null);
+                  if (!rpEmail || !rpPass1) {
+                    setRpMsg({ type: 'err', text: 'Please enter your email and a new password.' });
+                    return;
+                  }
+                  if (rpPass1 !== rpPass2) {
+                    setRpMsg({ type: 'err', text: 'Passwords do not match.' });
+                    return;
+                  }
+                  try {
+                    setRpBusy(true);
+                    const res = await fetch(
+                      `${apiBase}/api/auth/reset-password`,
+                      {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ email: rpEmail, newPassword: rpPass1 }),
+                      }
+                    );
+                    const json = await res.json().catch(() => ({}));
+                    if (!res.ok || json?.success !== true) {
+                      setRpMsg({ type: 'err', text: json?.message || 'Password reset failed. Please try again.' });
+                    } else {
+                      setRpMsg({ type: 'ok', text: json?.message || 'Password reset successful. You can now sign in.' });
+                      // Pre-fill login email and slide back after a moment
+                      setForm((prev) => ({ ...prev, email: rpEmail }));
+                      setTimeout(() => {
+                        setIsReset(false);
+                        setRpMsg(null);
+                      }, 1500);
+                    }
+                  } catch {
+                    setRpMsg({ type: 'err', text: 'Network error. Please try again.' });
+                  } finally {
+                    setRpBusy(false);
+                  }
+                }}
+                className="space-y-4"
+              >
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">Email</label>
+                  <input
+                    type="email"
+                    value={rpEmail}
+                    onChange={(e) => setRpEmail(e.target.value)}
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">New Password</label>
+                  <input
+                    type="password"
+                    value={rpPass1}
+                    onChange={(e) => setRpPass1(e.target.value)}
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                  />
+                </div>
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={rpPass2}
+                    onChange={(e) => setRpPass2(e.target.value)}
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                  />
+                </div>
+
+                <div className="flex items-center gap-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={rpBusy}
+                    className={`w-[160px] rounded-full px-5 py-2.5 text-sm font-bold text-white ${
+                      rpBusy ? 'bg-neutral-400' : 'bg-[#211F45] hover:opacity-90'
+                    }`}
+                  >
+                    {rpBusy ? 'Processing…' : 'Reset Password'}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsReset(false);     // back to login
+                      setRpMsg(null);
+                    }}
+                    className="rounded-full border border-neutral-300 px-5 py-2.5 text-sm font-semibold text-neutral-700 hover:bg-neutral-50"
+                  >
+                    Back to Sign In
+                  </button>
+                </div>
+              </form>
+
+              {/* Divider */}
+              <hr className="my-6 border-neutral-200" />
+            </>
+          ) : (
+            /* LOGIN/SIGNUP FORMS - Only show when not in reset mode */
+            <>
+              {/* Your existing login form JSX */}
+              <div className="mb-4">
+                <h1 className="text-[40px] font-extrabold leading-[104.5%] tracking-[-0.0em] text-[#93AFB9]">
+                  {isSignup ? 'Create Your Account' : 'Welcome to Dream Trip Club Rewards'}
+                </h1>
+                {!isSignup && (
+                  <p className="mt-2 text-[15px] font-semibold text-neutral-900">
+                    Let's get you signed in!
+                  </p>
+                )}
+              </div>
+
+              {error && (
+                <div className="mb-4 rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-800">
+                  {error}
+                </div>
+              )}
+              
+              {showSignupSuccess1 && (
+                <div className="mb-4 rounded-md border border-green-300 bg-green-50 px-3 py-2 text-sm text-green-800">
+                  Success! Your account has been created. Returning to login...
+                </div>
+              )}
+
+              {/* FORM */}
+              <form onSubmit={handleSubmit} className="space-y-4">
+                {isSignup && (
+                  <>
                     <div>
-                      <label className="mb-1 block text-sm text-neutral-700">Country</label>
-                      <select
-                        name="country"
-                        value={form.country}
-                        onChange={handleInput}
-                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                        required
-                      >
-                        <option value="Canada">Canada</option>
-                        <option value="United States">United States</option>
-                        <option value="Philippines">Philippines</option>
-                        <option value="Australia">Australia</option>
-                        <option value="United Kingdom">United Kingdom</option>
-                        <option value="Other">Other</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="mb-1 block text-sm text-neutral-700">Postal Code</label>
+                      <label className="mb-1 block text-sm text-neutral-700">First Name</label>
                       <input
-                        name="postalcode"
-                        value={form.postalcode}
+                        name="firstname"
+                        value={form.firstname}
                         onChange={handleInput}
                         required
                         className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                       />
                     </div>
-                  </div>
-                </>
-              )}
+                    <div>
+                      <label className="mb-1 block text-sm text-neutral-700">Last Name</label>
+                      <input
+                        name="lastname"
+                        value={form.lastname}
+                        onChange={handleInput}
+                        required
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-sm text-neutral-700">Mobile Number</label>
+                      <input
+                        name="mobilenumber"
+                        value={form.mobilenumber}
+                        onChange={handleInput}
+                        required
+                        className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="mb-1 block text-sm text-neutral-700">Country</label>
+                        <select
+                          name="country"
+                          value={form.country}
+                          onChange={handleInput}
+                          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                          required
+                        >
+                          <option value="Canada">Canada</option>
+                          <option value="United States">United States</option>
+                          <option value="Philippines">Philippines</option>
+                          <option value="Australia">Australia</option>
+                          <option value="United Kingdom">United Kingdom</option>
+                          <option value="Other">Other</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="mb-1 block text-sm text-neutral-700">Postal Code</label>
+                        <input
+                          name="postalcode"
+                          value={form.postalcode}
+                          onChange={handleInput}
+                          required
+                          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                        />
+                      </div>
+                    </div>
+                  </>
+                )}
 
-              <div>
-                <label className="mb-1 block text-sm text-neutral-700">
-                  Email or Member Number
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={form.email}
-                  onChange={handleInput}
-                  required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                />
-              </div>
-
-              <div>
-                <label className="mb-1 block text-sm text-neutral-700">Password</label>
-                <input
-                  type="password"
-                  name="password"
-                  value={form.password}
-                  onChange={handleInput}
-                  required
-                  className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                />
-              </div>
-
-              {!isSignup && (
-                <div className="flex items-center gap-2 pt-1">
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">
+                    Email or Member Number
+                  </label>
                   <input
-                    id="rememberMe"
-                    name="rememberMe"
-                    type="checkbox"
-                    checked={rememberMe}
+                    type="email"
+                    name="email"
+                    value={form.email}
                     onChange={handleInput}
-                    className="h-4 w-4"
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                   />
-                  <label htmlFor="rememberMe" className="text-sm text-neutral-700">
-                    Remember Me
-                  </label>
                 </div>
-              )}
 
-              {isSignup && (
-                <div className="space-y-3 pt-1 text-sm text-neutral-700">
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      name="marketing"
-                      checked={agreements.marketing}
-                      onChange={handleInput}
-                      className="mt-1 h-4 w-4"
-                      required
-                    />
-                    <span>I agree to receive personalized offers and updates.</span>
-                  </label>
-                  <label className="flex items-start gap-2">
-                    <input
-                      type="checkbox"
-                      name="dataSharing"
-                      checked={agreements.dataSharing}
-                      onChange={handleInput}
-                      className="mt-1 h-4 w-4"
-                      required
-                    />
-                    <span>I agree to data sharing with authorized partners.</span>
-                  </label>
+                <div>
+                  <label className="mb-1 block text-sm text-neutral-700">Password</label>
+                  <input
+                    type="password"
+                    name="password"
+                    value={form.password}
+                    onChange={handleInput}
+                    required
+                    className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                  />
                 </div>
-              )}
 
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className={`w-[120px] rounded-full px-5 py-2.5 text-sm font-bold text-white transition ${
-                  isSubmitting
-                    ? 'cursor-not-allowed bg-neutral-400'
-                    : 'bg-[#211F45] hover:opacity-90'
-                }`}
-              >
-                {isSubmitting ? 'Processing…' : isSignup ? 'Join Now' : 'Sign In'}
-              </button>
-            </form>
+                {!isSignup && (
+                  <div className="flex items-center gap-2 pt-1">
+                    <input
+                      id="rememberMe"
+                      name="rememberMe"
+                      type="checkbox"
+                      checked={rememberMe}
+                      onChange={handleInput}
+                      className="h-4 w-4"
+                    />
+                    <label htmlFor="rememberMe" className="text-sm text-neutral-700">
+                      Remember Me
+                    </label>
+                  </div>
+                )}
 
-            {/* Under-button links (only in Sign In mode) */}
-            {!isSignup && (
-              <div className="mt-3 flex gap-6 text-sm">
-                <a
+                {isSignup && (
+                  <div className="space-y-3 pt-1 text-sm text-neutral-700">
+                    <label className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        name="marketing"
+                        checked={agreements.marketing}
+                        onChange={handleInput}
+                        className="mt-1 h-4 w-4"
+                        required
+                      />
+                      <span>I agree to receive personalized offers and updates.</span>
+                    </label>
+                    <label className="flex items-start gap-2">
+                      <input
+                        type="checkbox"
+                        name="dataSharing"
+                        checked={agreements.dataSharing}
+                        onChange={handleInput}
+                        className="mt-1 h-4 w-4"
+                        required
+                      />
+                      <span>I agree to data sharing with authorized partners.</span>
+                    </label>
+                  </div>
+                )}
+                
+
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className={`w-[120px] rounded-full px-5 py-2.5 text-sm font-bold text-white transition ${
+                    isSubmitting
+                      ? 'cursor-not-allowed bg-neutral-400'
+                      : 'bg-[#211F45] hover:opacity-90'
+                  }`}
+                >
+                  {isSubmitting ? 'Processing…' : isSignup ? 'Join Now' : 'Sign In'}
+                </button>
+              </form>
+
+              {/* Under-button links (only in Sign In mode) */}
+              {!isSignup && (
+                <div className="mt-3 flex gap-6 text-sm">
+                 <a
                   href="#"
-                  onClick={(e) => e.preventDefault()}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setRpMsg(null);
+                    setRpEmail(form.email || localStorage.getItem('login_email') || '');
+                    setRpPass1('');
+                    setRpPass2('');
+                    setIsReset(true);     // slide to reset screen
+                    setIsSignup(false);   // ensure signup slide is off
+                  }}
                   className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
                 >
                   Forgot password?
                 </a>
-                <a
-                  href="#"
-                  onClick={(e) => e.preventDefault()}
-                  className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
-                >
-                 
-                </a>
-              </div>
-            )}
 
-            {/* Divider */}
-            <hr className="my-6 border-neutral-200" />
-
-            {/* "Not a Member?" + Icons (HIDE when joining) */}
-            {!isSignup && (
-              <section>
-                <h2 className="text-[22px] font-extrabold text-neutral-900">
-                  Not a Member?
-                </h2>
-                <p className="mt-2 text-sm leading-6 text-neutral-700">
-                  Members enjoy exclusive perks across all Cottage Dream Vacations
-                  properties. Membership is free and starts rewarding you from your very first stay.
-                </p>
-
-                {/* Benefits row */}
-                <div className="mt-4 grid grid-cols-4 gap-0 sm:grid-cols-4">
-                  <div className="flex flex-col text-[#211F45] items-center text-center">
-                    <Image src="/earnpoints.png" alt="Earn Points" width={30} height={30} />
-                    <span className="mt-1 text-[11px] font-semibold leading-tight">
-                      EARN<br />POINTS
-                    </span>
-                  </div>
-                  <div className="flex flex-col text-[#211F45] items-center text-center">
-                    <Image src="/concierge.png" alt="Concierge Service" width={30} height={30} />
-                    <span className="mt-1 text-[11px] font-semibold leading-tight">
-                      CONCIERGE<br />SERVICE
-                    </span>
-                  </div>
-                  <div className="flex flex-col text-[#211F45] items-center text-center">
-                    <Image src="/wifi.png" alt="Free Wi‑Fi" width={30} height={30} />
-                    <span className="mt-1 text-[11px] font-semibold leading-tight">
-                      FREE<br />WI‑FI
-                    </span>
-                  </div>
-                  <div className="flex flex-col text-[#211F45] items-center text-center">
-                    <Image src="/memberoffer.png" alt="Member Offers" width={30} height={30} />
-                    <span className="mt-1 text-[11px] font-semibold leading-tight">
-                      MEMBER<br />OFFERS
-                    </span>
-                  </div>
+                  <a
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
+                    className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
+                  >
+                   
+                  </a>
                 </div>
+              )}
+              
 
-                {/* Join button */}
-                <button
-                  type="button"
-                  onClick={() => setIsSignup(true)}
-                  className="mt-6 inline-flex items-center rounded-full border border-[#211F45] px-5 py-2 text-sm font-bold text-[#211F45] hover:bg-[#211F45] hover:text-white"
-                >
-                  JOIN FREE NOW!
-                </button>
-              </section>
-            )}
+              {/* Divider */}
+              <hr className="my-6 border-neutral-200" />
 
-            {/* Swap link beneath signup form */}
-            {isSignup && (
-              <p className="mt-4 text-sm text-neutral-700">
-                Already a member?{' '}
-                <button onClick={() => setIsSignup(false)} className="underline underline-offset-2">
-                  Sign In
-                </button>
-              </p>
-            )}
-          </>
-        )}
-      </div>
+              {/* "Not a Member?" + Icons (HIDE when joining) */}
+              {!isSignup && (
+                <section>
+                  <h2 className="text-[22px] font-extrabold text-neutral-900">
+                    Not a Member?
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-neutral-700">
+                    Members enjoy exclusive perks across all Cottage Dream Vacations
+                    properties. Membership is free and starts rewarding you from your very first stay.
+                  </p>
+
+                  {/* Benefits row */}
+                  <div className="mt-4 grid grid-cols-4 gap-0 sm:grid-cols-4">
+                    <div className="flex flex-col text-[#211F45] items-center text-center">
+                      <Image src="/earnpoints.png" alt="Earn Points" width={30} height={30} />
+                      <span className="mt-1 text-[11px] font-semibold leading-tight">
+                        EARN<br />POINTS
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-[#211F45] items-center text-center">
+                      <Image src="/concierge.png" alt="Concierge Service" width={30} height={30} />
+                      <span className="mt-1 text-[11px] font-semibold leading-tight">
+                        CONCIERGE<br />SERVICE
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-[#211F45] items-center text-center">
+                      <Image src="/wifi.png" alt="Free Wi‑Fi" width={30} height={30} />
+                      <span className="mt-1 text-[11px] font-semibold leading-tight">
+                        FREE<br />WI‑FI
+                      </span>
+                    </div>
+                    <div className="flex flex-col text-[#211F45] items-center text-center">
+                      <Image src="/memberoffer.png" alt="Member Offers" width={30} height={30} />
+                      <span className="mt-1 text-[11px] font-semibold leading-tight">
+                        MEMBER<br />OFFERS
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Join button */}
+                  <button
+                    type="button"
+                    onClick={() => setIsSignup(true)}
+                    className="mt-6 inline-flex items-center rounded-full border border-[#211F45] px-5 py-2 text-sm font-bold text-[#211F45] hover:bg-[#211F45] hover:text-white"
+                  >
+                    JOIN FREE NOW!
+                  </button>
+                </section>
+              )}
+              
+
+              {/* Swap link beneath signup form */}
+              {isSignup && (
+                <p className="mt-4 text-sm text-neutral-700">
+                  Already a member?{' '}
+                  <button onClick={() => setIsSignup(false)} className="underline underline-offset-2">
+                    Sign In
+                  </button>
+                </p>
+              )}
+            </>
+          )}
+        </>
+      )}
     </div>
-  );
+  </div>
+);
 }
