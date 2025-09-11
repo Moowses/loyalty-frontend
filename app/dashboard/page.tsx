@@ -191,9 +191,9 @@ export default function DashboardPage() {
   const controller = new AbortController();
 
 const run = async () => {
-  const email = localStorage.getItem('email');
+  const membershipno = localStorage.getItem('membershipno');
 
-  if (!email) {
+  if (!membershipno) {
     if (!cancelled) {
       setLoading(false);
 
