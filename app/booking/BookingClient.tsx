@@ -136,6 +136,7 @@ useEffect(() => {
       
       const em = userData?.primaryemail || userData?.primaryEmail || userData?.email;
       if (em) setEmail(String(em));
+      console.log('Member number from cache or storage:', memberNumber,firstName,lastName,email);
     } else {
       // Fallback to individual localStorage items
       const cachedMember = localStorage.getItem('membershipno');
@@ -149,10 +150,12 @@ useEffect(() => {
       
       const cachedEmail = localStorage.getItem('primaryemail');
       if (cachedEmail) setEmail(String(cachedEmail));
+      console.log(' esle Member number from cache or storage:', cachedMember,cachedFirstName ,cachedLastName,cachedEmail);
     }
   } catch (e) {
     console.error('Failed to load guest details:', e);
   }
+  console.log('gawas Member number from cache or storage:', memberNumber,firstName,lastName,email);
 }, []);
 
 

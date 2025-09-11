@@ -248,12 +248,13 @@ export default function MiniDashboard() {
 
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6">
-       <button
-        onClick={() => window.location.href = "https://dreamtripclub.com"}
-        className="bg-[#211F45] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
-      >
-        View Full Dashboard
-      </button>
+    <button
+  onClick={() => window.open("https://member.dreamtripclub.com/dashboard", "_blank")}
+  className="bg-[#211F45] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
+>
+  View Full Dashboard
+</button>
+
 
         <button
           onClick={() => alert('Download our mobile app for full features')}
