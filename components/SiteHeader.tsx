@@ -129,10 +129,13 @@ async function logout() {
           />
         </Link>
 
-       {/* Desktop Nav */}
-<nav className="hidden lg:flex items-center items-end justify-center gap-10 ">
+    {/* Desktop Nav */}
+<nav className="hidden lg:flex items-end justify-center gap-2">
   {/* Reserve */}
-  <Link href="https://dreamtripclub.com" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+  <Link
+    href="https://dreamtripclub.com"
+    className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+  >
     <Image
       src="/Navreservation.png"
       alt="Reserve"
@@ -140,15 +143,16 @@ async function logout() {
       height={24}
       className="transition-transform duration-200 group-hover:-translate-y-1"
     />
-    <span
-      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
-      >
+    <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
       Reserve
     </span>
   </Link>
 
   {/* Rewards */}
-  <Link href="https://dreamtripclub.com/rewards/" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+  <Link
+    href="https://dreamtripclub.com/rewards/"
+    className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+  >
     <Image
       src="/Navrewards.png"
       alt="Rewards"
@@ -156,15 +160,16 @@ async function logout() {
       height={24}
       className="transition-transform duration-200 group-hover:-translate-y-1"
     />
-    <span
-      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
-      >
+    <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
       Rewards
     </span>
   </Link>
 
   {/* Offers */}
-  <Link href="https://dreamtripclub.com/offer/" className="flex flex-col items-center gap-2 group transition-transform duration-200">
+  <Link
+    href="https://dreamtripclub.com/offer/"
+    className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+  >
     <Image
       src="/Navoffer.png"
       alt="Offers"
@@ -172,17 +177,15 @@ async function logout() {
       height={24}
       className="transition-transform duration-200 group-hover:-translate-y-1"
     />
-  <span
-      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
-      >
+    <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
       Offers
     </span>
   </Link>
 
   {/* Account */}
   <Link
-    href={loggedIn ? "https://member.dreamtripclub.com/dashboard" : "/dashboard"}
-    className="flex flex-col items-center gap-2 group transition-transform duration-200"
+    href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/dashboard'}
+    className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
   >
     <Image
       src="/Navaccount.png"
@@ -191,14 +194,11 @@ async function logout() {
       height={24}
       className="transition-transform duration-200 group-hover:-translate-y-1"
     />
-    <span
-      className="text-[9px] font-bold tracking-[0.01em] uppercase transition-colors duration-200 text-[#211F45] group-hover:text-[#EB6923]"
-      >
+    <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
       Account
     </span>
   </Link>
 </nav>
-
 
         {/* Desktop CTAs */}
         <div className="hidden md:flex items-center gap-5">
@@ -245,48 +245,142 @@ async function logout() {
           )}
         </div>
 
-        {/* Mobile Actions */}
-        <div className="md:hidden justify-self-end flex items-center gap-2">
-          {checking ? (
-            <span
-              className="px-3 py-1.5 rounded-[12px] text-xs font-semibold border opacity-50"
-              style={{ color: BRAND, borderColor: BRAND }}
-            >
-              …
-            </span>
-          ) : loggedIn ? (
-            <button
-              onClick={logout}
-              className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-transform duration-200 hover:opacity-90 hover:-translate-y-1"
-               style={{ backgroundColor: BRAND }}
-            >
-              Log out
-            </button>
-          ) : (
-        
-            <button
-              onClick={() => setShowLoginModal(true)}
-              className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm hover:opacity-90"
-              style={{ backgroundColor: BRAND }}
-            >
-               Join / Sign in
-           
-            </button>
-          )}
+       {/* Mobile Actions */}
+<div className="md:hidden justify-self-end flex items-center gap-2">
+  {/* Hamburger / Close (left) */}
+  <button
+    aria-label={open ? 'Close menu' : 'Open menu'}
+    aria-expanded={open}
+    aria-controls="mobile-nav"
+    onClick={() => setOpen(v => !v)}
+    className={`inline-flex items-center justify-center p-2 rounded-md border border-gray-300 transition-colors ${open ? 'bg-gray-100' : 'bg-white'}`}
+  >
+    {open ? (
+      // X icon
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M6 6l12 12M18 6L6 18" stroke={BRAND} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    ) : (
+      // Hamburger
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M3 6h18M3 12h18M3 18h18" stroke={BRAND} strokeWidth="2" strokeLinecap="round" />
+      </svg>
+    )}
+  </button>
 
-          <button
-            aria-label="Open menu"
-            aria-expanded={open}
-            aria-controls="mobile-nav"
-            onClick={() => setOpen((v) => !v)}
-            className="inline-flex items-center justify-center p-2 rounded-md border border-gray-300"
-          >
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-              <path d="M3 6h18M3 12h18M3 18h18" stroke={BRAND} strokeWidth="2" strokeLinecap="round" />
-            </svg>
-          </button>
-        </div>
-      </div>
+  {/* Auth button (right of hamburger) */}
+  {checking ? (
+    <span
+      className="px-3 py-1.5 rounded-[12px] text-xs font-semibold border opacity-50"
+      style={{ color: BRAND, borderColor: BRAND }}
+    >
+      …
+    </span>
+  ) : loggedIn ? (
+    <button
+      onClick={logout}
+      className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-colors hover:opacity-90"
+      style={{ backgroundColor: BRAND }}
+    >
+      LOG OUT
+    </button>
+  ) : (
+    <button
+      onClick={() => setShowLoginModal(true)}
+      className="px-3 py-1.5 rounded-[12px] text-sm font-semibold text-white shadow-sm transition-colors hover:opacity-90"
+      style={{ backgroundColor: BRAND }}
+    >
+      Join / Sign in
+    </button>
+  )}
+  </div>
+</div>
+
+{open && (
+  <div
+    id="mobile-nav"
+    className="absolute top-[65px] left-0 w-full bg-white shadow-lg z-50 flex flex-col"
+  >
+    {/* Active item (Reserve) */}
+    <Link
+      href="https://dreamtripclub.com"
+      onClick={() => setOpen(false)}
+      className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+    >
+      <Image
+        src="/Navreservation.png"
+        alt="Reserve"
+        width={15}
+        height={15}
+      />
+      <span className="font-semibold">Reserve</span>
+    </Link>
+
+    {/* Rewards */}
+    <Link
+      href="https://dreamtripclub.com/rewards/"
+      onClick={() => setOpen(false)}
+      className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+    >
+      <Image
+        src="/Navrewards.png"
+        alt="Rewards"
+        width={15}
+        height={15}
+      />
+      <span className="font-semibold">Rewards</span>
+    </Link>
+
+    {/* Offers */}
+    <Link
+      href="https://dreamtripclub.com/offer/"
+      onClick={() => setOpen(false)}
+      className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+    >
+      <Image
+        src="/Navoffer.png"
+        alt="Offers"
+        width={15}
+        height={15}
+      />
+      <span className="font-semibold">Offers</span>
+    </Link>
+
+    {/* Account */}
+    <Link
+      href={loggedIn ? "https://member.dreamtripclub.com/dashboard" : "/#login"}
+      onClick={() => setOpen(false)}
+      className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+    >
+      <Image
+        src="/Navaccount.png"
+        alt="Account"
+        width={15}
+        height={15}
+      />
+      <span className="font-semibold">Account</span>
+    </Link>
+
+    {/* Help */}
+    <Link
+      href="https://dreamtripclub.com/help/"
+      onClick={() => setOpen(false)}
+      className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+    >
+      <Image
+        src="/navhelpsvg.svg"
+        alt="Help"
+        width={15}
+        height={15}
+      />
+      <span className="font-semibold">Help</span>
+    </Link>
+  </div>
+)}
+
+
+
+
 
     {/* Login Modal (right-docked, no blank header) */}
 {showLoginModal && (
