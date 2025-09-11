@@ -3,8 +3,7 @@
 import React, { useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-
-export default function Page() {
+export default function ResetPassword() {
   const router = useRouter();
   const search = useSearchParams();
   const email = (search.get("email") || "").toLowerCase();
@@ -50,7 +49,7 @@ export default function Page() {
         return;
       }
       setMsg({ type: "ok", text: "Password reset successful. You can log in now." });
-      setTimeout(() => router.push("https://dreamtripclub.com/"), 1500);
+      setTimeout(() => router.push("/login"), 1500);
     } catch {
       setMsg({ type: "err", text: "Unexpected error. Please try again." });
     } finally {
@@ -86,11 +85,6 @@ export default function Page() {
                 aria-readonly="true"
                 className="mt-1 w-full rounded-md border border-gray-300 bg-gray-100 text-gray-700 px-3 py-2 focus:outline-none cursor-not-allowed"
               />
-              {!email && (
-                <p className="mt-1 text-xs text-red-600">
-                  This link is missing the email. Please use the link from your email again.
-                </p>
-              )}
             </div>
 
             {/* New Password */}
