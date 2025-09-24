@@ -1363,7 +1363,7 @@ function getHotelImage(name?: string) {
     <div className="mt-4 flex items-center justify-center gap-3">
       <button
         type="button"
-        onClick={() => { /* open dates popover */ }}
+        onClick={() => setShowCal(true)}
         className="px-4 py-2 rounded-full border border-gray-300 hover:bg-gray-50"
       >
         Change dates
