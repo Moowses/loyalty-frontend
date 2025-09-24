@@ -70,6 +70,87 @@ const Row = ({ Icon, text }: { Icon: IconC; text: string }) => (
   </div>
 );
 
+function DateRangePicker({
+  start, end, onChange, onClose, onApply
+}: {
+  start?: string; end?: string;
+  onChange: (s: string, e: string) => void;
+  onClose: () => void;
+  onApply: () => void;
+}) {
+  const today = new Date();
+  const [view, setView] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
+
+  function toISO(d: Date) { return d.toISOString().slice(0,10); }
+
+  function Month({ base }: { base: Date }) {
+    const days = new Date(base.getFullYear(), base.getMonth()+1, 0).getDate();
+    const offset = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
+
+    const y = base.getFullYear();
+    const m = base.getMonth();
+
+    const cells: (string|null)[] = Array(offset).fill(null).concat(
+      Array.from({ length: days }, (_, i) => toISO(new Date(y,m,i+1)))
+    );
+
+    return (
+      <div>
+        <div className="text-center font-semibold mb-2">
+          {base.toLocaleString(undefined, { month: "long", year: "numeric" })}
+        </div>
+        <div className="grid grid-cols-7 text-xs text-gray-500 mb-1">
+          {["Su","Mo","Tu","We","Th","Fr","Sa"].map(d=><div key={d}>{d}</div>)}
+        </div>
+        <div className="grid grid-cols-7 gap-1">
+          {cells.map((iso, idx) => (
+            <button
+              key={idx}
+              disabled={!iso}
+              onClick={()=>{
+                if (!start || (start && end)) onChange(iso!, "");
+                else if (start && !end) {
+                  if (iso! < start) onChange(iso!, start);
+                  else onChange(start, iso!);
+                }
+              }}
+              className={`h-9 rounded ${iso === start || iso === end ? "bg-[#211F45] text-white" : "hover:bg-gray-100"}`}
+            >
+              {iso ? Number(iso.slice(8,10)) : ""}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  const next = new Date(view); next.setMonth(view.getMonth()+1);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="bg-white p-4 rounded-xl shadow-xl max-w-3xl w-full">
+        <div className="flex justify-between mb-3">
+          <button onClick={()=>setView(new Date(view.getFullYear(), view.getMonth()-1, 1))}>Prev</button>
+          <div className="font-semibold">Select dates</div>
+          <button onClick={()=>setView(new Date(view.getFullYear(), view.getMonth()+1, 1))}>Next</button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Month base={view} />
+          <Month base={next} />
+        </div>
+        <div className="flex justify-end gap-2 mt-4">
+          <button onClick={()=>onChange("","")}>Reset</button>
+          <button onClick={onClose}>Close</button>
+          <button disabled={!start || !end} onClick={onApply} className="bg-[#211F45] text-white px-4 py-2 rounded">
+            Apply
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
 export default function HotelInfoPage() {
   const { hotelId } = useParams<{ hotelId: string }>();
   const sp = useSearchParams();
@@ -94,6 +175,16 @@ export default function HotelInfoPage() {
   const [child,    setChild]    = useState(Number(sp.get('child')  || sp.get('children')|| '0'));
   const [infant,   setInfant]   = useState(Number(sp.get('infant') || sp.get('infants') || '0'));
   const [pet,      setPet]      = useState((sp.get('pet') || (sp.get('pets') === '1' ? 'yes' : 'no') || 'no') === 'yes' ? 'yes' : 'no');
+  
+  const [showCalendar, setShowCalendar] = useState(false);
+  const [tmpStart, setTmpStart] = useState<string>(checkIn || '');
+  const [tmpEnd, setTmpEnd] = useState<string>(checkOut || '');
+
+  function fmtHuman(s?: string) {
+  if (!s) return '';
+  const d = new Date(s);
+  return d.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
   /* ==== meta + images (public/properties/<slug>/meta.json) ==== */
   const displayName = nameQP || '';
@@ -478,17 +569,34 @@ router.push(`/booking?${params.toString()}`);
             <div className="text-gray-500 text-sm">per night</div>
           </div>
 
-          <div className="grid grid-cols-2 gap-2 mb-3">
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-500">CHECK‑IN</label>
-              <input type="date" value={checkIn} onChange={e=>setCheckIn(e.target.value)} className="border rounded-lg px-2 py-2" />
+          <div className="mb-3">
+              <label className="text-xs text-gray-500">DATES</label>
+              <button
+                onClick={()=>{
+                  setTmpStart(checkIn || "");
+                  setTmpEnd(checkOut || "");
+                  setShowCalendar(true);
+                }}
+                className="border rounded-lg px-3 py-2 w-full text-left"
+              >
+                {checkIn && checkOut ? `${fmtHuman(checkIn)} → ${fmtHuman(checkOut)}` : "Add dates"}
+              </button>
             </div>
-            <div className="flex flex-col">
-              <label className="text-xs text-gray-500">CHECK‑OUT</label>
-              <input type="date" value={checkOut} onChange={e=>setCheckOut(e.target.value)} className="border rounded-lg px-2 py-2" />
-            </div>
-          </div>
 
+            {showCalendar && (
+              <DateRangePicker
+                start={tmpStart}
+                end={tmpEnd}
+                onChange={(s,e)=>{ setTmpStart(s); setTmpEnd(e); }}
+                onClose={()=> setShowCalendar(false)}
+                onApply={()=>{
+                  setCheckIn(tmpStart || "");
+                  setCheckOut(tmpEnd || "");
+                  setShowCalendar(false);
+                }}
+              />
+            )}
+            
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col">
               <label className="text-xs text-gray-500">ADULTS</label>
