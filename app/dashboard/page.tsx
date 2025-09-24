@@ -212,7 +212,7 @@ export default function DashboardPage() {
     setTimeout(() => {
       alert('You must log in first.');
       router.replace(HOME);
-    }, 3000);
+    }, 1500);
   };
 
   const run = async () => {
