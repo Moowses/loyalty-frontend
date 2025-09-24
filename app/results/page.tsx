@@ -1413,6 +1413,20 @@ function getHotelImage(name?: string) {
     const petFee = toNum(room.petFeeAmount);  // can be "0" or number
     const grandTotal = roomTotal + petFee;    // rooms + pet
     const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+    const hero = getHotelImage(room.hotelName); // e.g. /properties/getaway-on-stoney-lake/hero.png
+    const slug = hero ? hero.replace(/^\/properties\/|\/hero\.png$/g, "") : "";
+
+    // Try load meta.json
+    let meta: any = {};
+    try {
+      meta = require(`@/public/properties/${slug}/meta.json`);
+    } catch (e) {
+      meta = {};
+    }
+
+const address = meta?.Address ?? meta?.address ?? null;
+const minNights = Number(room?.minNights ?? 1);
+    
 
     const currency = room.currencyCode || 'CAD';
     // Return number-only string (no currency symbol) so we can control labels consistently
@@ -1479,10 +1493,20 @@ function getHotelImage(name?: string) {
                             )}
                           </div>
                           <div>
+                            <span className="font-medium text-gray-900">Minimum stay:</span>{" "}
+                            <span className="text-gray-700">
+                              {minNights} night{minNights > 1 ? "s" : ""}
+                            </span>
+                          </div>
+                          <div>
                             Pet fee:{' '}
                             <span className="font-medium text-gray-900">
                               {petFee > 0 ? money(petFee) : '0'}
                             </span>
+                          </div>
+                          <div>
+                            <span className="font-medium text-gray-900">Address:</span>{" "}
+                            <span className="text-gray-700">{address}</span>
                           </div>
                         </div>
 

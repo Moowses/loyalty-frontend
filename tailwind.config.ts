@@ -23,7 +23,7 @@ const config: Config = {
         card: '0 1px 2px rgba(16,24,40,.06)',
       },
       fontFamily: {
-        // Avenir will be the primary, then fall back to your Google fonts & system
+        // Avenir from anna
         sans: [
           'var(--font-avenir)',
           'var(--font-manrope)',
