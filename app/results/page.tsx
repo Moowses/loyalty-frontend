@@ -1586,7 +1586,6 @@ const minNights = Number(room?.minNights ?? 1);
           );
         })}
       </div>
-      <script id="chatbotkit-widget" src="https://static.chatbotkit.com/integrations/widget/v2.js" data-widget="cmfofmmqn84umyredb9q4j46d"></script>
       </div>
     
   );
@@ -1600,7 +1599,7 @@ export default function SearchResultsPage() {
         <ResultsContent />
       </Suspense>
 
-      {/* Chatbot shows only on this page; doesn't block page render */}
+      {/* Chatbot shows only on this page */}
       <Suspense fallback={null}>
         <ChatbotWidget />
       </Suspense>
