@@ -7,7 +7,7 @@ export default function BookingPage() {
   return (
     <Suspense fallback={<div />}>
       <BookingClient />
-      <script id="chatbotkit-widget" src="https://static.chatbotkit.com/integrations/widget/v2.js" data-widget="cmfofmmqn84umyredb9q4j46d"></script>
+      
     </Suspense>
   );
 }

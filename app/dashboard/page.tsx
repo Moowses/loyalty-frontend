@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import {
   FaBellConcierge,
   FaSuitcaseRolling,
@@ -27,6 +28,12 @@ type Dashboard = {
 };
 type Reservation = { hotelName?: string; checkIn?: string; checkOut?: string };
 type ReservationsPayload = { upcoming: Reservation[]; past: Reservation[] };
+
+/* chatbot - dynamically import to avoid SSR issues */
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {
+  ssr: false,
+  loading: () => null,
+});
 
 /* ========= Mocks (only if API + local fallback fail) ========= */
 const MOCK_DASH: Dashboard = {
@@ -210,7 +217,7 @@ export default function DashboardPage() {
       return;
     }
     setTimeout(() => {
-      alert('You must log in first.');
+      alert('You must Log In first.');
       router.replace(HOME);
     }, 1500);
   };
@@ -337,6 +344,7 @@ export default function DashboardPage() {
       {/* ===== BODY: Light DTC layout ===== */}
       
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-[#1F2042]">
+        <ChatbotWidget />
         {/* Greeting row */}
      {/* Greeting banner (muted blue) */}
         <section className="mb-6">
@@ -463,7 +471,7 @@ export default function DashboardPage() {
                         onClick={() => alert('This feature is available on our mobile app. Please download the Dream Trip Club app to continue.')}
                         className="underline hover:opacity-80 focus:outline-none appearance-none bg-transparent p-0 cursor-pointer"
                       >
-                        All activity
+                        All ACTIVITY
                       </button>
                       <span className="mx-2">|</span>
                       <button
@@ -527,7 +535,7 @@ export default function DashboardPage() {
 
         {/* Helper links */}
        <div className="grid grid-cols-3 gap-1 place-items-center mt-1">
-        <a href="#" className="flex items-center gap-1.5 text-[#211F45] hover:opacity-80">
+        <a href="https://dreamtripclub.com/help/" className="flex items-center gap-1.5 text-[#211F45] hover:opacity-80">
           <Image src="/questions.png" alt="Questions" width={18} height={18} />
           <span className="uppercase underline font-medium tracking-normal text-[12px] md:text-[13px]">
             Questions?
@@ -541,12 +549,7 @@ export default function DashboardPage() {
           </span>
         </a>
 
-        <a href="#" className="flex items-center gap-1.5 text-[#211F45] hover:opacity-80">
-          <Image src="/love you stay.png" alt="Love your stay" width={18} height={18} />
-          <span className="uppercase underline font-medium tracking-normal text-[12px] md:text-[13px]">
-            Love Your Stay?
-          </span>
-        </a>
+       
         </div>
 
         
