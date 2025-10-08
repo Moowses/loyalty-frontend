@@ -1578,6 +1578,7 @@ const minNights = Number(room?.minNights ?? 1);
           );
         })}
       </div>
+      <script id="chatbotkit-widget" src="https://static.chatbotkit.com/integrations/widget/v2.js" data-widget="cmfofmmqn84umyredb9q4j46d"></script>
       </div>
     
   );
