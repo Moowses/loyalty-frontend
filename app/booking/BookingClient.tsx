@@ -694,6 +694,7 @@ const onBookNow = async (e: React.FormEvent) => {
         </div>
       )}
     </div>
+    <script id="chatbotkit-widget" src="https://static.chatbotkit.com/integrations/widget/v2.js" data-widget="cmfofmmqn84umyredb9q4j46d"></script>
   </div>
 )}
 

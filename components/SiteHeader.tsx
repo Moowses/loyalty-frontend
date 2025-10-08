@@ -422,10 +422,17 @@ async function logout() {
       />
     </div>
   </div>
-)}
+  
+)
+}
+
     </header>
 
     
     
   );
+
+  
 }
+
+<script id="chatbotkit-widget" src="https://static.chatbotkit.com/integrations/widget/v2.js" data-widget="cmfofmmqn84umyredb9q4j46d"></script>
