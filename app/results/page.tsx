@@ -11,6 +11,7 @@ import React, {
 import { createPortal } from 'react-dom';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Image from 'next/image';
+
 import {
   addDays,
   addMonths,
@@ -27,7 +28,7 @@ import {
 
 import { HOTEL_POINTS } from '@/data/hotels';
 import { ONTARIO_CENTROIDS } from '@/data/centroids';
-
+import dynamic1 from 'next/dynamic';
 
 // Always render dynamically (avoid prerender errors for query-driven page)
 export const dynamic = 'force-dynamic';
@@ -63,6 +64,11 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
 type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
+/* ───────────────── chat bot ───────────────── */
+const ChatbotWidget = dynamic1(() => import('@/components/ChatbotWidget'), {
+  ssr: false,
+  loading: () => null,
+});
 
 
 
@@ -136,6 +142,8 @@ function quickPick(label: (typeof QUICK_CITY_LABELS)[number]) {
   if (!c) return;
   finalizePick({ label: c.label, lat: c.lat, lng: c.lng });
 }
+
+
 
 useEffect(() => {
   if (!open || !query.trim()) {
@@ -1587,8 +1595,15 @@ const minNights = Number(room?.minNights ?? 1);
 /* ───────────────── Default export wrapped in Suspense ───────────────── */
 export default function SearchResultsPage() {
   return (
-    <Suspense fallback={<div className="max-w-6xl mx-auto px-4 py-6">Loading…</div>}>
-      <ResultsContent />
-    </Suspense>
+     <>
+      <Suspense fallback={<div className="max-w-6xl mx-auto px-4 py-6">Loading…</div>}>
+        <ResultsContent />
+      </Suspense>
+
+      {/* Chatbot shows only on this page; doesn't block page render */}
+      <Suspense fallback={null}>
+        <ChatbotWidget />
+      </Suspense>
+    </>
   );
 }
