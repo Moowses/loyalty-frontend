@@ -15,6 +15,7 @@ import {
   FaUser,
 } from 'react-icons/fa6';
 
+
 /* ========= Types ========= */
 type Txn = { date: string; description: string; points: number };
 type Dashboard = {
@@ -55,7 +56,12 @@ const getCookie = (name: string): string => {
   );
   return m ? decodeURIComponent(m[1]) : '';
 };
-/* ========= Normalizers ========= */
+
+
+/* image carousel */
+const ImageCarousel = dynamic(() => import("@/components/ImageCarousel"), { ssr: false });
+
+/*  Normalizers */
 function normalizeDashboard(json: any): Dashboard {
   const rec =
     json?.dashboard ??
@@ -534,7 +540,7 @@ export default function DashboardPage() {
        
 
         {/* Helper links */}
-       <div className="grid grid-cols-3 gap-1 place-items-center mt-1">
+       <div className="flex items-center justify-center gap-10 text-sm md:text-base">
         <a href="https://dreamtripclub.com/help/" className="flex items-center gap-1.5 text-[#211F45] hover:opacity-80">
           <Image src="/questions.png" alt="Questions" width={18} height={18} />
           <span className="uppercase underline font-medium tracking-normal text-[12px] md:text-[13px]">
@@ -548,10 +554,11 @@ export default function DashboardPage() {
             Missing Points?
           </span>
         </a>
-
-       
         </div>
 
+        {/* Image-only carousel */}
+<ImageCarousel />
+      
         
       </main>
       

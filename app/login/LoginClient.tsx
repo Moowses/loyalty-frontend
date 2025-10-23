@@ -201,6 +201,7 @@ const handleInput = (
           (isSignup ? 'Signup failed. Please review your details.' : 'Invalid login. Please check your credentials.');
         
         setError(flag ? `${apiMessage}` : apiMessage);
+        console.log('Login/Signup failed:', json);
         return;
       }
 

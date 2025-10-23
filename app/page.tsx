@@ -365,7 +365,7 @@ const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoin
                 </a>
                 <a
                   href="https://www.apple.com/app-store/"
-                  target="_blank"
+                  target="_blank" 
                   rel="noopener noreferrer"
                   className="hover:opacity-80 transition-opacity"
                 >
@@ -377,6 +377,8 @@ const apiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL || ''}${apiBase}${endpoin
           {/* /GLASS CARD */}
         </div>
       </div>
+    
     </div>
+    
   );
 }
