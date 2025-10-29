@@ -106,11 +106,63 @@ export default function BookingPage() {
   const [consentEmail, setConsentEmail] = useState(false);
   const [consentSms, setConsentSms]     = useState(false);
 
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+    fetch(`${base}/api/auth/status`, { credentials: "include" })
+      .then(r => {
+        if (r.ok) { setIsAuthed(true); return; }
+        // not authed → clear stale caches
+        try {
+          localStorage.removeItem("dashboardData");
+          localStorage.removeItem("dtc_profile");
+          localStorage.removeItem("dtc_guestDetails");
+          localStorage.removeItem("membershipno");
+          localStorage.removeItem("firstname");
+          localStorage.removeItem("lastname");
+          localStorage.removeItem("primaryemail");
+        } catch {}
+        setIsAuthed(false);
+      })
+      .catch(() => { // network error → treat as logged out
+        try {
+          localStorage.removeItem("dtc_profile");
+          localStorage.removeItem("dtc_guestDetails");
+        } catch {}
+        setIsAuthed(false);
+      });
+  }, []);
+      useEffect(() => {
+      let bc: BroadcastChannel | null = null;
+      try {
+        bc = new BroadcastChannel('dtc-auth');
+        bc.onmessage = (e) => {
+          if (e?.data?.type === 'logout') {
+            try {
+              localStorage.removeItem('dtc_profile');
+              localStorage.removeItem('dtc_guestDetails');
+              localStorage.removeItem('dashboardData');
+            } catch {}
+            // Optional: clear visible fields too
+            setFirstName(''); 
+            setLastName(''); 
+            setEmail(''); 
+            setMemberNumber('');
+          }
+        };
+      } catch {}
+      return () => { try { bc?.close(); } catch {} };
+    }, []);
+
+  
 const getCookie = (name: string): string => {
   if (typeof document === 'undefined') return '';
   const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : '';
 };
+
+
 
 // Modal state for payment process
 const [payModalOpen, setPayModalOpen] = useState(false);
@@ -118,66 +170,44 @@ const [payStage, setPayStage] = useState<'idle' | 'verifying' | 'declined' | 'ap
 const [payMessage, setPayMessage] = useState('');
 
   // poppulate member number from cache if available or localstorage
-useEffect(() => {
-  try {
-    // 1) Cookie-first (set by MiniDashboard with Domain=.dreamtripclub.com)
-    const cFirst = getCookie('dtc_firstName');
-    const cLast  = getCookie('dtc_lastName');
-    const cEmail = getCookie('dtc_email');
-    const cMemNo = getCookie('dtc_membershipNo');
+  useEffect(() => {
+    if (isAuthed !== true) return; // 
 
+  
+    const cFirst = getCookie("dtc_firstName");
+    const cLast  = getCookie("dtc_lastName");
+    const cEmail = getCookie("dtc_email");
+    const cMemNo = getCookie("dtc_membershipNo");
     if (cFirst) setFirstName(cFirst);
     if (cLast)  setLastName(cLast);
     if (cEmail) setEmail(cEmail);
     if (cMemNo) setMemberNumber(cMemNo);
+  
 
-    // 2) Fallback: your existing localStorage approach (kept for legacy)
     if (!cFirst || !cLast || !cEmail || !cMemNo) {
-      const ls = localStorage.getItem('dashboardData');
+      const ls = localStorage.getItem("dashboardData");
       if (ls) {
         const dash = JSON.parse(ls);
-        const userData = dash?.data?.[0] || dash;
-
+        const u = dash?.data?.[0] || dash;
         if (!cMemNo) {
-          const m = userData?.membershipno || userData?.membershipNo || userData?.membershipNumber;
+          const m = u?.membershipno || u?.membershipNo || u?.membershipNumber;
           if (m) setMemberNumber(String(m));
         }
         if (!cFirst) {
-          const fn = userData?.firstname || userData?.firstName;
+          const fn = u?.firstname || u?.firstName;
           if (fn) setFirstName(String(fn));
         }
         if (!cLast) {
-          const ln = userData?.lastname || userData?.lastName;
+          const ln = u?.lastname || u?.lastName;
           if (ln) setLastName(String(ln));
         }
         if (!cEmail) {
-          const em = userData?.primaryemail || userData?.primaryEmail || userData?.email;
+          const em = u?.primaryemail || u?.primaryEmail || u?.email;
           if (em) setEmail(String(em));
-        }
-      } else {
-        // legacy direct keys
-        if (!cMemNo) {
-          const cachedMember = localStorage.getItem('membershipno');
-          if (cachedMember) setMemberNumber(String(cachedMember));
-        }
-        if (!cFirst) {
-          const cachedFirstName = localStorage.getItem('firstname');
-          if (cachedFirstName) setFirstName(String(cachedFirstName));
-        }
-        if (!cLast) {
-          const cachedLastName = localStorage.getItem('lastname');
-          if (cachedLastName) setLastName(String(cachedLastName));
-        }
-        if (!cEmail) {
-          const cachedEmail = localStorage.getItem('primaryemail');
-          if (cachedEmail) setEmail(String(cachedEmail));
         }
       }
     }
-  } catch (e) {
-    console.error('Failed to load guest details:', e);
-  }
-}, []);
+  }, [isAuthed]); // 
 
   // --- Fetch FINAL price from /availability ---
   useEffect(() => {
