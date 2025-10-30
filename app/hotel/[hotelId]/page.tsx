@@ -267,7 +267,12 @@ useEffect(() => {
     .catch(() => setIsAuthed(false));
 }, []);
 
-
+// Auto-open SiteHeader login drawer if logged out
+useEffect(() => {
+  if (isAuthed === false) {
+    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
+  }
+}, [isAuthed]);
 
 // (roomSubtotal / nights) for the “per night” display
 const nightly = useMemo(
