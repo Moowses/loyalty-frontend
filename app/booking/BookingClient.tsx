@@ -393,19 +393,18 @@ const configureCollect = useCallback(() => {
 
 // --- Booking Handler ---
 
-
+// --- Booking Handler ---
 const onBookNow = async (e: React.FormEvent) => {
   e.preventDefault();
+
+  // Block submit if not logged in and open the header login drawer
   if (isAuthed !== true) {
-    // optional inline message
     setErr('Please log in to continue to payment.');
     try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
     return;
   }
 
-const onBookNow = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (paying) return;        
+  if (paying) return;
   setErr('');
 
   if (!quote) {
@@ -438,10 +437,8 @@ const onBookNow = async (e: React.FormEvent) => {
         if (tok) resolve(tok);
         else reject(new Error(resp?.error?.message || resp?.error || "Tokenization failed"));
       };
-
       try {
         (window as any).CollectJS.startPaymentRequest?.();
-        
       } catch (err) {
         reject(new Error("Unable to start payment request."));
       }
@@ -475,7 +472,6 @@ const onBookNow = async (e: React.FormEvent) => {
           ? 'Your card was declined: Do Not Honor. Please try a different card.'
           : `HTTP error! status: ${res.status}`);
 
-      // Stay on the page → show decline in modal
       setPayStage('declined');
       setPayMessage(msg);
       return;
@@ -505,8 +501,7 @@ const onBookNow = async (e: React.FormEvent) => {
     setPaying(false);
   }
 };
-
-
+ // --- Render ---
 
   if (loading) return <div className="mx-auto max-w-4xl p-6">Loading…</div>;
   if (err) return <div className="mx-auto max-w-4xl p-6 text-red-600">{err}</div>;
