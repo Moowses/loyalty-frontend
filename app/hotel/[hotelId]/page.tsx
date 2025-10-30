@@ -256,6 +256,7 @@ const amenitiesList = useMemo(() => {
 
 useEffect(() => {
   setNights(nightsCalc);
+  
 }, [nightsCalc]);
 
 // Check auth status on mount
@@ -270,9 +271,15 @@ useEffect(() => {
 // Auto-open SiteHeader login drawer if logged out
 useEffect(() => {
   if (isAuthed === false) {
-    window.dispatchEvent(new CustomEvent('dtc:open-login')); 
+    // prevent multiple prompts
+    const hasPrompted = sessionStorage.getItem('dtc_login_prompted');
+    if (!hasPrompted) {
+      window.dispatchEvent(new CustomEvent('dtc:open-login'));
+      sessionStorage.setItem('dtc_login_prompted', 'true');
+    }
   }
 }, [isAuthed]);
+
 
 // (roomSubtotal / nights) for the “per night” display
 const nightly = useMemo(
