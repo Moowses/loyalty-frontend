@@ -677,10 +677,10 @@ const onBookNow = async (e: React.FormEvent) => {
 
               {err && <div className="text-sm text-red-600 p-2 bg-red-50 rounded">{err}</div>}
 
-               <button
+              <button
                 id="bookNowBtn"
                 type="submit"
-                disabled={paying || !available || nights <= 0}
+                disabled={paying || !available || nights <= 0 || isAuthed !== true} 
                 className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
               >
                 {paying ? 'Processing…' : (available ? 'BOOK NOW' : 'Not available')}
