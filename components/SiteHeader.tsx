@@ -84,6 +84,12 @@ const checkAuth = useCallback(async () => {
   return () => window.removeEventListener('message', onMsg);
 }, [checkAuth]);
 
+useEffect(() => {
+  const handler = () => setShowLoginModal(true);
+  // listen for booking page request
+  window.addEventListener('dtc:open-login' as any, handler as any);
+  return () => window.removeEventListener('dtc:open-login' as any, handler as any);
+}, []);
 
 
 async function logout() {
@@ -377,10 +383,6 @@ async function logout() {
     </Link>
   </div>
 )}
-
-
-
-
 
     {/* Login Modal (right-docked, no blank header) */}
 {showLoginModal && (

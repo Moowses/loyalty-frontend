@@ -161,6 +161,12 @@ const getCookie = (name: string): string => {
   const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : '';
 };
+// Auto-open SiteHeader login drawer if logged out
+useEffect(() => {
+  if (isAuthed === false) {
+    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
+  }
+}, [isAuthed]);
 
 
 
@@ -386,6 +392,17 @@ const configureCollect = useCallback(() => {
   }, [configureCollect]);
 
 // --- Booking Handler ---
+
+
+const onBookNow = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (isAuthed !== true) {
+    // optional inline message
+    setErr('Please log in to continue to payment.');
+    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
+    return;
+  }
+
 const onBookNow = async (e: React.FormEvent) => {
   e.preventDefault();
   if (paying) return;        
@@ -668,7 +685,7 @@ const onBookNow = async (e: React.FormEvent) => {
               <button
                 id="bookNowBtn"
                 type="submit"
-                disabled={paying || !available || nights <= 0}
+                disabled={paying || !available || nights <= 0 || isAuthed !== true} 
                 className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
               >
                 {paying ? 'Processing…' : (available ? 'BOOK NOW' : 'Not available')}
