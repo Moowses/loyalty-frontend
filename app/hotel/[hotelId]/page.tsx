@@ -155,8 +155,11 @@ export default function HotelInfoPage() {
   const { hotelId } = useParams<{ hotelId: string }>();
   const sp = useSearchParams();
   const router = useRouter();
+  // Live login state for this page
+  const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
-  /* ==== values carried from Search page (unchanged) ==== */
+
+  /* values carried from Search page (unchanged) */
   const nameQP      = sp.get('name') || '';
   const currency    = sp.get('currency') || 'CAD';
   const hotelNo     = sp.get('hotelNo') || '';
@@ -168,7 +171,7 @@ export default function HotelInfoPage() {
   const totalFromSearch = Number(sp.get('total') || '0');
   const petFromSearch   = Number(sp.get('petFee') || '0');
 
-  /* ==== user-editable inputs (seeded from QPs) ==== */
+  /* user-editable inputs (seeded from QPs) */
   const [checkIn,  setCheckIn]  = useState(sp.get('checkIn')  || sp.get('startTime') || '');
   const [checkOut, setCheckOut] = useState(sp.get('checkOut') || sp.get('endTime')   || '');
   const [adult,    setAdult]    = useState(Number(sp.get('adult')  || sp.get('adults')  || '1'));
@@ -254,6 +257,15 @@ const amenitiesList = useMemo(() => {
 useEffect(() => {
   setNights(nightsCalc);
 }, [nightsCalc]);
+
+// Check auth status on mount
+
+useEffect(() => {
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://member.dreamtripclub.com';
+  fetch(`${base}/api/auth/status`, { credentials: 'include' })
+    .then(r => setIsAuthed(r.ok))
+    .catch(() => setIsAuthed(false));
+}, []);
 
 
 
@@ -422,26 +434,31 @@ async function fetchQuote() {
 
   /* ==== booking nav (unchanged params you used before) ==== */
 function goBooking() {
+  // If not logged in, ask the SiteHeader to open the login drawer
+  if (isAuthed !== true) {
+    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
+    return;
+  }
+
   if (!available || !roomTotal || !checkIn || !checkOut) return;
 
   const params = new URLSearchParams({
-  hotelId: resolvedHotelId || String(hotelId),
-  hotelNo: String(hotelNo || ''),
-  startTime: checkIn,
-  endTime: checkOut,
-  adults: String(adult),
-  children: String(child),
-  infants: String(infant),
-  pets: pet === 'yes' ? '1' : '0',
-  currency: currency || 'CAD',
+    hotelId: resolvedHotelId || String(hotelId),
+    hotelNo: String(hotelNo || ''),
+    startTime: checkIn,
+    endTime: checkOut,
+    adults: String(adult),
+    children: String(child),
+    infants: String(infant),
+    pets: pet === 'yes' ? '1' : '0',
+    currency: currency || 'CAD',
+    total: String(roomTotal),      // room-only subtotal
+    petFee: String(petFee),        // pet fee
+  });
 
-  // optional legacy fields your BookingClient can read:
-  total: String(roomTotal),       // room-only subtotal
-  petFee: String(petFee),         // pet fee
-});
-router.push(`/booking?${params.toString()}`);
-
+  router.push(`/booking?${params.toString()}`);
 }
+
 
 
   /* ================== UI (unchanged design) ================== */
@@ -661,18 +678,22 @@ router.push(`/booking?${params.toString()}`);
               </div>
             )} */}
           </div>
+            {isAuthed === false && (
+              <div className="mb-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
+                To continue, please log in or join Dream Trip Club.
+              </div>
+            )}
 
-
-         <button
-          disabled={!checkIn || !checkOut || !available || roomSubtotal <= 0}
+        <button
+          disabled={!checkIn || !checkOut || !available || roomSubtotal <= 0 || isAuthed !== true}
           onClick={goBooking}
           className={`w-full rounded-xl py-3 font-medium ${
-            available && roomSubtotal > 0
+            available && roomSubtotal > 0 && isAuthed === true
               ? 'bg-[#211F45] text-white'
               : 'bg-gray-300 text-gray-600 cursor-not-allowed'
           }`}
         >
-          {available && roomSubtotal > 0 ? 'Book now' : 'Not available'}
+          {(available && roomSubtotal > 0 && isAuthed === true) ? 'Book now' : 'Sign in to book'}
         </button>
 
           {loading && <div className="text-xs text-gray-500 mt-2">Updating rates…</div>}

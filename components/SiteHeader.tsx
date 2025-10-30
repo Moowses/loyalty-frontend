@@ -84,6 +84,7 @@ const checkAuth = useCallback(async () => {
   return () => window.removeEventListener('message', onMsg);
 }, [checkAuth]);
 
+//listen for login modal open requests
 useEffect(() => {
   const handler = () => setShowLoginModal(true);
   // listen for booking page request
