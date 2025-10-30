@@ -107,6 +107,7 @@ export default function BookingPage() {
   const [consentSms, setConsentSms]     = useState(false);
 
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
+  const [showAuthModal, setShowAuthModal] = useState(false);//modal if not logged in
 
   useEffect(() => {
     const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
@@ -326,6 +327,24 @@ const [payMessage, setPayMessage] = useState('');
       }
     })();
   }, [hotelIdParam, hotelNoParam, startTime, endTime, adults, children, infants, petYN, currency, nights]);
+// Auto-close auth modal when login completes in the iframe
+useEffect(() => {
+  if (!showAuthModal) return;
+  const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+  const id = setInterval(async () => {
+    try {
+      const r = await fetch(`${base}/api/auth/status`, { credentials: 'include' });
+      if (r.ok) {
+        setIsAuthed(true);
+        setShowAuthModal(false);
+        clearInterval(id);
+      }
+    } catch {}
+  }, 1000); // check every 1s
+
+  return () => clearInterval(id);
+}, [showAuthModal]);
+
 
   // --- Collect.js Configuration ---
   const configuredRef = useRef(false);
@@ -386,8 +405,20 @@ const configureCollect = useCallback(() => {
   }, [configureCollect]);
 
 // --- Booking Handler ---
+const onPreSubmit = (e: React.MouseEvent<HTMLButtonElement>) => {
+  if (isAuthed !== true) {
+    e.preventDefault(); // stop form submit
+    setShowAuthModal(true);
+  }
+};
+
+
 const onBookNow = async (e: React.FormEvent) => {
   e.preventDefault();
+ if (isAuthed !== true) {
+  setShowAuthModal(true);   // show login/join drawer instead
+ return;
+ }
   if (paying) return;        
   setErr('');
 
@@ -665,9 +696,10 @@ const onBookNow = async (e: React.FormEvent) => {
 
               {err && <div className="text-sm text-red-600 p-2 bg-red-50 rounded">{err}</div>}
 
-              <button
+             <button
                 id="bookNowBtn"
                 type="submit"
+                onClick={onPreSubmit}                 // ⬅️ intercept if not authed
                 disabled={paying || !available || nights <= 0}
                 className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
               >
@@ -726,6 +758,45 @@ const onBookNow = async (e: React.FormEvent) => {
     </div>
   </div>
 )}
+{showAuthModal && (
+  <div className="fixed inset-0 z-[9999] flex justify-end">
+    {/* Backdrop */}
+    <button
+      aria-label="Close"
+      onClick={() => setShowAuthModal(false)}
+      className="absolute inset-0 w-full h-full bg-black/50"
+    />
+    {/* Right panel */}
+    <div className="relative w-full max-w-[530px] h-[92vh] bg-white shadow-2xl rounded-l-2xl overflow-hidden">
+      <button
+        onClick={() => setShowAuthModal(false)}
+        className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
+        aria-label="Close"
+      >
+        ×
+      </button>
+
+      {/* Message header */}
+      <div className="p-5 border-b">
+        <h3 className="text-lg font-semibold" style={{ color: '#211F45' }}>
+          Not a member yet?
+        </h3>
+        <p className="mt-1 text-sm text-gray-600">
+          To continue with payment, please <strong>log in</strong> or <strong>join Dream Trip Club</strong>.
+        </p>
+      </div>
+
+      {/* Login / Join iframe (same as your SiteHeader login panel) */}
+      <iframe
+        src="https://member.dreamtripclub.com/login"
+        className="w-full h-[calc(92vh-64px)] border-0"
+        loading="lazy"
+        sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+      />
+    </div>
+  </div>
+)}
+
 
 
 
