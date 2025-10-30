@@ -270,7 +270,7 @@ useEffect(() => {
 // Auto-open SiteHeader login drawer if logged out
 useEffect(() => {
   if (isAuthed === false) {
-    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
+    window.dispatchEvent(new CustomEvent('dtc:open-login')); 
   }
 }, [isAuthed]);
 
