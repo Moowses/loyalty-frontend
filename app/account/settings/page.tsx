@@ -41,17 +41,6 @@ function SectionCard({ children }: { children: React.ReactNode }) {
   return <section className="relative rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 overflow-hidden">{children}</section>;
 }
 
-function isLoggedInLikeHeader() {
-  try {
-    const dash = localStorage.getItem("dashboard");
-    const token = localStorage.getItem("token"); // if your header checks this too
-    return Boolean(dash || token);
-  } catch {
-    return false;
-  }
-}
-
-
 export default function AccountSettingsPage() {
   const [tab, setTab] = useState<'profile' | 'password'>('profile');
   const [loading, setLoading] = useState(true);
