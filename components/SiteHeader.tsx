@@ -27,6 +27,15 @@ export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+const router = useRouter();
+const [currentPath, setCurrentPath] = useState("");
+
+useEffect(() => {
+  if (typeof window !== "undefined") {
+    setCurrentPath(window.location.pathname);
+  }
+}, []);  
+
 
 const checkAuth = useCallback(async () => {
   try {
@@ -190,21 +199,28 @@ async function logout() {
   </Link>
 
   {/* Account */}
-  <Link
-    href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/dashboard'}
-    className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
-  >
-    <Image
-      src="/Navaccount.png"
-      alt="Account"
-      width={24}
-      height={24}
-      className="transition-transform duration-200 group-hover:-translate-y-1"
-    />
-    <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
-      Account
-    </span>
-  </Link>
+<Link
+  href={
+    loggedIn
+      ? currentPath.startsWith("/dashboard")
+        ? "/dashboard/settings" // already inside dashboard
+        : "https://member.dreamtripclub.com/dashboard" // coming from marketing site
+      : "/dashboard"
+  }
+  onClick={() => setOpen(false)}
+  className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+>
+  <Image
+    src="/Navaccount.png"
+    alt="Account"
+    width={24}
+    height={24}
+    className="transition-transform duration-200 group-hover:-translate-y-1"
+  />
+  <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
+    Account
+  </span>
+</Link>
 </nav>
 
         {/* Desktop CTAs */}
