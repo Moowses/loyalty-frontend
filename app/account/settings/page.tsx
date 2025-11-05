@@ -1,22 +1,10 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
 
-/** ——— helpers you already use ——— */
-const apiBase = () =>
-  process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') || '';
-
-const getCookie = (name: string) => {
-  if (typeof document === 'undefined') return '';
-  const m = document.cookie.match(
-    new RegExp('(?:^|; )' + name.replace(/([.$?*|{}()[\]\\/+^])/g, '\\$1') + '=([^;]*)'),
-  );
-  return m ? decodeURIComponent(m[1]) : '';
-};
-
-/** ——— types you already have ——— */
-type Profile = {
+interface Profile {
   avatarUrl?: string | null;
   firstname?: string;
   lastname?: string;
@@ -26,38 +14,50 @@ type Profile = {
   address1?: string;
   membershipno?: string;
   email?: string;
+}
+
+const BRAND = '#211F45';
+const apiBase = () => (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '');
+
+const getCookie = (name: string): string => {
+  if (typeof document === 'undefined') return '';
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
+  return m ? decodeURIComponent(m[1]) : '';
 };
 
-/** ——— Page ——— */
+function Label({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
+  return <label htmlFor={htmlFor} className="block text-sm font-medium text-[#374151] mb-1">{children}</label>;
+}
+
+function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${props.className || ''}`} />;
+}
+
+function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
+  return <textarea {...props} className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${props.className || ''}`} />;
+}
+
+function SectionCard({ children }: { children: React.ReactNode }) {
+  return <section className="relative rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 overflow-hidden">{children}</section>;
+}
+
+function isLoggedInLikeHeader() {
+  try {
+    const dash = localStorage.getItem("dashboard");
+    const token = localStorage.getItem("token"); // if your header checks this too
+    return Boolean(dash || token);
+  } catch {
+    return false;
+  }
+}
+
+
 export default function AccountSettingsPage() {
-  const router = useRouter();
-
-  /** 1) Auth guard (no early returns) */
-  const [authChecked, setAuthChecked] = useState(false);
-  useEffect(() => {
-    try {
-      const dash = localStorage.getItem('dashboard');
-      const token = localStorage.getItem('token');
-      if (!dash && !token) {
-        router.replace('/dashboard'); // same behavior as SiteHeader
-        // we still set checked, so hooks order stays stable
-      }
-    } catch {
-      router.replace('/dashboard');
-    } finally {
-      setAuthChecked(true);
-    }
-  }, [router]);
-
-  /** 2) All your existing hooks remain BELOW (order is stable on every render) */
   const [tab, setTab] = useState<'profile' | 'password'>('profile');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({});
 
-  // Load profile AFTER auth check completes
   useEffect(() => {
-    if (!authChecked) return;
-
     let cancelled = false;
     const run = async () => {
       try {
@@ -79,14 +79,10 @@ export default function AccountSettingsPage() {
             });
           }
         } else {
-          if (!cancelled) {
-            setProfile({ email: getCookie('dtc_email') || '' });
-          }
+          if (!cancelled) setProfile({ email: getCookie('dtc_email') || '' });
         }
       } catch {
-        if (!cancelled) {
-          setProfile({ email: getCookie('dtc_email') || '' });
-        }
+        if (!cancelled) setProfile({ email: getCookie('dtc_email') || '' });
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -95,225 +91,193 @@ export default function AccountSettingsPage() {
     return () => {
       cancelled = true;
     };
-  }, [authChecked]);
+  }, []);
 
-  /** password change handler you already wired to /api/account/change-password */
-  const [savingPw, setSavingPw] = useState(false);
-  const [currentPw, setCurrentPw] = useState('');
-  const [pw1, setPw1] = useState('');
-  const [pw2, setPw2] = useState('');
-
-  const canSave = pw1.length > 0 && pw1 === pw2 && currentPw.length > 0;
-
-  const onChangePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSave) return;
-
-    try {
-      setSavingPw(true);
-      const res = await fetch(`${apiBase()}/api/account/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({
-          email: profile.email,
-          currentPassword: currentPw,
-          newPassword: pw1,
-        }),
-      });
-
-      const isJSON = res.headers.get('content-type')?.includes('application/json');
-      const data = isJSON ? await res.json() : null;
-
-      if (!res.ok) {
-        const stage = data?.stage;
-        const message =
-          data?.message ||
-          (stage === 'verify'
-            ? 'Current password is incorrect.'
-            : stage === 'update'
-            ? 'Unable to update password.'
-            : 'Unable to change password.');
-        alert(message);
-        return;
-        }
-      alert('Password changed successfully.');
-      setCurrentPw('');
-      setPw1('');
-      setPw2('');
-    } catch (err: any) {
-      alert(err?.message || 'Failed to change password. Please try again.');
-    } finally {
-      setSavingPw(false);
-    }
-  };
-
-  /** Optional avatar handlers (no-op placeholders) */
   const onUploadAvatar = () => alert('Avatar upload coming soon.');
   const onDeleteAvatar = () => alert('Avatar delete coming soon.');
-
-  /** 3) Render – show a light loader while auth check runs.
-   *     No early returns before hooks ⇒ no hook-order errors.
-   */
-  if (!authChecked) {
-    return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        Checking session…
-      </div>
-    );
-  }
-
-  /** ——— YOUR EXISTING UI STARTS HERE ———
-   * I am NOT changing your layout/markup. Keep everything below as-is.
-   * If your file defines components like SectionCard/ProfileTab/PasswordTab,
-   * they remain unchanged; just ensure they use the same state/handlers.
-   */
 
   return (
     <div className="min-h-screen w-full bg-[#F6F8FB] text-[#1F2042]">
       <main className="max-w-6xl mx-auto px-4 md:px-6 py-8">
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold">Account settings</h1>
-          <p className="text-sm text-gray-500">Manage your profile and password.</p>
+        <div className="mb-6 flex items-center justify-between">
+          <h1 className="text-[22px] md:text-[26px] font-bold">Account settings</h1>
+          <Link href="/dashboard" className="text-sm text-[#211F45] underline">Back to Dashboard</Link>
         </div>
 
-        <div className="grid grid-cols-12 gap-6">
-          {/* Sidebar */}
-          <aside className="col-span-12 md:col-span-3">
-            <nav className="space-y-2">
-              <button
-                onClick={() => setTab('profile')}
-                className={`w-full text-left px-4 py-2 rounded-lg border ${
-                  tab === 'profile' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white hover:bg-gray-50'
-                }`}
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={() => setTab('password')}
-                className={`w-full text-left px-4 py-2 rounded-lg border ${
-                  tab === 'password' ? 'bg-indigo-50 border-indigo-200 text-indigo-700' : 'bg-white hover:bg-gray-50'
-                }`}
-              >
-                Password
-              </button>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
+          <aside className="md:col-span-2 lg:col-span-1">
+            <nav className="rounded-xl border border-gray-200 bg-white overflow-hidden">
+              <button onClick={() => setTab('profile')} className={`w-full text-left px-4 py-3 border-b border-gray-200 ${tab === 'profile' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'}`}>Profile Settings</button>
+              <button onClick={() => setTab('password')} className={`w-full text-left px-4 py-3 ${tab === 'password' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'}`}>Password</button>
             </nav>
           </aside>
 
-          {/* Content */}
-          <section className="col-span-12 md:col-span-9">
-            {/* Avatar + membership no. */}
-            <div className="flex items-center gap-4 mb-6">
-              <div className="w-16 h-16 rounded-full bg-gray-200" aria-label="Avatar" />
-              <div>
-                <div className="text-sm text-gray-500">Membership No.</div>
-                <div className="font-medium">{profile.membershipno || '—'}</div>
-              </div>
-            </div>
-
-            {/* Tabs */}
+          <div className="md:col-span-3 lg:col-span-4 space-y-6">
             {loading ? (
-              <div className="rounded-xl border bg-white p-6">Loading…</div>
+              <SectionCard>Loading…</SectionCard>
             ) : tab === 'profile' ? (
               <div className="relative">
-                {/* Blurred overlay */}
                 <div className="absolute inset-0 backdrop-blur-sm bg-white/75 flex items-center justify-center z-10 rounded-2xl">
                   <div className="text-center">
-                    <p className="text-lg font-semibold text-[#1F2042] mb-2">
-                      This feature is coming soon.
-                    </p>
-                    <p className="text-sm text-gray-600">
-                      If you need support, open the live chat below left.
-                    </p>
+                    <p className="text-lg font-semibold text-[#1F2042] mb-2">This feature is coming soon.</p>
+                    <p className="text-sm text-gray-600">If you need support, open the live chat below left.</p>
                   </div>
                 </div>
-
-                {/* Your existing profile form (disabled) */}
-                <div className="opacity-100 pointer-events-none">
-                  {/* keep your existing form fields as-is; showing the values */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="text-sm font-medium">First Name</label>
-                      <input className="mt-1 w-full rounded-lg border px-3 py-2" value={profile.firstname || ''} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Last Name</label>
-                      <input className="mt-1 w-full rounded-lg border px-3 py-2" value={profile.lastname || ''} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Phone</label>
-                      <input className="mt-1 w-full rounded-lg border px-3 py-2" value={profile.phone || ''} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">Mobile Number</label>
-                      <input className="mt-1 w-full rounded-lg border px-3 py-2" value={profile.mobilenumber || ''} readOnly />
-                    </div>
-                    <div>
-                      <label className="text-sm font-medium">City</label>
-                      <input className="mt-1 w-full rounded-lg border px-3 py-2" value={profile.city || ''} readOnly />
-                    </div>
-                    <div className="md:col-span-2">
-                      <label className="text-sm font-medium">Residential Address</label>
-                      <textarea className="mt-1 w-full rounded-lg border px-3 py-2" rows={3} value={profile.address1 || ''} readOnly />
-                    </div>
-                  </div>
-                  <button disabled className="mt-4 inline-flex items-center rounded-lg bg-gray-300 text-white px-4 py-2 cursor-not-allowed">
-                    Save Changes
-                  </button>
+                <div className="opacity-1 pointer-events-none">
+                  <ProfileTab
+                    profile={profile}
+                    setProfile={setProfile}
+                    onUploadAvatar={onUploadAvatar}
+                    onDeleteAvatar={onDeleteAvatar}
+                  />
                 </div>
               </div>
             ) : (
-              /* Password tab (unchanged UI, just uses onChangePassword) */
-              <form onSubmit={onChangePassword} className="space-y-4">
-                <div>
-                  <label className="text-sm font-medium">Email</label>
-                  <input className="mt-1 w-full rounded-lg border px-3 py-2 bg-gray-100" value={profile.email || ''} readOnly />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Current Password</label>
-                  <input
-                    type="password"
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
-                    value={currentPw}
-                    onChange={(e) => setCurrentPw(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">New Password</label>
-                  <input
-                    type="password"
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
-                    value={pw1}
-                    onChange={(e) => setPw1(e.target.value)}
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium">Confirm New Password</label>
-                  <input
-                    type="password"
-                    className="mt-1 w-full rounded-lg border px-3 py-2"
-                    value={pw2}
-                    onChange={(e) => setPw2(e.target.value)}
-                    required
-                  />
-                </div>
-
-                <div className="flex items-center gap-3">
-                  <button
-                    type="submit"
-                    disabled={savingPw || !canSave}
-                    className="inline-flex items-center rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 disabled:opacity-60">
-                    {savingPw ? 'Saving…' : 'Change Password'}
-                  </button>
-                </div>
-              </form>
+              <PasswordTab email={profile.email || ''} />
             )}
-          </section>
+          </div>
         </div>
       </main>
     </div>
+  );
+}
+
+function ProfileTab({ profile, setProfile, onUploadAvatar, onDeleteAvatar }: { profile: Profile; setProfile: React.Dispatch<React.SetStateAction<Profile>>; onUploadAvatar: () => void; onDeleteAvatar: () => void; }) {
+  return (
+    <SectionCard>
+      <div className="flex items-center gap-5 mb-6">
+        <div className="relative h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md">
+          <Image src={profile.avatarUrl || '/avatar-placeholder.png'} alt="Avatar" fill className="object-cover" />
+        </div>
+        <div className="flex flex-col gap-1">
+          <div className="text-sm text-gray-500">Membership No.</div>
+          <div className="text-lg font-semibold text-[#1F2042]">{profile.membershipno || '—'}</div>
+          <div className="flex items-center gap-3 mt-2">
+            <button onClick={onUploadAvatar} className="px-4 py-2 rounded-lg bg-[#211F45] text-white font-semibold hover:opacity-90">Upload New</button>
+            <button onClick={onDeleteAvatar} className="px-4 py-2 rounded-lg bg-gray-100 text-gray-700 font-semibold hover:bg-gray-200">Delete avatar</button>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <Label>First Name<span className="text-red-500"> *</span></Label>
+          <Input value={profile.firstname || ''} onChange={(e) => setProfile({ ...profile, firstname: e.target.value })} placeholder="First name" />
+        </div>
+        <div>
+          <Label>Last Name<span className="text-red-500"> *</span></Label>
+          <Input value={profile.lastname || ''} onChange={(e) => setProfile({ ...profile, lastname: e.target.value })} placeholder="Last name" />
+        </div>
+        <div>
+          <Label>Phone</Label>
+          <Input value={profile.phone || ''} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} placeholder="e.g., 416 555 0123" />
+        </div>
+        <div>
+          <Label>Mobile Number</Label>
+          <Input value={profile.mobilenumber || ''} onChange={(e) => setProfile({ ...profile, mobilenumber: e.target.value })} placeholder="e.g., 416 555 0123" />
+        </div>
+        <div>
+          <Label>City</Label>
+          <Input value={profile.city || ''} onChange={(e) => setProfile({ ...profile, city: e.target.value })} placeholder="City" />
+        </div>
+        <div className="md:col-span-2">
+          <Label>Residential Address</Label>
+          <Textarea rows={3} value={profile.address1 || ''} onChange={(e) => setProfile({ ...profile, address1: e.target.value })} placeholder="Street / Unit / Province / Postal Code" />
+        </div>
+      </div>
+
+      <div className="mt-6 flex justify-end">
+        <button disabled className="inline-flex items-center gap-2 rounded-lg bg-gray-300 text-white px-4 py-2 font-semibold cursor-not-allowed" title="Disabled until backend is ready">Save Changes</button>
+      </div>
+    </SectionCard>
+  );
+}
+
+function PasswordTab({ email }: { email: string }) {
+  const [currentPw, setCurrentPw] = useState('');
+  const [pw1, setPw1] = useState('');
+  const [pw2, setPw2] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const canSave = currentPw.length >= 6 && pw1.length >= 8 && pw1 === pw2;
+
+ const onSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!canSave) return;
+
+  try {
+    setSaving(true);
+
+    const res = await fetch(`${apiBase()}/api/account/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        email,
+        currentPassword: currentPw,
+        newPassword: pw1,
+      }),
+    });
+
+    // try to read JSON if available
+    const isJSON = res.headers.get('content-type')?.includes('application/json');
+    const data = isJSON ? await res.json() : null;
+
+    if (!res.ok) {
+      // backend returns { stage: 'verify' } or { stage: 'update' } on specific failures
+      const stage = data?.stage;
+      const message =
+        data?.message ||
+        (stage === 'verify'
+          ? 'Current password is incorrect.'
+          : stage === 'update'
+          ? 'Unable to update password.'
+          : 'Unable to change password.');
+      throw new Error(message);
+    }
+
+    // success
+    setCurrentPw('');
+    setPw1('');
+    setPw2('');
+    alert('Password changed successfully.');
+  } catch (err: any) {
+    alert(err?.message || 'Failed to change password. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
+
+
+  return (
+    <SectionCard>
+      <h3 className="text-lg font-semibold mb-1">Change Password</h3>
+      <p className="text-sm text-gray-500 mb-4">Update your password for <span className="font-medium">{email || 'your account'}</span>.</p>
+
+      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="md:col-span-2">
+          <Label>Email</Label>
+          <Input value={email} readOnly className="bg-gray-100 cursor-not-allowed" />
+        </div>
+        <div className="md:col-span-2">
+          <Label>Current Password</Label>
+          <Input type="password" value={currentPw} onChange={(e) => setCurrentPw(e.target.value)} placeholder="Enter current password" />
+        </div>
+        <div>
+          <Label>New Password</Label>
+          <Input type="password" minLength={8} value={pw1} onChange={(e) => setPw1(e.target.value)} placeholder="At least 8 characters" />
+        </div>
+        <div>
+          <Label>Confirm New Password</Label>
+          <Input type="password" minLength={8} value={pw2} onChange={(e) => setPw2(e.target.value)} />
+        </div>
+
+        <div className="md:col-span-2 flex justify-end mt-2">
+          <button type="submit" disabled={!canSave || saving} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold text-white ${(!canSave || saving) ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#211F45] hover:opacity-90'}`}>
+            {saving ? 'Updating…' : 'Update Password'}
+          </button>
+        </div>
+      </form>
+    </SectionCard>
   );
 }
