@@ -4,7 +4,6 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 
-// ---------- types ----------
 interface Profile {
   avatarUrl?: string | null;
   firstname?: string;
@@ -14,67 +13,39 @@ interface Profile {
   city?: string;
   address1?: string;
   membershipno?: string;
-  email?: string; // internal only, not displayed for this spec
+  email?: string;
 }
 
-// ---------- helpers ----------
 const BRAND = '#211F45';
 const apiBase = () => (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '');
 
 const getCookie = (name: string): string => {
   if (typeof document === 'undefined') return '';
-  const m = document.cookie.match(
-    new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\]^{|}]/g, '\$&') + '=([^;]*)')
-  );
+  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
   return m ? decodeURIComponent(m[1]) : '';
 };
 
-// ---------- primitives ----------
 function Label({ htmlFor, children }: { htmlFor?: string; children: React.ReactNode }) {
-  return (
-    <label htmlFor={htmlFor} className="block text-sm font-medium text-[#374151] mb-1">
-      {children}
-    </label>
-  );
+  return <label htmlFor={htmlFor} className="block text-sm font-medium text-[#374151] mb-1">{children}</label>;
 }
 
 function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
-  return (
-    <input
-      {...props}
-      className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${
-        props.className || ''
-      }`}
-    />
-  );
+  return <input {...props} className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${props.className || ''}`} />;
 }
 
 function Textarea(props: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
-  return (
-    <textarea
-      {...props}
-      className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${
-        props.className || ''
-      }`}
-    />
-  );
+  return <textarea {...props} className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] outline-none focus:ring-2 focus:ring-[${BRAND}]/20 focus:border-[${BRAND}] disabled:opacity-60 ${props.className || ''}`} />;
 }
 
 function SectionCard({ children }: { children: React.ReactNode }) {
-  return (
-    <section className="rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6">
-      {children}
-    </section>
-  );
+  return <section className="relative rounded-2xl border border-gray-200 bg-white shadow-sm p-5 md:p-6 overflow-hidden">{children}</section>;
 }
 
-// ---------- main page ----------
 export default function AccountSettingsPage() {
   const [tab, setTab] = useState<'profile' | 'password'>('profile');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({});
 
-  // preload data from provided dashboard profile response
   useEffect(() => {
     let cancelled = false;
     const run = async () => {
@@ -111,9 +82,6 @@ export default function AccountSettingsPage() {
     };
   }, []);
 
-  const disabledSave = true; // backend not ready
-
-  // avatar handlers (UI only for now)
   const onUploadAvatar = () => alert('Avatar upload coming soon.');
   const onDeleteAvatar = () => alert('Avatar delete coming soon.');
 
@@ -126,42 +94,35 @@ export default function AccountSettingsPage() {
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-          {/* Sidebar */}
           <aside className="md:col-span-2 lg:col-span-1">
             <nav className="rounded-xl border border-gray-200 bg-white overflow-hidden">
-              <button
-                onClick={() => setTab('profile')}
-                className={`w-full text-left px-4 py-3 border-b border-gray-200 ${
-                  tab === 'profile' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'
-                }`}
-              >
-                Profile Settings
-              </button>
-              <button
-                onClick={() => setTab('password')}
-                className={`w-full text-left px-4 py-3 ${
-                  tab === 'password' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'
-                }`}
-              >
-                Password
-              </button>
+              <button onClick={() => setTab('profile')} className={`w-full text-left px-4 py-3 border-b border-gray-200 ${tab === 'profile' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'}`}>Profile Settings</button>
+              <button onClick={() => setTab('password')} className={`w-full text-left px-4 py-3 ${tab === 'password' ? 'bg-white text-[#211F45] font-semibold' : 'hover:bg-gray-50'}`}>Password</button>
             </nav>
           </aside>
 
-          {/* Content */}
           <div className="md:col-span-3 lg:col-span-4 space-y-6">
             {loading ? (
               <SectionCard>Loading…</SectionCard>
             ) : tab === 'profile' ? (
-              <ProfileTab
-                profile={profile}
-                setProfile={setProfile}
-                disabledSave={disabledSave}
-                onUploadAvatar={onUploadAvatar}
-                onDeleteAvatar={onDeleteAvatar}
-              />
+              <div className="relative">
+                <div className="absolute inset-0 backdrop-blur-sm bg-white/75 flex items-center justify-center z-10 rounded-2xl">
+                  <div className="text-center">
+                    <p className="text-lg font-semibold text-[#1F2042] mb-2">This feature is coming soon.</p>
+                    <p className="text-sm text-gray-600">If you need support, open the live chat below left.</p>
+                  </div>
+                </div>
+                <div className="opacity-100 pointer-events-none">
+                  <ProfileTab
+                    profile={profile}
+                    setProfile={setProfile}
+                    onUploadAvatar={onUploadAvatar}
+                    onDeleteAvatar={onDeleteAvatar}
+                  />
+                </div>
+              </div>
             ) : (
-              <PasswordTab email={profile.email || ''} disabledSave={true} />
+              <PasswordTab email={profile.email || ''} />
             )}
           </div>
         </div>
@@ -170,31 +131,12 @@ export default function AccountSettingsPage() {
   );
 }
 
-// ---------- Profile Tab ----------
-function ProfileTab({
-  profile,
-  setProfile,
-  disabledSave,
-  onUploadAvatar,
-  onDeleteAvatar,
-}: {
-  profile: Profile;
-  setProfile: React.Dispatch<React.SetStateAction<Profile>>;
-  disabledSave: boolean;
-  onUploadAvatar: () => void;
-  onDeleteAvatar: () => void;
-}) {
+function ProfileTab({ profile, setProfile, onUploadAvatar, onDeleteAvatar }: { profile: Profile; setProfile: React.Dispatch<React.SetStateAction<Profile>>; onUploadAvatar: () => void; onDeleteAvatar: () => void; }) {
   return (
     <SectionCard>
-      {/* Top: avatar + membership */}
       <div className="flex items-center gap-5 mb-6">
         <div className="relative h-24 w-24 rounded-full overflow-hidden border-4 border-white shadow-md">
-          <Image
-            src={profile.avatarUrl || '/avatar-placeholder.png'}
-            alt="Avatar"
-            fill
-            className="object-cover"
-          />
+          <Image src={profile.avatarUrl || '/avatar-placeholder.png'} alt="Avatar" fill className="object-cover" />
         </div>
         <div className="flex flex-col gap-1">
           <div className="text-sm text-gray-500">Membership No.</div>
@@ -206,80 +148,47 @@ function ProfileTab({
         </div>
       </div>
 
-      {/* Form — Canada spec: first/last, phone, mobile, city, address */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>First Name<span className="text-red-500"> *</span></Label>
-          <Input
-            value={profile.firstname || ''}
-            onChange={(e) => setProfile({ ...profile, firstname: e.target.value })}
-            placeholder="First name"
-          />
+          <Input value={profile.firstname || ''} onChange={(e) => setProfile({ ...profile, firstname: e.target.value })} placeholder="First name" />
         </div>
         <div>
           <Label>Last Name<span className="text-red-500"> *</span></Label>
-          <Input
-            value={profile.lastname || ''}
-            onChange={(e) => setProfile({ ...profile, lastname: e.target.value })}
-            placeholder="Last name"
-          />
+          <Input value={profile.lastname || ''} onChange={(e) => setProfile({ ...profile, lastname: e.target.value })} placeholder="Last name" />
         </div>
         <div>
           <Label>Phone</Label>
-          <Input
-            value={profile.phone || ''}
-            onChange={(e) => setProfile({ ...profile, phone: e.target.value })}
-            placeholder="e.g., 416 555 0123"
-          />
+          <Input value={profile.phone || ''} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} placeholder="e.g., 416 555 0123" />
         </div>
         <div>
           <Label>Mobile Number</Label>
-          <Input
-            value={profile.mobilenumber || ''}
-            onChange={(e) => setProfile({ ...profile, mobilenumber: e.target.value })}
-            placeholder="e.g., 416 555 0123"
-          />
+          <Input value={profile.mobilenumber || ''} onChange={(e) => setProfile({ ...profile, mobilenumber: e.target.value })} placeholder="e.g., 416 555 0123" />
         </div>
         <div>
           <Label>City</Label>
-          <Input
-            value={profile.city || ''}
-            onChange={(e) => setProfile({ ...profile, city: e.target.value })}
-            placeholder="City"
-          />
+          <Input value={profile.city || ''} onChange={(e) => setProfile({ ...profile, city: e.target.value })} placeholder="City" />
         </div>
         <div className="md:col-span-2">
           <Label>Residential Address</Label>
-          <Textarea
-            rows={3}
-            value={profile.address1 || ''}
-            onChange={(e) => setProfile({ ...profile, address1: e.target.value })}
-            placeholder="Street / Unit / Province / Postal Code"
-          />
+          <Textarea rows={3} value={profile.address1 || ''} onChange={(e) => setProfile({ ...profile, address1: e.target.value })} placeholder="Street / Unit / Province / Postal Code" />
         </div>
       </div>
 
       <div className="mt-6 flex justify-end">
-        <button
-          disabled={true}
-          className="inline-flex items-center gap-2 rounded-lg bg-gray-300 text-white px-4 py-2 font-semibold cursor-not-allowed"
-          title="Disabled until backend is ready"
-        >
-          Save Changes
-        </button>
+        <button disabled className="inline-flex items-center gap-2 rounded-lg bg-gray-300 text-white px-4 py-2 font-semibold cursor-not-allowed" title="Disabled until backend is ready">Save Changes</button>
       </div>
     </SectionCard>
   );
 }
 
-// ---------- Password Tab ----------
-function PasswordTab({ email, disabledSave }: { email: string; disabledSave: boolean }) {
+function PasswordTab({ email }: { email: string }) {
   const [currentPw, setCurrentPw] = useState('');
   const [pw1, setPw1] = useState('');
   const [pw2, setPw2] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const canSave = !disabledSave && currentPw.length >= 6 && pw1.length >= 8 && pw1 === pw2;
+  const canSave = currentPw.length >= 6 && pw1.length >= 8 && pw1 === pw2;
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -292,10 +201,7 @@ function PasswordTab({ email, disabledSave }: { email: string; disabledSave: boo
         credentials: 'include',
         body: JSON.stringify({ email, currentPassword: currentPw, newPassword: pw1 }),
       });
-      if (!res.ok) {
-        const t = await res.text();
-        throw new Error(t || 'Unable to change password');
-      }
+      if (!res.ok) throw new Error(await res.text());
       setCurrentPw('');
       setPw1('');
       setPw2('');
@@ -331,11 +237,7 @@ function PasswordTab({ email, disabledSave }: { email: string; disabledSave: boo
         </div>
 
         <div className="md:col-span-2 flex justify-end mt-2">
-          <button
-            type="submit"
-            disabled={!canSave || saving}
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold text-white ${(!canSave || saving) ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#211F45] hover:opacity-90'}`}
-          >
+          <button type="submit" disabled={!canSave || saving} className={`inline-flex items-center gap-2 rounded-lg px-4 py-2 font-semibold text-white ${(!canSave || saving) ? 'bg-gray-300 cursor-not-allowed' : 'bg-[#211F45] hover:opacity-90'}`}>
             {saving ? 'Updating…' : 'Update Password'}
           </button>
         </div>
