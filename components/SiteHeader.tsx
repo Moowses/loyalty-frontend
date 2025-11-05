@@ -201,12 +201,12 @@ async function logout() {
   {/* Account */}
 <Link
   href={
-    loggedIn
-      ? currentPath.startsWith("/dashboard")
-        ? "/dashboard/settings" // already inside dashboard
-        : "https://member.dreamtripclub.com/dashboard" // coming from marketing site
-      : "/dashboard"
-  }
+  loggedIn
+    ? currentPath.startsWith("/dashboard") || currentPath.startsWith("/account")
+      ? "/account/settings" // already inside the member app
+      : "https://member.dreamtripclub.com/dashboard" // from marketing/public site
+    : "/dashboard"
+}
   onClick={() => setOpen(false)}
   className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
 >
