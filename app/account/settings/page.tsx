@@ -112,7 +112,7 @@ export default function AccountSettingsPage() {
                     <p className="text-sm text-gray-600">If you need support, open the live chat below left.</p>
                   </div>
                 </div>
-                <div className="opacity-100 pointer-events-none">
+                <div className="opacity-1 pointer-events-none">
                   <ProfileTab
                     profile={profile}
                     setProfile={setProfile}
@@ -190,28 +190,53 @@ function PasswordTab({ email }: { email: string }) {
 
   const canSave = currentPw.length >= 6 && pw1.length >= 8 && pw1 === pw2;
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!canSave) return;
-    try {
-      setSaving(true);
-      const res = await fetch(`${apiBase()}/api/auth/change-password`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify({ email, currentPassword: currentPw, newPassword: pw1 }),
-      });
-      if (!res.ok) throw new Error(await res.text());
-      setCurrentPw('');
-      setPw1('');
-      setPw2('');
-      alert('Password changed successfully.');
-    } catch (err: any) {
-      alert(err?.message || 'Failed to change password. Please try again.');
-    } finally {
-      setSaving(false);
+ const onSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  if (!canSave) return;
+
+  try {
+    setSaving(true);
+
+    const res = await fetch(`${apiBase()}/api/account/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({
+        email,
+        currentPassword: currentPw,
+        newPassword: pw1,
+      }),
+    });
+
+    // try to read JSON if available
+    const isJSON = res.headers.get('content-type')?.includes('application/json');
+    const data = isJSON ? await res.json() : null;
+
+    if (!res.ok) {
+      // backend returns { stage: 'verify' } or { stage: 'update' } on specific failures
+      const stage = data?.stage;
+      const message =
+        data?.message ||
+        (stage === 'verify'
+          ? 'Current password is incorrect.'
+          : stage === 'update'
+          ? 'Unable to update password.'
+          : 'Unable to change password.');
+      throw new Error(message);
     }
-  };
+
+    // success
+    setCurrentPw('');
+    setPw1('');
+    setPw2('');
+    alert('Password changed successfully.');
+  } catch (err: any) {
+    alert(err?.message || 'Failed to change password. Please try again.');
+  } finally {
+    setSaving(false);
+  }
+};
+
 
   return (
     <SectionCard>
