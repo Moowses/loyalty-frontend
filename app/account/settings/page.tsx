@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 interface Profile {
   avatarUrl?: string | null;
@@ -18,6 +19,8 @@ interface Profile {
 
 const BRAND = '#211F45';
 const apiBase = () => (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '');
+const HOME =
+  (process.env.NEXT_PUBLIC_HOME_URL || '').replace(/\/+$/, '') || '/';
 
 const getCookie = (name: string): string => {
   if (typeof document === 'undefined') return '';
@@ -42,45 +45,92 @@ function SectionCard({ children }: { children: React.ReactNode }) {
 }
 
 export default function AccountSettingsPage() {
+  const router = useRouter();
   const [tab, setTab] = useState<'profile' | 'password'>('profile');
+
+  // Auth gate + data loading
+  const [gate, setGate] = useState<'checking' | 'allowed' | 'denied'>('checking');
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<Profile>({});
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
+
+    const deny = () => {
+      if (cancelled) return;
+      setGate('denied');
+      router.replace(HOME);
+    };
+
+    const allow = () => {
+      if (cancelled) return;
+      setGate('allowed');
+    };
+
     const run = async () => {
       try {
-        const res = await fetch(`${apiBase()}/api/user/profile`, { credentials: 'include' });
-        if (res.ok) {
-          const j = await res.json();
-          const row = j?.data?.[0] || j?.profile || {};
-          if (!cancelled) {
-            setProfile({
-              avatarUrl: null,
-              firstname: row.firstname || '',
-              lastname: row.lastname || '',
-              phone: row.phone || '',
-              mobilenumber: row.mobilenumber || '',
-              city: row.city || '',
-              address1: row.address1 || row.mailingaddress || '',
-              membershipno: row.membershipno || '',
-              email: row.primaryemail || getCookie('dtc_email') || '',
-            });
+        const base = apiBase();
+        if (!base) return deny();
+
+        // 1) Authoritative auth check (server session only)
+        const meRes = await fetch(`${base}/api/auth/me`, {
+          credentials: 'include',
+          signal: controller.signal,
+        });
+        const me = meRes.ok ? await meRes.json().catch(() => ({})) : {};
+        if (!me?.loggedIn) return deny();
+
+        allow();
+
+        // 2) Load profile AFTER auth
+        try {
+          const res = await fetch(`${base}/api/user/profile`, { credentials: 'include', signal: controller.signal });
+          if (res.ok) {
+            const j = await res.json();
+            const row = j?.data?.[0] || j?.profile || {};
+            if (!cancelled) {
+              setProfile({
+                avatarUrl: null,
+                firstname: row.firstname || '',
+                lastname: row.lastname || '',
+                phone: row.phone || '',
+                mobilenumber: row.mobilenumber || '',
+                city: row.city || '',
+                address1: row.address1 || row.mailingaddress || '',
+                membershipno: row.membershipno || '',
+                email: row.primaryemail || getCookie('dtc_email') || '',
+              });
+            }
+          } else {
+            if (!cancelled) setProfile({ email: getCookie('dtc_email') || '' });
           }
-        } else {
+        } catch {
           if (!cancelled) setProfile({ email: getCookie('dtc_email') || '' });
         }
       } catch {
-        if (!cancelled) setProfile({ email: getCookie('dtc_email') || '' });
+        return deny();
       } finally {
         if (!cancelled) setLoading(false);
       }
     };
+
     run();
     return () => {
       cancelled = true;
+      controller.abort();
     };
-  }, []);
+  }, [router]);
+
+  // HARD GUARD: nothing renders until allowed
+  if (gate === 'checking') {
+    return (
+      <div className="min-h-screen grid place-items-center bg-[#F6F8FB] text-[#1F2042]">
+        Loading…
+      </div>
+    );
+  }
+  if (gate === 'denied') return null; // redirect in-flight
 
   const onUploadAvatar = () => alert('Avatar upload coming soon.');
   const onDeleteAvatar = () => alert('Avatar delete coming soon.');
@@ -190,53 +240,52 @@ function PasswordTab({ email }: { email: string }) {
 
   const canSave = currentPw.length >= 6 && pw1.length >= 8 && pw1 === pw2;
 
- const onSubmit = async (e: React.FormEvent) => {
-  e.preventDefault();
-  if (!canSave) return;
+  const onSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!canSave) return;
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    const res = await fetch(`${apiBase()}/api/account/change-password`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      credentials: 'include',
-      body: JSON.stringify({
-        email,
-        currentPassword: currentPw,
-        newPassword: pw1,
-      }),
-    });
+      const res = await fetch(`${apiBase()}/api/account/change-password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({
+          email,
+          currentPassword: currentPw,
+          newPassword: pw1,
+        }),
+      });
 
-    // try to read JSON if available
-    const isJSON = res.headers.get('content-type')?.includes('application/json');
-    const data = isJSON ? await res.json() : null;
+      // try to read JSON if available
+      const isJSON = res.headers.get('content-type')?.includes('application/json');
+      const data = isJSON ? await res.json() : null;
 
-    if (!res.ok) {
-      // backend returns { stage: 'verify' } or { stage: 'update' } on specific failures
-      const stage = data?.stage;
-      const message =
-        data?.message ||
-        (stage === 'verify'
-          ? 'Current password is incorrect.'
-          : stage === 'update'
-          ? 'Unable to update password.'
-          : 'Unable to change password.');
-      throw new Error(message);
+      if (!res.ok) {
+        // backend returns { stage: 'verify' } or { stage: 'update' } on specific failures
+        const stage = data?.stage;
+        const message =
+          data?.message ||
+          (stage === 'verify'
+            ? 'Current password is incorrect.'
+            : stage === 'update'
+            ? 'Unable to update password.'
+            : 'Unable to change password.');
+        throw new Error(message);
+      }
+
+      // success
+      setCurrentPw('');
+      setPw1('');
+      setPw2('');
+      alert('Password changed successfully.');
+    } catch (err: any) {
+      alert(err?.message || 'Failed to change password. Please try again.');
+    } finally {
+      setSaving(false);
     }
-
-    // success
-    setCurrentPw('');
-    setPw1('');
-    setPw2('');
-    alert('Password changed successfully.');
-  } catch (err: any) {
-    alert(err?.message || 'Failed to change password. Please try again.');
-  } finally {
-    setSaving(false);
-  }
-};
-
+  };
 
   return (
     <SectionCard>
