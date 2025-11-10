@@ -730,8 +730,7 @@ export default function DashboardPage() {
                 </span>
               </p>
               <p className="text-[15px] leading-5 text-slate-600 font-bold mb-4">
-                Points and Rewards may take up to 5 business days to be posted after your stay.
-                Please allow up to 6 weeks for points earned from promotions to be posted to your account.
+                Reward points will be reflected after your stay, and any points adjustments are updated in real time.
               </p>
 
               {/* Tab 1: Points History (existing design) */}
