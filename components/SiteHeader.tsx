@@ -98,34 +98,59 @@ export default function SiteHeader() {
     return () => window.removeEventListener('dtc:open-login' as any, handler as any);
   }, []);
 
-  async function logout() {
-    try {
-      await fetch(`${API_BASE}/api/auth/logout`, {
-        method: 'POST',
-        credentials: 'include',
-      });
+async function logout() {
+  try {
+    await fetch(`${API_BASE}/api/auth/logout`, {
+      method: 'POST',
+      credentials: 'include',
+    });
+
+    if (typeof window !== 'undefined') {
+      // Marker if you ever want to read this after redirect
       sessionStorage.setItem('justLoggedOut', 'true');
-    } catch (error) {
-      console.error('Logout error:', error);
+    }
+  } catch (error) {
+    console.error('Logout error:', error);
+  } finally {
+    try {
+      if (typeof window !== 'undefined') {
+        //  Tell other tabs / windows that auth changed
+        try {
+          localStorage.setItem('dtc_auth_changed', String(Date.now()));
+        } catch (e) {
+          console.warn('localStorage dtc_auth_changed failed', e);
+        }
+
+        //  Clear all local auth-related data
+        const keysToClear = ['email', 'apiToken', 'dashboardData', 'membershipno'];
+
+        for (const key of keysToClear) {
+          try {
+            localStorage.removeItem(key);
+          } catch (e) {
+            console.warn(`Failed to remove localStorage key ${key}`, e);
+          }
+        }
+
+        // Clear all cookies
+        try {
+          document.cookie.split(';').forEach(cookie => {
+            const [name] = cookie.split('=');
+            if (!name) return;
+            document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
+          });
+        } catch (e) {
+          console.warn('Failed to clear cookies', e);
+        }
+      }
     } finally {
-      // Clear ALL client-side storage
-      localStorage.removeItem('email');
-      localStorage.removeItem('apiToken');
-      localStorage.removeItem('dashboardData');
-      localStorage.removeItem('dtc_auth_changed');
-      localStorage.removeItem('membershipno');
-
-      // Clear all cookies
-      document.cookie.split(';').forEach(cookie => {
-        const [name] = cookie.split('=');
-        document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-      });
-
-      // Force a complete page reload to clear any cached state
+      
       window.location.href = 'https://dreamtripclub.com';
-      window.location.reload(); // Force reload to clear everything
+      window.location.reload();
     }
   }
+}
+
 
   return (
     <header className="w-full border-b border-gray-200 bg-white ">
