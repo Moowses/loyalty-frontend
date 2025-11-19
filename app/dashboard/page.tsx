@@ -775,31 +775,6 @@ export default function DashboardPage() {
                     </table>
                   </div>
 
-                  <div className="text-[16px] text-center mt-3 text-[#A25A3D]">
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alert(
-                          'This feature is available on our mobile app. Please download the Dream Trip Club app to continue.'
-                        )
-                      }
-                      className="underline hover:opacity-80 focus:outline-none appearance-none bg-transparent p-0 cursor-pointer"
-                    >
-                      All ACTIVITY
-                    </button>
-                    <span className="mx-2">|</span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        alert(
-                          'This feature is available on our mobile app. Please download the Dream Trip Club app to continue.'
-                        )
-                      }
-                      className="underline hover:opacity-80 focus:outline-none appearance-none bg-transparent p-0 cursor-pointer"
-                    >
-                      Missing a stay?
-                    </button>
-                  </div>
                 </>
               )}
 
@@ -921,11 +896,7 @@ export default function DashboardPage() {
               }
               title="PRIVATE CONCIERGE"
               desc="Enjoy personalized service with our dedicated concierge team. From booking exclusive experiences to arranging seamless travel, we're here to cater to your every need."
-              onClick={() =>
-                alert(
-                  'Our concierge team will contact you shortly to arrange this service.'
-                )
-              }
+              onClick={() => window.open("https://dreamtripclub.com/rewards/", "_blank")}
             />
           </div>
 
@@ -942,11 +913,7 @@ export default function DashboardPage() {
               }
               title="LUXURY BOOKING"
               desc="Earn qualifying points to unlock more member benefits at curated resorts and cottages."
-              onClick={() =>
-                alert(
-                  'This feature is available on our mobile app. Please download the Dream Trip Club app to continue.'
-                )
-              }
+             onClick={() => window.open("https://dreamtripclub.com/rewards/", "_blank")}
             />
           </div>
 
@@ -963,11 +930,7 @@ export default function DashboardPage() {
               }
               title="MEMBER-ONLY EVENTS"
               desc="First access to book prime weekends and holiday periods before they open to the general public."
-              onClick={() =>
-                alert(
-                  'This feature is available on our mobile app. Please download the Dream Trip Club app to continue.'
-                )
-              }
+              onClick={() => window.open("https://dreamtripclub.com/rewards/", "_blank")}
             />
           </div>
 
@@ -984,11 +947,7 @@ export default function DashboardPage() {
               }
               title="GIFTS FOR ANNIVERSARIES AND REFERRALS"
               desc="Receive 5,000 bonus points each year on your membership anniversary and a delightful surprise on your birthday. Plus, gift your friends with a Dream Trip Club referral and get points for your friend and extra points for yourself."
-              onClick={() =>
-                alert(
-                  'This feature is available on our mobile app. Please download the Dream Trip Club app to continue.'
-                )
-              }
+              onClick={() => window.open("https://dreamtripclub.com/rewards/", "_blank")}
             />
           </div>
         </div>
