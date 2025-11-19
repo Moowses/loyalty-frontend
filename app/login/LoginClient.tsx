@@ -115,7 +115,7 @@ const handleInput = (
 
 
 
-  //Auto-resize iframe + remove top space
+  // ===== Auto-resize iframe + remove top space =====
   useEffect(() => {
     document.documentElement.style.margin = '0';
     document.body.style.margin = '0';
@@ -158,7 +158,7 @@ const handleInput = (
     }
 
     try {
-      // Determine endpoint and payload
+      // FIXED: Use correct endpoints
       const endpoint = isSignup ? 'signup' : 'login';
       const apiPath = '/api/auth';
       
@@ -251,7 +251,7 @@ try {
 } catch {}
           
         } else {
-          // For signups, y redirect
+          // For signups, you might still want to redirect
         setShowSignupSuccess1(true);
   
           // Auto-return to login after 3 seconds
@@ -323,7 +323,7 @@ return (
               type: 'ok',
               text: json?.message || `Reset link sent to ${rpEmail}.`,
             });
-            // return to sign-in after a short pause
+            // Optionally return to sign-in after a short pause
             setTimeout(() => {
               setIsReset(false);
               setRpMsg(null);
@@ -377,9 +377,9 @@ return (
     <hr className="my-6 border-neutral-200" />
   </>
 ) : (
-  
+  /* LOGIN/SIGNUP FORMS - Only show when not in reset mode */
 
-            /* LOGIN/SIGNUP FORMS  show when not in reset mode */
+            /* LOGIN/SIGNUP FORMS - Only show when not in reset mode */
             <>
               {/* Your existing login form JSX */}
               <div className="mb-4">
