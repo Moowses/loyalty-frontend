@@ -10,19 +10,19 @@ export default function ImageCarousel() {
   const slides = [
     {
       src: "/Tiny-Home-Experience-2.png",
-      href: "https://cottagedreamvacations.com/listing-tiny-home-experience/",
+      href: "https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=STH&roomTypeId=302995&&name=Tiny+Home+Experience",
     },
     {
       src: "/Nordic-Spa-Getaway-2.png",
-      href: "https://cottagedreamvacations.com/listing-stoney-lake/",
+      href: "https://member.dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake",
     },
     {
       src: "/Your-Dream-Getaway-2.png",
-      href: "https://cottagedreamvacations.com/your-dream-getaway/",
+      href: "https://member.dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway",
     },
     {
       src: "/Escape-From-Life-2.png",
-      href: "https://cottagedreamvacations.com/escape-from-life/",
+      href: "https://member.dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
     },
   ];
 

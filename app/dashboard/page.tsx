@@ -431,6 +431,8 @@ export default function DashboardPage() {
           return;
         }
 
+        
+
         // 1) Dashboard
         const dres = await fetch(
           `${base}/api/user/dashboard`,
