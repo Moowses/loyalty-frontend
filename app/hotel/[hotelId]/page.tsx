@@ -55,8 +55,30 @@ function isBlockedDateFactory(
       if (iso > range.end) return true;
     }
     if (loading) return false; // while loading let overlay handle UX
-    return !available.has(iso); // inside 6-month window: block if no rate
+    return !available.has(iso); // block if date NOT in availableDates set
   };
+}
+
+
+function hasUnavailableInRange(
+  available: Set<string>,
+  start?: string,
+  end?: string
+) {
+  if (!start || !end) return false;
+  // check every night from start -> end (exclusive of checkout)
+  const startDate = new Date(start + 'T00:00:00');
+  const endDate = new Date(end + 'T00:00:00');
+
+  const cur = new Date(startDate);
+  while (cur < endDate) {
+    const iso = ymd(cur); // reuse existing helper
+    if (!available.has(iso)) {
+      return true; // found a blocked/unavailable day
+    }
+    cur.setDate(cur.getDate() + 1);
+  }
+  return false;
 }
 
 /* ========= icons ========= */
@@ -567,44 +589,52 @@ export default function HotelInfoPage() {
   }, [checkIn, checkOut, adult, child, infant, pet, lat, lng, hotelNo, currency]);
 
   // Calendar availability (today -> +6 months), ALWAYS live (no cache)
-  async function loadCalendarAvailability() {
-    const base =
-      process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+async function loadCalendarAvailability() {
+  const base =
+    process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
-    const start = ymd(new Date());
-    const end = ymd(addMonths(new Date(), 6));
-    setCalRange({ start, end });
+  const start = ymd(new Date());
+  const end = ymd(addMonths(new Date(), 12)); // 1 year window
+  setCalRange({ start, end });
 
-    setIsCalLoading(true);
-    try {
-      const url =
-        `${base}/api/calendar/availability?` +
-        new URLSearchParams({
-          hotelId: String(hotelId || ''),
-          hotelNo: String(hotelNo || ''),
-          startDate: start,
-          endDate: end,
-          adult: String(adult),
-          children: String(child),
-          infant: String(infant),
-          pet,
-          currency: String(currency || 'CAD').toUpperCase(),
-        });
-      const res = await fetch(url, { credentials: 'include' });
-      const j = await res.json();
-      const prices = (j?.data?.dailyPrices ?? {}) as Record<string, number>;
-      setCalPrices(prices);
-      const enabled = Object.keys(prices).filter(
-        (d) => Number(prices[d]) > 0
-      );
-      setAvailableDates(new Set(enabled));
-    } catch (err) {
-      console.error('Calendar availability failed', err);
-      setAvailableDates(new Set());
-    } finally {
-      setIsCalLoading(false);
-    }
+  setIsCalLoading(true);
+  try {
+    const url =
+      `${base}/api/calendar/availability?` +
+      new URLSearchParams({
+        hotelId: String(hotelId || ''),
+        hotelNo: String(hotelNo || ''),
+        startDate: start,
+        endDate: end,
+        // the rest are only forwarded, they don't affect availability logic
+        adult: String(adult),
+        children: String(child),
+        infant: String(infant),
+        pet,
+        currency: String(currency || 'CAD').toUpperCase(),
+      });
+
+    const res = await fetch(url, { credentials: 'include' });
+    const j = await res.json();
+
+    // 🔹 We ignore prices for the calendar behaviour
+    const availability =
+      (j?.data?.availability ?? {}) as Record<string, number>;
+
+    // A date is enabled ONLY if availability[date] === 1
+    const enabled = Object.keys(availability).filter(
+      (d) => Number(availability[d]) === 1
+    );
+
+    setAvailableDates(new Set(enabled));
+  } catch (err) {
+    console.error('Calendar availability failed', err);
+    setAvailableDates(new Set());
+  } finally {
+    setIsCalLoading(false);
   }
+}
+
 
   // On first load of the page, request calendar availability
   useEffect(() => {
@@ -801,31 +831,42 @@ export default function HotelInfoPage() {
           </div>
 
           {showCalendar && (
-            <DateRangePicker
-              start={tmpStart}
-              end={tmpEnd}
-              onChange={(s, e) => {
-                setTmpStart(s);
-                setTmpEnd(e);
-              }}
-              onClose={() => setShowCalendar(false)}
-              onApply={() => {
-                setCheckIn(tmpStart || '');
-                setCheckOut(tmpEnd || '');
-                setShowCalendar(false);
-              }}
-              isDayBlocked={isBlockedDateFactory(
-                availableDates,
-                calRange,
-                isCalLoading
-              )}
-              isLoading={isCalLoading}
-              loadingText={
-                calRange
-                  ? `Getting availability… (to ${calRange.end})`
-                  : 'Getting availability…'
-              }
-            />
+              <DateRangePicker
+                start={tmpStart}
+                end={tmpEnd}
+                onChange={(s, e) => {
+                  setTmpStart(s);
+                  setTmpEnd(e);
+                }}
+                onClose={() => setShowCalendar(false)}
+                onApply={() => {
+                  // If both dates selected, validate that all nights are available
+                  if (tmpStart && tmpEnd) {
+                    if (hasUnavailableInRange(availableDates, tmpStart, tmpEnd)) {
+                      alert(
+                        'Your selected dates include at least one unavailable night. ' +
+                        'Please choose only dates that are not greyed out.'
+                      );
+                      return; 
+                    }
+                    setCheckIn(tmpStart);
+                    setCheckOut(tmpEnd);
+                  }
+                  setShowCalendar(false);
+                  }}
+                  isDayBlocked={isBlockedDateFactory(
+                    availableDates,
+                    calRange,
+                    isCalLoading
+                  )}
+                  isLoading={isCalLoading}
+                  loadingText={
+                    calRange && isCalLoading
+                      ? `Getting availability… (to ${calRange.end})`
+                      : 'Getting availability…'
+                  }
+                />
+
           )}
 
           <div className="grid grid-cols-3 gap-2 mb-3">
