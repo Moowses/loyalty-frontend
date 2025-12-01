@@ -993,10 +993,10 @@ useEffect(() => {
       place: dest?.label || '',
       lat,
       lng,
-      pet: pet ? 'yes' : 'no', 
+      pet: pet ? 'yes' : 'no', // NEW added august 13 
     });
     router.push(`/results?${query.toString()}`);
-   
+    
     
   };
 function dashedSlug(s: string) {
@@ -1006,7 +1006,7 @@ function condensedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
-//Exact folder names in /public/properties
+/** Exact folder names in /public/properties */
 const slugMap: Record<string, string> = {
   'Your Dream Getaway': 'your-dream-getaway',
   'Escape From Life': 'escape-from-life',
@@ -1018,7 +1018,7 @@ const slugMap: Record<string, string> = {
   'Gull River Escape: Nordic Spa': 'gull-river-escape-nordic-spa', 
 };
 
-//Return the correct static image path (with fallbacks) */
+/** Return the correct static image path (with fallbacks) */
 function getHotelImage(name?: string) {
   if (!name) return '';
   const exact = slugMap[name];
@@ -1028,10 +1028,14 @@ function getHotelImage(name?: string) {
   const dashed = dashedSlug(name);
   const condensed = condensedSlug(name);
   return `/properties/${dashed}/hero.png`; // UI will still render if this 404s
-  
-} 
+  // (If you want, you can try `/properties/${condensed}/hero.png` as a second
+  // candidate via onError in <Image>; see next snippet.)
+}
 
-  //Render 
+
+   
+
+  /* ─────────────── Render ─────────────── */
   return (
    
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
@@ -1413,14 +1417,14 @@ function getHotelImage(name?: string) {
       return Number.isFinite(n) ? n : 0;
     };
 
-    const roomTotal = toNum(room.totalPrice); 
-    const petFee = toNum(room.petFeeAmount);  
-    const grandTotal = roomTotal + petFee;    
+    const roomTotal = toNum(room.totalPrice); // rooms only
+    const petFee = toNum(room.petFeeAmount);  // can be "0" or number
+    const grandTotal = roomTotal + petFee;    // rooms + pet
     const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
-    const hero = getHotelImage(room.hotelName); 
+    const hero = getHotelImage(room.hotelName); // e.g. /properties/getaway-on-stoney-lake/hero.png
     const slug = hero ? hero.replace(/^\/properties\/|\/hero\.png$/g, "") : "";
 
-    // Try load meta.json 
+    // Try load meta.json
     let meta: any = {};
     try {
       meta = require(`@/public/properties/${slug}/meta.json`);
@@ -1428,15 +1432,12 @@ function getHotelImage(name?: string) {
       meta = {};
     }
 
-    const address = meta?.Address ?? meta?.address ?? null;
-    const minNights = Number(room?.minNights ?? 1);
+const address = meta?.Address ?? meta?.address ?? null;
+const minNights = Number(room?.minNights ?? 1);
     
 
     const currency = room.currencyCode || 'CAD';
-    const distanceLabel =typeof room.formattedDistance === 'string' && room.formattedDistance.trim() ? room.formattedDistance: 
-                          room.distance && room.distanceUnit? `${Number(room.distance).toFixed(2)} ${room.distanceUnit}`: '';
-
-    // Return number-only string for formatting
+    // Return number-only string (no currency symbol) so we can control labels consistently
     const money = (n: number) =>
       new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n);
 
@@ -1516,14 +1517,6 @@ function getHotelImage(name?: string) {
                             <span className="text-gray-700">{address}</span>
                           </div>
                         </div>
-                        {distanceLabel && (
-                          <div>
-                            <span className="font-medium text-gray-890">Distance:</span>{" "}
-                            <span className="text-gray-700">
-                              {distanceLabel} from your search area
-                            </span>
-                          </div>
-                        )}
 
                         {/* Bottom bar */}
                         <div className="mt-4 pt-3 border-t">
@@ -1579,6 +1572,8 @@ function getHotelImage(name?: string) {
                                   >
                                     View rates
                                   </button>
+
+
                           </div>
                         </div>
                       </div>
