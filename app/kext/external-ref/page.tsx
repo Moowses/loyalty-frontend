@@ -18,18 +18,18 @@ export default function KextExternalRefPage() {
   const [isScanning, setIsScanning] = useState(false);
   const [posContext, setPosContext] = useState<PosContext | null>(null);
 
-  // Load ZXing on client
+  // Load ZXing on client (multi-format: QR + 1D barcodes)
   useEffect(() => {
     let active = true;
 
     async function load() {
       try {
-        const { BrowserQRCodeReader } = await import('@zxing/browser');
+        const { BrowserMultiFormatReader } = await import('@zxing/browser');
         if (!active) return;
-        readerRef.current = new BrowserQRCodeReader();
+        readerRef.current = new BrowserMultiFormatReader();
       } catch (err) {
         console.error('Failed to load ZXing', err);
-        setStatus('Failed to load QR scanner library.');
+        setStatus('Failed to load scanner library.');
       }
     }
 
@@ -183,7 +183,7 @@ export default function KextExternalRefPage() {
         }
       );
 
-      setStatus('Scanning… align QR within the orange line.');
+      setStatus('Scanning… align barcode / QR within the orange line.');
     } catch (err: any) {
       console.error(err);
       setStatus(camErrorMessage(err));
