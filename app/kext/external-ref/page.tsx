@@ -26,7 +26,9 @@ export default function KextExternalRefPage() {
       try {
         const { BrowserMultiFormatReader } = await import('@zxing/browser');
         if (!active) return;
-        readerRef.current = new BrowserMultiFormatReader();
+
+        // 300ms between scans for responsiveness
+        readerRef.current = new BrowserMultiFormatReader(undefined, 300);
       } catch (err) {
         console.error('Failed to load ZXing', err);
         setStatus('Failed to load scanner library.');
@@ -160,7 +162,7 @@ export default function KextExternalRefPage() {
       await readerRef.current.decodeFromVideoDevice(
         undefined,
         video,
-        (result: any, err: any) => {
+        (result: any) => {
           if (result && result.getText) {
             const code = String(result.getText()).trim();
             setMembershipId(code);
@@ -245,6 +247,9 @@ export default function KextExternalRefPage() {
   }
 
   function handleRetry() {
+    // Clear the current membership + status and restart scan
+    setMembershipId('');
+    setStatus('');
     stopScan();
     startScan();
   }
@@ -277,8 +282,9 @@ export default function KextExternalRefPage() {
 
             <p className="mt-2 text-[11px] md:text-xs text-slate-500">
               On iPad/POS: tap <span className="font-semibold">Start Camera</span> once to
-              allow access. If the camera is blocked by the POS container, you can still
-              type the Membership ID and press <span className="font-semibold">SAVE</span>.
+              allow access. Hold the barcode or QR steady in the orange line. If the
+              camera is blocked by the POS container, you can still type the Membership ID
+              and press <span className="font-semibold">SAVE</span>.
             </p>
           </section>
 
