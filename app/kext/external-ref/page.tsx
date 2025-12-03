@@ -173,10 +173,10 @@ export default function KextExternalRefPage() {
 
       // 2) Visible $0 special item
       if (typeof w.pos_addSpecialItemToCurrentAccount === 'function') {
-        w.pos_addSpecialItemToCurrentAccount(itemId, 0, id); // name = pure membership ID
-        used.push('pos_addSpecialItemToCurrentAccount');
-        lastMethod = 'pos_addSpecialItemToCurrentAccount';
-      }
+            w.pos_addSpecialItemToCurrentAccount(itemId, 0, id); // id = scanned membership ID
+            used.push('pos_addSpecialItemToCurrentAccount');
+            lastMethod = 'pos_addSpecialItemToCurrentAccount';
+            }
 
       if (!used.length) {
         return { ok: false, reason: 'no-pos-bridge' };
