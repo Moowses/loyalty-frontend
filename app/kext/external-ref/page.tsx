@@ -17,6 +17,9 @@ export default function KextExternalRefPage() {
   const [status, setStatus] = useState('');
   const [isScanning, setIsScanning] = useState(false);
   const [posContext, setPosContext] = useState<PosContext | null>(null);
+  const [hasCurrentAccount, setHasCurrentAccount] = useState<boolean | null>(
+    null
+  );
 
   // Load ZXing on client (multi-format: QR + 1D barcodes)
   useEffect(() => {
@@ -49,20 +52,61 @@ export default function KextExternalRefPage() {
     };
   }, []);
 
-  // Listen for POS context from K-Series
+  // Listen for POS context from K-Series + actively request current account
   useEffect(() => {
     if (typeof window === 'undefined') return;
 
     function handleMessage(evt: MessageEvent) {
       if (evt?.data?.type === 'LSK_POS_CONTEXT') {
-        setPosContext(evt.data.payload);
+        setPosContext(evt.data.payload || null);
+        setHasCurrentAccount(true);
       }
     }
 
     window.addEventListener('message', handleMessage);
 
-    if ((window as any).posContext) {
-      setPosContext((window as any).posContext);
+    const w = window as any;
+
+    // 1) If global posContext is already injected, use it
+    if (w.posContext) {
+      setPosContext(w.posContext);
+      setHasCurrentAccount(true);
+    }
+
+    // 2) Actively ask POS for the current account if API exists
+    if (typeof w.pos_getCurrentAccount === 'function') {
+      try {
+        w.pos_getCurrentAccount((response: any) => {
+          if (response && response.data) {
+            setPosContext(response.data);
+            setHasCurrentAccount(true);
+            console.log('[WX] getCurrentAccount OK', response.data);
+          } else {
+            setHasCurrentAccount(false);
+            setStatus(
+              'No open order detected. Start a sale on the POS, then open this membership scanner.'
+            );
+            console.log('[WX] getCurrentAccount – no active account', response);
+          }
+        });
+      } catch (err) {
+        console.error('[WX] pos_getCurrentAccount failed', err);
+        setHasCurrentAccount(false);
+      }
+    } else {
+      // No explicit API; if no posContext either, assume no account
+      if (!w.posContext) {
+        setHasCurrentAccount(false);
+      }
+    }
+
+    // 3) Optionally ping native app to request context (harmless if unsupported)
+    if (window.parent && window.parent !== window) {
+      try {
+        window.parent.postMessage({ type: 'LSK_GET_CONTEXT' }, '*');
+      } catch {
+        // ignore
+      }
     }
 
     return () => {
@@ -94,6 +138,7 @@ export default function KextExternalRefPage() {
     if (!id) return { ok: false, reason: 'empty-id' };
 
     const label = `DreamTripMember-${id}`;
+    // TODO: replace with your real Special Item reference / SKU from Back Office
     const itemId = '1285251783460764';
 
     const used: string[] = [];
@@ -145,6 +190,13 @@ export default function KextExternalRefPage() {
   }
 
   async function startScan() {
+    if (hasCurrentAccount === false) {
+      setStatus(
+        'No open order detected. Start a sale on the POS, then open this membership scanner.'
+      );
+      return;
+    }
+
     if (!readerRef.current) {
       setStatus('Scanner not ready yet. Try again in a moment.');
       return;
@@ -211,6 +263,14 @@ export default function KextExternalRefPage() {
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
+
+    if (hasCurrentAccount === false) {
+      setStatus(
+        'No open order detected. Start a sale on the POS, then open this membership scanner.'
+      );
+      return;
+    }
+
     const id = membershipId.trim();
     if (!id) {
       setStatus('Membership ID is required.');
@@ -258,9 +318,16 @@ export default function KextExternalRefPage() {
     <main className="min-h-screen bg-slate-100 flex items-center justify-center px-4 py-6">
       <div className="max-w-6xl w-full">
         {/* Title */}
-        <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 mb-4">
+        <h1 className="text-2xl md:text-3xl font-semibold text-slate-900 mb-2">
           Scan Membership ID
         </h1>
+
+        {hasCurrentAccount === false && (
+          <div className="mb-3 rounded-md bg-amber-100 border border-amber-300 px-3 py-2 text-[11px] text-amber-900">
+            No open order detected on the POS. Please start a sale, then open
+            this Web Extension from the order screen.
+          </div>
+        )}
 
         {/* Layout */}
         <div className="flex flex-col md:flex-row gap-8 md:gap-10">
@@ -295,7 +362,7 @@ export default function KextExternalRefPage() {
               <button
                 type="button"
                 onClick={startScan}
-                disabled={isScanning}
+                disabled={isScanning || hasCurrentAccount === false}
                 className="flex-1 h-12 rounded-full bg-[#211F45] text-white text-xs md:text-sm font-semibold tracking-[0.12em] uppercase hover:bg-[#1a1936] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {isScanning ? 'SCANNING…' : 'START CAMERA'}
@@ -303,7 +370,8 @@ export default function KextExternalRefPage() {
               <button
                 type="button"
                 onClick={handleRetry}
-                className="flex-1 h-12 rounded-full bg-[#211F45] text-white text-xs md:text-sm font-semibold tracking-[0.12em] uppercase hover:bg-[#1a1936]"
+                disabled={hasCurrentAccount === false}
+                className="flex-1 h-12 rounded-full bg-[#211F45] text-white text-xs md:text-sm font-semibold tracking-[0.12em] uppercase hover:bg-[#1a1936] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 RETRY
               </button>
@@ -352,7 +420,8 @@ export default function KextExternalRefPage() {
 
               <button
                 type="submit"
-                className="w-40 h-12 rounded-full bg-[#211F45] text-white text-xs md:text-sm font-semibold tracking-[0.12em] uppercase hover:bg-[#1a1936]"
+                disabled={hasCurrentAccount === false}
+                className="w-40 h-12 rounded-full bg-[#211F45] text-white text-xs md:text-sm font-semibold tracking-[0.12em] uppercase hover:bg-[#1a1936] disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 SAVE
               </button>
@@ -365,16 +434,26 @@ export default function KextExternalRefPage() {
 
             {/* --- POS DIAGNOSTICS --- */}
             <div className="mt-4 p-3 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-700">
-            <div className="font-semibold mb-1">POS Diagnostics</div>
-            <pre className="whitespace-pre-wrap text-[10px]">
-            {typeof window !== 'undefined' ? `
-            pos_addSpecialItemToCurrentAccount: ${typeof (window as any).pos_addSpecialItemToCurrentAccount}
-            pos_addExternalReference:          ${typeof (window as any).pos_addExternalReference}
-            posContext:                        ${!!(window as any).posContext}
-            userAgent:                         ${navigator.userAgent}
-            origin:                            ${window.location.origin}
-            ` : 'Loading…'}
-            </pre>
+              <div className="font-semibold mb-1">POS Diagnostics</div>
+              <pre className="whitespace-pre-wrap text-[10px]">
+                {typeof window !== 'undefined'
+                  ? `
+pos_addSpecialItemToCurrentAccount: ${
+                    typeof (window as any).pos_addSpecialItemToCurrentAccount
+                  }
+pos_addExternalReference:          ${
+                    typeof (window as any).pos_addExternalReference
+                  }
+pos_getCurrentAccount:             ${
+                    typeof (window as any).pos_getCurrentAccount
+                  }
+hasCurrentAccount (state):         ${String(hasCurrentAccount)}
+posContext (state is set):         ${String(!!posContext)}
+userAgent:                         ${navigator.userAgent}
+origin:                            ${window.location.origin}
+`
+                  : 'Loading…'}
+              </pre>
             </div>
           </section>
         </div>
