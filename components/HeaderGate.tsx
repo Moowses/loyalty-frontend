@@ -7,7 +7,7 @@ import SiteHeader from './SiteHeader';
 
 // Show the header on these routes
 const SHOW_ON: RegExp[] = [
-  /^\/$/,                     // home
+  ///^\/$/,                     // home
   /^\/results/,   
   /^\/hotel/,              // results
   /^\/booking(?!\/confirm)/,  // booking but NOT /booking/confirm
