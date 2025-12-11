@@ -21,6 +21,13 @@ export default function KextExternalRefPage() {
     null
   );
 
+  // Keep track of the last membership ID we attached to POS
+  // to prevent multiple lines from one scan / scanner bounce
+  const lastTaggedRef = useRef<{ id: string | null; ts: number | null }>({
+    id: null,
+    ts: null,
+  });
+
   // Load ZXing on client (multi-format: QR + 1D barcodes)
   useEffect(() => {
     let active = true;
@@ -131,14 +138,25 @@ export default function KextExternalRefPage() {
   // Attach member to POS: external reference + special item
   function addMembershipToPos(rawId: string) {
     if (typeof window === 'undefined') {
-      return { ok: false, reason: 'no-window' };
+      return { ok: false, reason: 'no-window' as const };
     }
 
     const id = String(rawId).trim();
-    if (!id) return { ok: false, reason: 'empty-id' };
+    if (!id) return { ok: false, reason: 'empty-id' as const };
+
+    // 🔒 Duplicate guard: avoid multiple lines for the same scan
+    const now = Date.now();
+    if (
+      lastTaggedRef.current.id === id &&
+      lastTaggedRef.current.ts &&
+      now - lastTaggedRef.current.ts < 3000 // 3 seconds
+    ) {
+      console.log('[LOYALTY] Skipping duplicate membership tag', id);
+      return { ok: false, reason: 'duplicate-scan' as const };
+    }
+    lastTaggedRef.current = { id, ts: now };
 
     const label = `DreamTripMember-${id}`;
-    // TODO: replace with your real Special Item reference / SKU from Back Office
     const itemId = '1285251783460764';
 
     const used: string[] = [];
@@ -173,13 +191,13 @@ export default function KextExternalRefPage() {
 
       // 2) Visible $0 special item
       if (typeof w.pos_addSpecialItemToCurrentAccount === 'function') {
-            w.pos_addSpecialItemToCurrentAccount(itemId, 0, id); // id = scanned membership ID
-            used.push('pos_addSpecialItemToCurrentAccount');
-            lastMethod = 'pos_addSpecialItemToCurrentAccount';
-            }
+        w.pos_addSpecialItemToCurrentAccount(itemId, 0, id); // id = scanned membership ID
+        used.push('pos_addSpecialItemToCurrentAccount');
+        lastMethod = 'pos_addSpecialItemToCurrentAccount';
+      }
 
       if (!used.length) {
-        return { ok: false, reason: 'no-pos-bridge' };
+        return { ok: false, reason: 'no-pos-bridge' as const };
       }
 
       (w as any).__lastMembershipAdded = id;
@@ -280,6 +298,9 @@ export default function KextExternalRefPage() {
     const wr = addMembershipToPos(id);
     if (wr.ok) {
       setStatus(`Saved to POS via ${wr.method}. Syncing to server…`);
+    } else if (wr.reason === 'duplicate-scan') {
+      // We already tagged POS, just sync to server
+      setStatus('Already tagged in POS. Syncing to server…');
     } else {
       setStatus(
         `POS attach failed (${wr.reason || 'n/a'}). Syncing to server anyway…`
@@ -310,6 +331,10 @@ export default function KextExternalRefPage() {
     // Clear the current membership + status and restart scan
     setMembershipId('');
     setStatus('');
+
+    // Reset duplicate guard so a new scan can add again
+    lastTaggedRef.current = { id: null, ts: null };
+
     stopScan();
     startScan();
   }
