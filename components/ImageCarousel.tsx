@@ -10,7 +10,7 @@ export default function ImageCarousel() {
   const slides = [
     {
       src: "/Tiny-Home-Experience-2.png",
-      href: "https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=STH&roomTypeId=302995&&name=Tiny+Home+Experience",
+      href: "https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience",
     },
     {
       src: "/Nordic-Spa-Getaway-2.png",

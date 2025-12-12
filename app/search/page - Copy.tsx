@@ -63,12 +63,10 @@ function DestinationPicker({
   isMobile,
   value,
   setValue,
- 
 }: {
   isMobile: boolean;
   value: Place | null;
   setValue: (p: Place | null) => void;
-  onPropertySelect?: (baseUrl: string) => void;
 }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -112,27 +110,6 @@ function DestinationPicker({
         window.removeEventListener('resize', calc);
     };
   }, [open, isMobile]);
-
-    // Fixed popular properties for direct booking
-  const POPULAR_PROPERTIES = [
-    {
-      label: "Nordic Spa Getaway",
-      url: "https://member.dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake",
-    },
-    {
-      label: "Your Dream Getaway",
-      url: "https://member.dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway",
-    },
-    {
-      label: "Escape From Life",
-      url: "https://member.dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
-    },
-    {
-      label: "Tiny Home Experience",
-      url: "https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience",
-    },
-  ];
-
 
  // In your DestinationPicker component, modify the search effect:
 useEffect(() => {
@@ -371,28 +348,27 @@ const hotelMatches = HOTEL_POINTS
   </div>
 )}
               
-     {!query && (
-        <>
-          <div className="mx-2 my-2 border-t" />
-          <div className="text-xs uppercase tracking-wide text-gray-500 px-3 py-1">
-            Popular Properties
-          </div>
-          {POPULAR_PROPERTIES.map((p) => (
-            <div
-              key={p.label}
-              className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-              onClick={() => {
-                // Behave like a normal destination: set label, open calendar via dest-picked
-                finalizePick({ label: p.label });
-              }}
-            >
-              <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
-              <div className="text-sm text-gray-900">{p.label}</div>
+              
+             {!query && (
+                <>
+                  <div className="mx-2 my-2 border-t" />
+                  <div className="text-xs uppercase tracking-wide text-gray-500 px-3 py-1">
+                    Popular in Ontario
+                  </div>
+                  {ONTARIO_CENTROIDS.slice(0, 4).map((c) => (
+                    <div
+                      key={c.label}
+                      className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
+                      onClick={() => choose({ label: c.label, lat: c.lat, lon: c.lng })}
+                    >
+                      <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
+                      <div className="text-sm text-gray-900">{c.label}</div>
+                    </div>
+                  ))}
+                </>
+              )}
+
             </div>
-          ))}
-        </>
-      )}
-      </div>
           </>,
           document.body,
         )}
@@ -752,20 +728,6 @@ function SearchBar() {
     const next = Math.min(max, Math.max(min, cur + delta));
     setter(next);
   };
-  //search popular property direct urls
-
-  const POPULAR_PROPERTY_URLS: Record<string, string> = {
-    'Nordic Spa Getaway':
-      'https://member.dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake',
-    'Your Dream Getaway':
-      'https://member.dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway',
-    'Escape From Life':
-      'https://member.dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life',
-    'Tiny Home Experience':
-      'https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience',
-  };
-
-
   //togger for adults rooms and etch
   const summaryLabel = `${rooms} ${rooms > 1 ? 'Rooms' : 'Room'} • ${adults} ${
     adults > 1 ? 'Adults' : 'Adult'
@@ -773,127 +735,59 @@ function SearchBar() {
     infants > 0 ? ` • ${infants} Infant${infants > 1 ? 's' : ''}` : ''
   }${pet ? ' • Pet' : ''}`;
 
-  const handlePopularPropertySelect = (baseUrl: string) => {
-    // Require dates because we must attach checkIn/checkOut
-    if (!checkIn || !checkOut) {
-      alert('Please select check-in and check-out dates first');
-      return;
-    }
+    const handleSearch = () => {
+      // allow searching without a destination; only require dates
+      if (!checkIn || !checkOut) return;
 
-    const params: Record<string, string> = {
-      checkIn: fmtParam(checkIn),
-      checkOut: fmtParam(checkOut),
-      adult: String(adults),
-      child: String(children),
-      infant: String(infants),
-      pet: pet ? 'yes' : 'no',
-    };
+      const params: Record<string, string> = {
+        startDate: fmtParam(checkIn),
+        endDate: fmtParam(checkOut),
+        adult: String(adults),
+        child: String(children),
+        infant: String(infants),
+        pet: pet ? 'yes' : 'no',
+      };
 
-    if (typeof rooms === 'number') {
-      params.rooms = String(rooms);
-    }
+      // include rooms only if you have a rooms count variable
+      if (typeof rooms === 'number') {
+        params.rooms = String(rooms);
+      }
 
-    const qs = new URLSearchParams(params).toString();
-    const url = `${baseUrl}${baseUrl.includes('?') ? '&' : '?'}${qs}`;
+      // include destination only if present
+      if (dest?.label) params.place = dest.label;
+      if (dest?.lat != null && dest?.lng != null) {
+        params.lat = String(dest.lat);
+        params.lng = String(dest.lng);
+      }
 
-    // Break out of iframe if needed
-    if (typeof window !== 'undefined' && window.top) {
-      window.top.location.href = url;
-    } else if (typeof window !== 'undefined') {
-      window.location.href = url;
-    }
-  };
+      const url = `/results?${new URLSearchParams(params).toString()}`;
 
-     const handleSearch = () => {
-    // allow searching without a destination; only require dates
-    if (!checkIn || !checkOut) return;
-
-    // Common params for dates & guests
-    const dateGuestParams: Record<string, string> = {
-      checkIn: fmtParam(checkIn),
-      checkOut: fmtParam(checkOut),
-      adult: String(adults),
-      child: String(children),
-      infant: String(infants),
-      pet: pet ? 'yes' : 'no',
-    };
-
-    if (typeof rooms === 'number') {
-      dateGuestParams.rooms = String(rooms);
-    }
-
-    // 1) If destination is one of our Popular Properties => go directly to that hotel URL
-    const popularUrl = dest?.label ? POPULAR_PROPERTY_URLS[dest.label] : undefined;
-
-    if (popularUrl) {
-      const url = `${popularUrl}${
-        popularUrl.includes('?') ? '&' : '?'
-      }${new URLSearchParams(dateGuestParams).toString()}`;
-
+      // keep iframe-friendly redirect
       if (window.top) {
         window.top.location.href = url;
       } else {
         window.location.href = url;
       }
-      return;
-    }
-
-    // 2) Otherwise: go to /results with full params (existing behavior)
-    const params: Record<string, string> = {
-      startDate: dateGuestParams.checkIn,
-      endDate: dateGuestParams.checkOut,
-      adult: dateGuestParams.adult,
-      child: dateGuestParams.child,
-      infant: dateGuestParams.infant,
-      pet: dateGuestParams.pet,
     };
 
-    if (dateGuestParams.rooms) {
-      params.rooms = dateGuestParams.rooms;
-    }
 
-    // include destination only if present
-    if (dest?.label) params.place = dest.label;
-    if (dest?.lat != null && dest?.lng != null) {
-      params.lat = String(dest.lat);
-      params.lng = String(dest.lng);
-    }
-
-    const url = `/results?${new URLSearchParams(params).toString()}`;
-
-    // keep iframe-friendly redirect
-    if (window.top) {
-      window.top.location.href = url;
-    } else {
-      window.location.href = url;
-    }
-  };
   return (
     <div className="w-full flex justify-center">
       {/* Hidden mobile DestinationPicker instance to handle modal events */}
-         {isMobile && (
-       <div className="flex-1 min-w-[220px]">
-        <DestinationPicker
-          isMobile={false}
-          value={dest}
-          setValue={setDest}
-        />
-      </div>
+      {isMobile && (
+        <div className="hidden">
+          <DestinationPicker isMobile={true} value={dest} setValue={setDest} />
+        </div>
       )}
+
       <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[95px]">
         {/* Desktop layout */}
         {!isMobile ? (
           <div className="flex items-center md:justify-start gap-4">
-        {/* Destination */}
+            {/* Destination */}
             <div className="flex-1 min-w-[220px]">
-              <DestinationPicker
-                isMobile={false}
-                value={dest}
-                setValue={setDest}
-                onPropertySelect={handlePopularPropertySelect}
-              />
+              <DestinationPicker isMobile={false} value={dest} setValue={setDest} />
             </div>
-
 
             <div className="hidden md:block w-px self-stretch bg-gray-200" />
 
