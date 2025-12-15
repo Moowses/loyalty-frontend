@@ -219,29 +219,29 @@ async function logout() {
             </span>
           </Link>
 
-          {/* Account */}
-          <Link
-            href={
-              loggedIn
-                ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
-                  ? '/account/settings' // already inside the member app
-                  : '/dashboard' // from marketing/public site
-                : '/account/settings'
-            }
-            onClick={() => setOpen(false)}
-            className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
-          >
-            <Image
-              src="/Navaccount.png"
-              alt="Account"
-              width={24}
-              height={24}
-              className="transition-transform duration-200 group-hover:-translate-y-1"
-            />
-            <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
-              Account
-            </span>
-          </Link>
+         {/* Account */}
+            <Link
+              href={
+                loggedIn
+                  ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
+                    ? '/account/settings' // already inside the member app
+                    : '/dashboard' // from marketing/public site
+                  : '/dashboard' // ✅ logged out -> always send to dashboard
+              }
+              onClick={() => setOpen(false)}
+              className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+            >
+              <Image
+                src="/Navaccount.png"
+                alt="Account"
+                width={24}
+                height={24}
+                className="transition-transform duration-200 group-hover:-translate-y-1"
+              />
+              <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
+                Account
+              </span>
+            </Link>
         </nav>
 
         {/* Desktop CTAs (lg and up) */}

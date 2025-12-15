@@ -258,11 +258,11 @@ async function handleLogout() {
       {/* Quick Actions */}
       <div className="grid grid-cols-2 gap-3 mb-6">
     <button
-  onClick={() => window.open("https://member.dreamtripclub.com/dashboard", "_blank")}
-  className="bg-[#211F45] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
->
-  View Full Dashboard
-</button>
+      onClick={() => window.open("/dashboard", "_blank")}
+      className="bg-[#211F45] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
+    >
+      View Full Dashboard
+    </button>
 
 
         <button
