@@ -225,7 +225,7 @@ async function logout() {
               loggedIn
                 ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
                   ? '/account/settings' // already inside the member app
-                  : '/member' // from marketing/public site
+                  : '/dashboard' // from marketing/public site
                 : '/dashboard'
             }
             onClick={() => setOpen(false)}
