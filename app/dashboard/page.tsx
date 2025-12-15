@@ -362,7 +362,7 @@ export default function DashboardPage() {
     let cancelled = false;
     const controller = new AbortController();
 
-    const HOME = 'https://member.dreamtripclub.com';
+    const HOME = '//';
     const base =
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ||
       '';
