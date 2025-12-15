@@ -7,14 +7,15 @@ import SiteHeader from './SiteHeader';
 
 // Show the header on these routes
 const SHOW_ON: RegExp[] = [
-  ///^\/$/,                     // home
+  /^\/$/,                     // home
   /^\/results/,   
   /^\/hotel/,              // results
   /^\/booking(?!\/confirm)/,  // booking but NOT /booking/confirm
   ///^\/confirm/,               // confirmation page
   /^\/dashboard/,
   /^\/account/,                // confirmation page
-  // (optional) hide header on auth pages by NOT listing `/signin` or `/join`
+  /^\/rewards/,               // rewards page
+  /^\/offer/,              
 ];
 
 export default function HeaderGate() {

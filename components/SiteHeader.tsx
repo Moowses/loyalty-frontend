@@ -170,7 +170,7 @@ async function logout() {
         <nav className="hidden lg:flex items-end justify-center gap-2">
           {/* Reserve */}
           <Link
-            href="https://dreamtripclub.com"
+            href="//"
             className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
           >
             <Image
@@ -187,7 +187,7 @@ async function logout() {
 
           {/* Rewards */}
           <Link
-            href="https://dreamtripclub.com/rewards/"
+            href="/rewards"
             className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
           >
             <Image
@@ -204,7 +204,7 @@ async function logout() {
 
           {/* Offers */}
           <Link
-            href="https://dreamtripclub.com/offer/"
+            href="/offers"
             className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
           >
             <Image
@@ -225,7 +225,7 @@ async function logout() {
               loggedIn
                 ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
                   ? '/account/settings' // already inside the member app
-                  : 'https://member.dreamtripclub.com/dashboard' // from marketing/public site
+                  : '/member' // from marketing/public site
                 : '/dashboard'
             }
             onClick={() => setOpen(false)}
@@ -247,7 +247,7 @@ async function logout() {
         {/* Desktop CTAs (lg and up) */}
         <div className="hidden lg:flex items-center gap-5">
           <Link
-            href="https://dreamtripclub.com/help/"
+            href="/help"
             className="text-[10px] font-bold inline-flex items-center gap-2 transition-colors duration-200 text-[#211F45] hover:text-[#EB6923]"
           >
             HELP
@@ -368,7 +368,7 @@ async function logout() {
 
           {/* Rewards */}
           <Link
-            href="https://dreamtripclub.com/rewards/"
+            href="/rewards"
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
@@ -378,7 +378,7 @@ async function logout() {
 
           {/* Offers */}
           <Link
-            href="https://dreamtripclub.com/offer/"
+            href="/offer"
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
@@ -388,7 +388,7 @@ async function logout() {
 
           {/* Account */}
           <Link
-            href={loggedIn ? 'https://member.dreamtripclub.com/dashboard' : '/#login'}
+            href={loggedIn ? '/dashboard' : '/#login'}
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
@@ -398,7 +398,7 @@ async function logout() {
 
           {/* Help */}
           <Link
-            href="https://dreamtripclub.com/help/"
+            href="/help"
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
@@ -441,7 +441,7 @@ async function logout() {
 
             {/* Iframe */}
             <iframe
-              src="https://member.dreamtripclub.com/login"
+              src="/login"
               className="w-full h-full border-0"
               loading="lazy"
               sandbox="allow-scripts allow-forms allow-same-origin allow-popups"

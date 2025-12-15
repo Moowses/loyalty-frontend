@@ -29,52 +29,51 @@ export default function ImageCarousel1() {
   return (
     <section className="mt-2">
       <div className="relative">
-        <Swiper
-          modules={[Autoplay, Navigation]}
-          navigation={{
-            nextEl: ".custom-next",
-            prevEl: ".custom-prev",
-          }}
-          autoplay={{
-            delay: 3500,
-            disableOnInteraction: false,
-          }}
-          loop
-          centeredSlides={false}
-          spaceBetween={22}
-          // IMPORTANT: use "auto" so we can set a fixed slide width (square-ish cards)
-          slidesPerView={"auto"}
-          speed={500}
-          className="rounded-2xl"
-        >
-          {slides.map((s, i) => (
-            <SwiperSlide
-              key={i}
-              // lock each card width so it doesn't become too wide
-              className="!w-[180px] sm:!w-[220px] md:!w-[360px]"
-            >
-              <a
-                href={s.href} 
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block overflow-hidden rounded-2xl"
-              >
-                {/*  Square-ish card: 360x360 on md */}
-                <div className="relative h-[280px] sm:h-[310px] md:h-[250px] w-full bg-black/10">
-                  <Image
-                    src={s.src}
-                    alt=""
-                    fill
-                    //  show full artwork (no aggressive crop)
-                    className="object-contain"
-                    sizes="(max-width:768px) 320px, 360px"
-                    priority={i === 0}
-                  />
-                </div>
-              </a>
-            </SwiperSlide>
-          ))}
-        </Swiper>
+       <Swiper
+               modules={[Autoplay, Navigation]}
+               navigation={{
+                 nextEl: ".custom-next",
+                 prevEl: ".custom-prev",
+               }}
+               autoplay={{ 
+                 delay: 3500, 
+                 disableOnInteraction: false 
+               }}
+               loop={true}
+               centeredSlides={false}
+               spaceBetween={24}
+               slidesPerView={1.1}
+               speed={500}
+               breakpoints={{
+                 640: { slidesPerView: 1.3, spaceBetween: 24 },
+                 768: { slidesPerView: 2.2, spaceBetween: 24 },
+                 1024: { slidesPerView: 2.8, spaceBetween: 30 },
+                 1280: { slidesPerView: 3.2, spaceBetween: 30 },
+               }}
+               className="rounded-2xl"
+             >
+               {slides.map((s, i) => (
+                 <SwiperSlide key={i}>
+                   <a
+                     href={s.href}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="block rounded-2xl overflow-hidden bg-transparent"
+                   >
+                     <div className="relative w-full h-[240px] sm:h-[300px] md:h-[340px] lg:h-[400px]">
+                       <Image
+                         src={s.src}
+                         alt=""
+                         fill
+                         className="object-contain"
+                         sizes="(max-width:768px) 100vw, 33vw"
+                         priority={i === 0}
+                       />
+                     </div>
+                   </a>
+                 </SwiperSlide>
+               ))}
+             </Swiper>
 
         {/* Arrows */}
         <button

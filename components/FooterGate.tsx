@@ -7,8 +7,11 @@ import SiteFooter from './SiteFooter';
 
 // Show the footer on these routes
 const SHOW_ON: RegExp[] = [
+  /^\/$/,                   // home
   /^\/review-request/,
   /^\/dashboard/,
+  /^\/rewards/,
+  /^\/offer/,
 ];
 
 export default function FooterGate() {
