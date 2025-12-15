@@ -10,10 +10,7 @@ const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsS
 export default function HelpPage() {
   return (
     <main className="w-full">
-      {/* =========================
-          SECTION 1: HERO + SUPPORT CARD
-          BG: /helppagebg-min.png
-          ========================= */}
+      {/* SECTION 1: HERO + SUPPORT CARD */}
       <section className="relative w-full overflow-hidden">
         <Image src="/helppagebg-min.png" alt="" fill priority className="object-cover" />
         <div className="absolute inset-0 bg-black/25" />
@@ -108,9 +105,7 @@ export default function HelpPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 2: Member Benefits Component
-          ========================= */}
+      {/*  SECTION 2: Member Benefits Component*/}
       <section className="w-full bg-[#1E1C49] py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
 

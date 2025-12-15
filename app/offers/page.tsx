@@ -13,9 +13,7 @@ const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsS
 export default function OffersPage() {
   return (
     <main className="w-full">
-      {/* =========================
-          SECTION 1: HERO (same pattern as Home/Rewards)
-          ========================= */}
+      {/* SECTION 1: HERO */}
       <section className="relative w-full overflow-hidden">
         <Image src="/offerbackground-min.png" alt="" fill priority className="object-cover" />
         <div className="absolute inset-0 bg-black/20" />
@@ -77,9 +75,7 @@ export default function OffersPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 2: OFFERS CAROUSEL
-          ========================= */}
+      {/* SECTION 2: OFFERS CAROUSEL */}
       <section className="w-full bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
           {/* start the components */}
@@ -88,9 +84,7 @@ export default function OffersPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 3: MEMBER BENEFITS (existing component)
-          ========================= */}
+      {/* MEMBER BENEFITS  */}
       <section className="w-full bg-[#1E1C49] py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
           <h2 className="text-center text-2xl font-extrabold text-white md:text-3xl">

@@ -72,8 +72,7 @@ export default function RewardsPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 2: MEMBER BENEFITS (light) */}
+      {/*SECTION 2: MEMBER BENEFITS (light) */}
       <section className="w-full bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
           <h2

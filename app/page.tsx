@@ -26,7 +26,7 @@ export default function HomePage() {
             <div className="mx-auto w-full max-w-6xl px-4">
               <div className="w-full md:min-h-[1000px]">
                 <iframe
-                  src="http://localhost:3000/search"
+                  src="/search"
                   className="w-full"
                   height={720}
                   style={{ border: 'none', background: 'transparent' }}
@@ -72,7 +72,7 @@ export default function HomePage() {
                   LEARN MORE
                 </button>
 
-                {/* ✅ MOBILE: add extra breathing room before the carousel so it sits lower */}
+                {/*  MOBILE */}
                 <div className="h-14 md:hidden" />
               </div>
 
@@ -92,7 +92,7 @@ export default function HomePage() {
                       Your next trip starts here
                     </h2>
 
-                    {/* ✅ FIX: reduce gap between title and images (was mt-8) */}
+                    {/* Image Carousel*/}
                     <div className="mt-4">
                       {/* start the components */}
                       <ImageCarousel1 />
