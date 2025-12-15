@@ -924,10 +924,10 @@ useEffect(() => {
           setRooms([]);
           setFetchError(`No available rooms for these dates nearby in ${dest.label}.`);
         }
-        return; // IMPORTANT: stop here if we handled province fan-out
+        return; 
       }
 
-      // ── City-level search: single lat/lng ──
+      //  City-level search: single lat/lng 
       const latStr = dest?.lat?.toString() || '';
       const lngStr = dest?.lng?.toString() || '';
       if (!latStr || !lngStr) {

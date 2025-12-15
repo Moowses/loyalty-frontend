@@ -3,7 +3,8 @@ import type { Metadata } from "next";
 import { Nunito_Sans, Manrope } from "next/font/google";
 import localFont from "next/font/local";
 import "./globals.css";
-import HeaderGate from "@/components/HeaderGate"; // ok with your tsconfig paths
+import HeaderGate from "@/components/HeaderGate"; 
+import FooterGate from "@/components/FooterGate";
 
 export const metadata: Metadata = {
   title: "Dream Trip Club Membership Access",
@@ -29,6 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <HeaderGate />   {/* purely client, no Date.now etc. */}
         {children}
+        <FooterGate />
       </body>
     </html>
   );

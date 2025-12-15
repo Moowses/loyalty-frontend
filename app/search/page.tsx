@@ -352,24 +352,24 @@ const hotelMatches = HOTEL_POINTS
                 <div className="text-sm font-medium text-gray-900">Use current location</div>
               </div>
               {/* show matches when user types */}
-{query && (
-  <div className="mt-1">
-    {results.length === 0 ? (
-      <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>
-    ) : (
-      results.map((r) => (
-        <div
-          key={`${r.label}-${r.lat}-${r.lon}`}
-          className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
-          onClick={() => choose(r)}
-        >
-          <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
-          <div className="text-sm text-gray-900">{r.label}</div>
+      {query && (
+        <div className="mt-1">
+          {results.length === 0 ? (
+            <div className="px-3 py-2 text-sm text-gray-500">Searching…</div>
+          ) : (
+            results.map((r) => (
+              <div
+                key={`${r.label}-${r.lat}-${r.lon}`}
+                className="flex items-start gap-3 px-3 py-2 rounded-xl hover:bg-gray-50 cursor-pointer"
+                onClick={() => choose(r)}
+              >
+                <PinIcon className="w-4 h-4 mt-1 text-[#F05A28]" />
+                <div className="text-sm text-gray-900">{r.label}</div>
+              </div>
+            ))
+          )}
         </div>
-      ))
-    )}
-  </div>
-)}
+      )}
               
      {!query && (
         <>
@@ -870,15 +870,11 @@ function SearchBar() {
   };
   return (
     <div className="w-full flex justify-center">
-      {/* Hidden mobile DestinationPicker instance to handle modal events */}
-         {isMobile && (
-       <div className="flex-1 min-w-[220px]">
-        <DestinationPicker
-          isMobile={false}
-          value={dest}
-          setValue={setDest}
-        />
-      </div>
+      {/* Hidden mobile DestinationPicker instance (ONLY to handle modal events) */}
+        {isMobile && (
+        <div className="hidden">
+          <DestinationPicker isMobile={true} value={dest} setValue={setDest} />
+        </div>
       )}
       <div className="w-full max-w-7xl bg-white/95 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[95px]">
         {/* Desktop layout */}
