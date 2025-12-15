@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 const BRAND = '#211F45';
 
@@ -25,14 +25,16 @@ export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
 
-  const router = useRouter();
-  const [currentPath, setCurrentPath] = useState('');
+ const pathname = usePathname();
+  const currentPath = pathname || '';
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      setCurrentPath(window.location.pathname);
-    }
-  }, []);
+  const isInsideMemberApp =
+    currentPath.startsWith('/dashboard') || currentPath.startsWith('/account');
+  const accountHref = loggedIn
+    ? isInsideMemberApp
+      ? '/account/settings'
+      : '/dashboard'
+    : '/dashboard';
 
   const checkAuth = useCallback(async () => {
     try {
@@ -221,13 +223,7 @@ async function logout() {
 
          {/* Account */}
             <Link
-              href={
-                loggedIn
-                  ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
-                    ? '/account/settings' // already inside the member app
-                    : '/dashboard' // from marketing/public site
-                  : '/dashboard' //  logged out -> always send to dashboard
-              }
+              href={accountHref}
               onClick={() => setOpen(false)}
               className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
             >
@@ -388,7 +384,7 @@ async function logout() {
 
           {/* Account */}
           <Link
-            href={loggedIn ? '/dashboard' : '/#login'}
+            href={accountHref}
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
