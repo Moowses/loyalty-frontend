@@ -226,7 +226,7 @@ async function logout() {
                 ? currentPath.startsWith('/dashboard') || currentPath.startsWith('/account')
                   ? '/account/settings' // already inside the member app
                   : '/dashboard' // from marketing/public site
-                : '/dashboard'
+                : '/account/settings'
             }
             onClick={() => setOpen(false)}
             className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
