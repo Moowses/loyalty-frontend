@@ -43,8 +43,7 @@ type Meta = {
 };
 
 /* ========= helpers ========= */
-const toNum = (v: any) =>
-  Number(String(v ?? 0).replace(/[^0-9.-]/g, '')) || 0;
+const toNum = (v: any) => Number(String(v ?? 0).replace(/[^0-9.-]/g, '')) || 0;
 const money = (n: number, ccy = 'CAD') =>
   new Intl.NumberFormat('en-CA', {
     style: 'currency',
@@ -55,8 +54,7 @@ const slugify = (s: string) =>
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
-const slugCondensed = (s: string) =>
-  s.toLowerCase().replace(/[^a-z0-9]/g, '');
+const slugCondensed = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // LOCAL y-m-d (fixes UTC shift)
 const ymd = (d: Date) => {
@@ -81,63 +79,61 @@ function diffInDays(start: string, end: string) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
-function isBlockedDateFactory(
+/**
+ * ✅ NEW: hard disable ONLY if unavailable (PMS availability)
+ */
+function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: boolean) {
+  return (iso: string) => {
+    if (isCalLoading) return true;
+    if (!iso) return true;
+    return !availableDates.has(iso);
+  };
+}
+
+/**
+ * ✅ NEW: rules-only blocking for CHECKOUT candidates (min/max + no gaps)
+ * NOTE: this is NOT "disabled"; it's only "not clickable" for end selection.
+ */
+function isCheckoutBlockedFactory(
   availableDates: Set<string>,
-  isCalLoading: boolean,
   tmpStart: string | null,
   minStayMap: Record<string, number>,
   maxStayMap: Record<string, number>,
   defaultMinStay: number | null,
   defaultMaxStay: number | null
 ) {
-  // DateRangePicker passes ISO strings (YYYY-MM-DD)
   return (iso: string) => {
-    if (isCalLoading) return true;
     if (!iso) return true;
 
-    // if date isn't available at all → blocked
-    if (!availableDates.has(iso)) return true;
-
-    // no check-in chosen yet → any available day can be used as start
+    // no start yet → rules don't apply
     if (!tmpStart) return false;
 
-    // for checkout, can't pick same/before check-in
+    // cannot pick same/before start as checkout
     if (iso <= tmpStart) return true;
 
     const nights = diffInDays(tmpStart, iso);
 
-    const min =
-      minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
-    const max =
-      maxStayMap[tmpStart] ?? (defaultMaxStay ?? 365);
+    const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
+    const max = maxStayMap[tmpStart] ?? (defaultMaxStay ?? 365);
 
-    // min / max nights
     if (nights < min) return true;
     if (nights > max) return true;
 
-    // ensure all intermediate nights are available
+    // ensure all intermediate nights are available (no gaps)
     const [sy, sm, sd] = tmpStart.split('-').map(Number);
     let cursor = new Date(sy, (sm || 1) - 1, sd || 1);
 
     for (let i = 0; i < nights; i++) {
       cursor.setDate(cursor.getDate() + 1);
       const midIso = ymd(cursor);
-      if (!availableDates.has(midIso)) {
-        // gap in availability inside the range → block this checkout date
-        return true;
-      }
+      if (!availableDates.has(midIso)) return true;
     }
 
-    // valid checkout candidate
     return false;
   };
 }
 
-function hasUnavailableInRange(
-  available: Set<string>,
-  start?: string,
-  end?: string
-) {
+function hasUnavailableInRange(available: Set<string>, start?: string, end?: string) {
   if (!start || !end) return false;
   // check every night from start -> end (exclusive of checkout)
   const startDate = new Date(start + 'T00:00:00');
@@ -145,10 +141,8 @@ function hasUnavailableInRange(
 
   const cur = new Date(startDate);
   while (cur < endDate) {
-    const iso = ymd(cur); // reuse existing helper
-    if (!available.has(iso)) {
-      return true; // found a blocked/unavailable day
-    }
+    const iso = ymd(cur);
+    if (!available.has(iso)) return true;
     cur.setDate(cur.getDate() + 1);
   }
   return false;
@@ -197,14 +191,15 @@ const Row = ({ Icon, text }: { Icon: IconC; text: string }) => (
   </div>
 );
 
-/* ========== Calendar (supports blocked days + loader) ========== */
+/* ========== Calendar (supports availability + rules + loader) ========== */
 function DateRangePicker({
   start,
   end,
   onChange,
   onClose,
   onApply,
-  isDayBlocked,
+  isDayUnavailable,
+  isCheckoutBlocked,
   isLoading,
   loadingText,
 }: {
@@ -213,14 +208,15 @@ function DateRangePicker({
   onChange: (s: string, e: string) => void;
   onClose: () => void;
   onApply: () => void;
-  isDayBlocked?: (iso: string) => boolean;
+  // hard disable (gray)
+  isDayUnavailable?: (iso: string) => boolean;
+  // rules-only for end-date candidates
+  isCheckoutBlocked?: (iso: string) => boolean;
   isLoading?: boolean;
   loadingText?: string;
 }) {
   const today = new Date();
-  const [view, setView] = useState(
-    new Date(today.getFullYear(), today.getMonth(), 1)
-  );
+  const [view, setView] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
 
   function toISO(d: Date) {
     return ymd(d);
@@ -228,22 +224,14 @@ function DateRangePicker({
 
   function Month({ base }: { base: Date }) {
     const days = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
-    const offset = new Date(
-      base.getFullYear(),
-      base.getMonth(),
-      1
-    ).getDay();
+    const offset = new Date(base.getFullYear(), base.getMonth(), 1).getDay();
 
     const y = base.getFullYear();
     const m = base.getMonth();
 
     const cells: (string | null)[] = Array(offset)
       .fill(null)
-      .concat(
-        Array.from({ length: days }, (_, i) =>
-          toISO(new Date(y, m, i + 1))
-        )
-      );
+      .concat(Array.from({ length: days }, (_, i) => toISO(new Date(y, m, i + 1))));
 
     return (
       <div>
@@ -253,37 +241,74 @@ function DateRangePicker({
             year: 'numeric',
           })}
         </div>
+
         <div className="grid grid-cols-7 text-xs text-gray-500 mb-1">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((d) => (
-            <div key={d}>{d}</div>
+            <div key={d} className="text-center">
+              {d}
+            </div>
           ))}
         </div>
+
         <div className="grid grid-cols-7 gap-1">
           {cells.map((iso, idx) => {
-            const blocked = !!iso && isDayBlocked?.(iso);
-            const active = iso === start || iso === end;
-            const isDisabled = !iso || blocked;
+            const unavailable = !!iso && !!isDayUnavailable?.(iso); // gray+disabled
+            const blockedEnd = !!iso && !!isCheckoutBlocked?.(iso); // rules-only (not disabled)
+            const isDisabled = !iso || unavailable;
+
+            const isStart = !!start && iso === start;
+            const isEnd = !!end && iso === end;
+
+            const inRange = !!start && !!end && !!iso && iso > start && iso < end;
+            const active = isStart || isEnd;
+            const isSingle = !!start && !end && iso === start;
+
+            // Can click = not disabled and not blocked by rules (when selecting checkout)
+            const canClick = !!iso && !isDisabled && !blockedEnd;
 
             return (
               <button
                 key={idx}
+                type="button"
                 disabled={isDisabled}
                 onClick={() => {
-                  if (!iso || blocked) return;
-                  if (!start || (start && end)) onChange(iso!, '');
-                  else if (start && !end) {
+                  if (!iso) return;
+
+                  // Start selection: allow clicking available days, regardless of end rules
+                  if (!start || (start && end)) {
+                    if (unavailable) return;
+                    onChange(iso!, '');
+                    return;
+                  }
+
+                  // End selection: enforce rules-only
+                  if (start && !end) {
+                    if (!canClick) return;
+
                     if (iso! < start) onChange(iso!, start);
                     else onChange(start, iso!);
                   }
                 }}
                 className={[
-                  'h-9 rounded flex items-center justify-center text-sm transition',
+                  'h-9 w-9 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
+
+                  // hard disabled always wins
                   isDisabled
-                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70'
-                    : 'bg-white text-gray-900 hover:bg-gray-100 cursor-pointer border border-gray-200',
-                  active
-                    ? 'bg-[#211F45] text-white border-[#211F45] hover:bg-[#211F45]'
-                    : '',
+                    ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70 border-gray-200'
+                    : 'bg-white text-gray-900 border-gray-200',
+
+                  // show pointer only when clickable
+                  canClick ? 'hover:bg-gray-100 cursor-pointer' : '',
+                  isSingle && !isDisabled
+                  ? '!bg-[#211F45] !text-white !border-[#211F45]'
+                : active && !isDisabled
+                  ? '!bg-[#211F45] !text-white !border-[#211F45]'
+                : inRange && !isDisabled
+                  ? '!bg-[#E9E7F2] !text-[#211F45] !border-[#E9E7F2]'
+                : ''
+                
+
+                  
                 ].join(' ')}
               >
                 {iso ? Number(iso.slice(8, 10)) : ''}
@@ -311,33 +336,34 @@ function DateRangePicker({
 
         <div className="flex justify-between mb-3">
           <button
-            onClick={() =>
-              setView(
-                new Date(view.getFullYear(), view.getMonth() - 1, 1)
-              )
-            }
+            type="button"
+            onClick={() => setView(new Date(view.getFullYear(), view.getMonth() - 1, 1))}
           >
             Prev
           </button>
           <div className="font-semibold">Select dates</div>
           <button
-            onClick={() =>
-              setView(
-                new Date(view.getFullYear(), view.getMonth() + 1, 1)
-              )
-            }
+            type="button"
+            onClick={() => setView(new Date(view.getFullYear(), view.getMonth() + 1, 1))}
           >
             Next
           </button>
         </div>
+
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <Month base={view} />
           <Month base={next} />
         </div>
+
         <div className="flex justify-end gap-2 mt-4">
-          <button onClick={() => onChange('', '')}>Reset</button>
-          <button onClick={onClose}>Close</button>
+          <button type="button" onClick={() => onChange('', '')}>
+            Reset
+          </button>
+          <button type="button" onClick={onClose}>
+            Close
+          </button>
           <button
+            type="button"
             disabled={!start || !end}
             onClick={onApply}
             className="bg-[#211F45] text-white px-4 py-2 rounded"
@@ -357,21 +383,13 @@ export default function HotelInfoPage() {
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   // calendar min/max stay
-  const [minStayMap, setMinStayMap] = useState<
-    Record<string, number>
-  >({});
-  const [maxStayMap, setMaxStayMap] = useState<
-    Record<string, number>
-  >({});
-  const [defaultMinStay, setDefaultMinStay] =
-    useState<number | null>(null);
-  const [defaultMaxStay, setDefaultMaxStay] =
-    useState<number | null>(null);
+  const [minStayMap, setMinStayMap] = useState<Record<string, number>>({});
+  const [maxStayMap, setMaxStayMap] = useState<Record<string, number>>({});
+  const [defaultMinStay, setDefaultMinStay] = useState<number | null>(null);
+  const [defaultMaxStay, setDefaultMaxStay] = useState<number | null>(null);
 
-  const [activeMinStay, setActiveMinStay] =
-    useState<number | null>(null);
-  const [activeMaxStay, setActiveMaxStay] =
-    useState<number | null>(null);
+  const [activeMinStay, setActiveMinStay] = useState<number | null>(null);
+  const [activeMaxStay, setActiveMaxStay] = useState<number | null>(null);
 
   /* values from search */
   const nameQP = sp.get('name') || '';
@@ -385,27 +403,13 @@ export default function HotelInfoPage() {
   const petFromSearch = Number(sp.get('petFee') || '0');
 
   /* inputs */
-  const [checkIn, setCheckIn] = useState(
-    sp.get('checkIn') || sp.get('startTime') || ''
-  );
-  const [checkOut, setCheckOut] = useState(
-    sp.get('checkOut') || sp.get('endTime') || ''
-  );
-  const [adult, setAdult] = useState(
-    Number(sp.get('adult') || sp.get('adults') || '1')
-  );
-  const [child, setChild] = useState(
-    Number(sp.get('child') || sp.get('children') || '0')
-  );
-  const [infant, setInfant] = useState(
-    Number(sp.get('infant') || sp.get('infants') || '0')
-  );
+  const [checkIn, setCheckIn] = useState(sp.get('checkIn') || sp.get('startTime') || '');
+  const [checkOut, setCheckOut] = useState(sp.get('checkOut') || sp.get('endTime') || '');
+  const [adult, setAdult] = useState(Number(sp.get('adult') || sp.get('adults') || '1'));
+  const [child, setChild] = useState(Number(sp.get('child') || sp.get('children') || '0'));
+  const [infant, setInfant] = useState(Number(sp.get('infant') || sp.get('infants') || '0'));
   const [pet, setPet] = useState(
-    (sp.get('pet') ||
-      (sp.get('pets') === '1' ? 'yes' : 'no') ||
-      'no') === 'yes'
-      ? 'yes'
-      : 'no'
+    (sp.get('pet') || (sp.get('pets') === '1' ? 'yes' : 'no') || 'no') === 'yes' ? 'yes' : 'no'
   );
 
   const [showCalendar, setShowCalendar] = useState(false);
@@ -442,10 +446,7 @@ export default function HotelInfoPage() {
 
   useEffect(() => {
     async function load() {
-      const candidates = [
-        `/properties/${sDashed}/meta.json`,
-        `/properties/${sCondensed}/meta.json`,
-      ];
+      const candidates = [`/properties/${sDashed}/meta.json`, `/properties/${sCondensed}/meta.json`];
       for (const url of candidates) {
         try {
           const r = await fetch(url, { cache: 'no-store' });
@@ -460,43 +461,28 @@ export default function HotelInfoPage() {
     if (displayName) load();
   }, [displayName, sDashed, sCondensed]);
 
-  const gallery = meta?.gallery?.length
-    ? meta.gallery
-    : ['hero.png', '1.png', '2.png', '3.png', '4.png', '5.png'];
+  const gallery = meta?.gallery?.length ? meta.gallery : ['hero.png', '1.png', '2.png', '3.png', '4.png', '5.png'];
   const img = (f: string) => `/properties/${sDashed}/${f}`;
-  const imgFallback = (f: string) =>
-    `/properties/${sCondensed}/${f}`;
+  const imgFallback = (f: string) => `/properties/${sCondensed}/${f}`;
 
   /* totals & availability */
   const [roomTotal, setRoomTotal] = useState(totalFromSearch);
   const [petFee, setPetFee] = useState(petFromSearch);
-  const [available, setAvailable] = useState(
-    totalFromSearch > 0
-  );
+  const [available, setAvailable] = useState(totalFromSearch > 0);
   const [loading, setLoading] = useState(false);
   const [nights, setNights] = useState(0);
-  const [roomSubtotal, setRoomSubtotal] =
-    useState(totalFromSearch);
+  const [roomSubtotal, setRoomSubtotal] = useState(totalFromSearch);
   const [cleaningFee, setCleaningFee] = useState(0);
   const [vat, setVat] = useState(0);
   const [grossAmount, setGrossAmount] = useState(0);
-  const [resolvedHotelId, setResolvedHotelId] =
-    useState<string>('');
+  const [resolvedHotelId, setResolvedHotelId] = useState<string>('');
   const [noRooms, setNoRooms] = useState(false);
 
   // Calendar availability state
-  const [calPrices, setCalPrices] = useState<
-    Record<string, number>
-  >({});
-  const [availableDates, setAvailableDates] = useState<
-    Set<string>
-  >(new Set());
-  const [isCalLoading, setIsCalLoading] =
-    useState<boolean>(false);
-  const [calRange, setCalRange] = useState<{
-    start: string;
-    end: string;
-  } | null>(null);
+  const [calPrices, setCalPrices] = useState<Record<string, number>>({});
+  const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
+  const [isCalLoading, setIsCalLoading] = useState<boolean>(false);
+  const [calRange, setCalRange] = useState<{ start: string; end: string } | null>(null);
 
   const nightsCalc = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -512,12 +498,8 @@ export default function HotelInfoPage() {
 
   // Auth status
   useEffect(() => {
-    const base =
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'https://member.dreamtripclub.com';
-    fetch(`${base}/api/auth/status`, {
-      credentials: 'include',
-    })
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'https://member.dreamtripclub.com';
+    fetch(`${base}/api/auth/status`, { credentials: 'include' })
       .then((r) => setIsAuthed(r.ok))
       .catch(() => setIsAuthed(false));
   }, []);
@@ -525,32 +507,19 @@ export default function HotelInfoPage() {
   // Prompt login if needed
   useEffect(() => {
     if (isAuthed === false) {
-      const hasPrompted =
-        sessionStorage.getItem('dtc_login_prompted');
+      const hasPrompted = sessionStorage.getItem('dtc_login_prompted');
       if (!hasPrompted) {
         try {
-          window.dispatchEvent(
-            new CustomEvent('dtc:open-login')
-          );
+          window.dispatchEvent(new CustomEvent('dtc:open-login'));
         } catch {}
-        sessionStorage.setItem(
-          'dtc_login_prompted',
-          'true'
-        );
+        sessionStorage.setItem('dtc_login_prompted', 'true');
       }
     }
   }, [isAuthed]);
 
-  const nightly = useMemo(
-    () => (nights ? roomSubtotal / nights : 0),
-    [roomSubtotal, nights]
-  );
+  const nightly = useMemo(() => (nights ? roomSubtotal / nights : 0), [roomSubtotal, nights]);
   const grandTotal = useMemo(
-    () =>
-      (roomSubtotal || 0) +
-      (petFee || 0) +
-      (cleaningFee || 0) +
-      (vat || 0),
+    () => (roomSubtotal || 0) + (petFee || 0) + (cleaningFee || 0) + (vat || 0),
     [roomSubtotal, petFee, cleaningFee, vat]
   );
 
@@ -561,9 +530,7 @@ export default function HotelInfoPage() {
 
     setLoading(true);
     try {
-      const base =
-        process.env.NEXT_PUBLIC_API_BASE_URL ||
-        'http://localhost:5000';
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
       const qs1 = new URLSearchParams({
         hotelId: String(hotelId),
@@ -588,10 +555,7 @@ export default function HotelInfoPage() {
       let nightsSrv = 0;
       let noRoomsFlag = false;
 
-      const r1 = await fetch(
-        `${base}/api/booking/availability?${qs1.toString()}`,
-        { cache: 'no-store' }
-      );
+      const r1 = await fetch(`${base}/api/booking/availability?${qs1.toString()}`, { cache: 'no-store' });
       if (r1.ok) {
         const j1 = await r1.json();
         const payload = j1?.data?.data;
@@ -611,16 +575,8 @@ export default function HotelInfoPage() {
           nightsSrv = Object.keys(nightlyMap).length;
           if (nightsSrv > 0) setNights(nightsSrv);
 
-          subtotal = Number(
-            row.roomSubtotal ??
-              row.totalPrice ??
-              row.grossAmountUpstream ??
-              0
-          );
-          pfee =
-            pet === 'yes'
-              ? Number(row.petFeeAmount ?? 0)
-              : 0;
+          subtotal = Number(row.roomSubtotal ?? row.totalPrice ?? row.grossAmountUpstream ?? 0);
+          pfee = pet === 'yes' ? Number(row.petFeeAmount ?? 0) : 0;
           cfee = Number(row.cleaningFeeAmount ?? 0);
           tax = Number(row.vatAmount ?? 0);
           gross = Number(row.grossAmountUpstream ?? 0);
@@ -628,12 +584,7 @@ export default function HotelInfoPage() {
           ok = subtotal > 0;
         }
 
-        setResolvedHotelId(
-          String(
-            (row && (row.roomTypeId || row.hotelId)) ||
-              hotelId
-          )
-        );
+        setResolvedHotelId(String((row && (row.roomTypeId || row.hotelId)) || hotelId));
       }
 
       // Nearby fallback
@@ -649,27 +600,13 @@ export default function HotelInfoPage() {
           pet: pet === 'yes' ? 'yes' : 'no',
         });
 
-        const r2 = await fetch(
-          `${base}/api/booking/availability?${qs2.toString()}`,
-          { cache: 'no-store' }
-        );
+        const r2 = await fetch(`${base}/api/booking/availability?${qs2.toString()}`, { cache: 'no-store' });
         if (r2.ok) {
           const j2 = await r2.json();
-          const list: any[] = Array.isArray(
-            j2?.data?.data
-          )
-            ? j2.data.data
-            : [];
+          const list: any[] = Array.isArray(j2?.data?.data) ? j2.data.data : [];
 
           const item =
-            list.find(
-              (x) =>
-                String(x.hotelId) === String(hotelId)
-            ) ||
-            list.find(
-              (x) =>
-                String(x.hotelNo) === String(hotelNo)
-            );
+            list.find((x) => String(x.hotelId) === String(hotelId)) || list.find((x) => String(x.hotelNo) === String(hotelNo));
 
           if (item) {
             let summed = 0;
@@ -679,31 +616,17 @@ export default function HotelInfoPage() {
                 const d = new Date(startD);
                 d.setDate(startD.getDate() + i);
                 const key = ymd(d);
-                const v =
-                  Number(
-                    String(
-                      item.dailyPrices[key] ?? 0
-                    ).replace(/[^0-9.-]/g, '')
-                  ) || 0;
+                const v = Number(String(item.dailyPrices[key] ?? 0).replace(/[^0-9.-]/g, '')) || 0;
                 summed += v;
               }
             } else {
-              summed =
-                Number(
-                  String(
-                    item.totalPrice ?? 0
-                  ).replace(/[^0-9.-]/g, '')
-                ) || 0;
+              summed = Number(String(item.totalPrice ?? 0).replace(/[^0-9.-]/g, '')) || 0;
             }
 
             subtotal = summed;
             pfee =
               pet === 'yes'
-                ? Number(
-                    String(
-                      item.petFeeAmount ?? 0
-                    ).replace(/[^0-9.-]/g, '')
-                  ) || 0
+                ? Number(String(item.petFeeAmount ?? 0).replace(/[^0-9.-]/g, '')) || 0
                 : 0;
 
             cfee = 0;
@@ -737,24 +660,11 @@ export default function HotelInfoPage() {
   useEffect(() => {
     const t = setTimeout(fetchQuote, 250);
     return () => clearTimeout(t);
-  }, [
-    checkIn,
-    checkOut,
-    adult,
-    child,
-    infant,
-    pet,
-    lat,
-    lng,
-    hotelNo,
-    currency,
-  ]);
+  }, [checkIn, checkOut, adult, child, infant, pet, lat, lng, hotelNo, currency]);
 
   // Calendar availability fetcher
   async function loadCalendarAvailability() {
-    const base =
-      process.env.NEXT_PUBLIC_API_BASE_URL ||
-      'http://localhost:5000';
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
     const start = ymd(new Date());
     const end = ymd(addMonths(new Date(), 12)); // 1 year window
@@ -776,30 +686,18 @@ export default function HotelInfoPage() {
           currency: String(currency || 'CAD').toUpperCase(),
         });
 
-      const res = await fetch(url, {
-        credentials: 'include',
-      });
+      const res = await fetch(url, { credentials: 'include' });
       const j = await res.json();
 
       const data = j?.data ?? {};
 
-      const availability =
-        (data.availability ??
-          {}) as Record<string, number>;
-      const prices =
-        (data.dailyPrices ??
-          {}) as Record<string, number>;
-      const minStay =
-        (data.minStay ??
-          {}) as Record<string, number>;
-      const maxStay =
-        (data.maxStay ??
-          {}) as Record<string, number>;
+      const availability = (data.availability ?? {}) as Record<string, number>;
+      const prices = (data.dailyPrices ?? {}) as Record<string, number>;
+      const minStay = (data.minStay ?? {}) as Record<string, number>;
+      const maxStay = (data.maxStay ?? {}) as Record<string, number>;
 
       // 1 = clickable, 0 = not clickable
-      const enabled = Object.keys(availability).filter(
-        (d) => Number(availability[d]) === 1
-      );
+      const enabled = Object.keys(availability).filter((d) => Number(availability[d]) === 1);
 
       setAvailableDates(new Set(enabled));
       setCalPrices(prices);
@@ -821,38 +719,30 @@ export default function HotelInfoPage() {
     }
   }
 
-  
   // guards for incoming search dates
   const [incomingRangeInvalid, setIncomingRangeInvalid] = useState(false);
   const [initialGuardChecked, setInitialGuardChecked] = useState(false);
+
   // When user lands with checkIn/checkOut from search, verify against daily availability
   useEffect(() => {
-    // only run once, after calendar has loaded
     if (initialGuardChecked) return;
     if (isCalLoading) return;
     if (!checkIn || !checkOut) return;
     if (!availableDates || availableDates.size === 0) return;
 
-    const hasGap = hasUnavailableInRange(
-      availableDates,
-      checkIn,
-      checkOut
-    );
+    const hasGap = hasUnavailableInRange(availableDates, checkIn, checkOut);
 
     if (hasGap) {
       setIncomingRangeInvalid(true);
-      setShowCalendar(true); // open calendar so they can fix the dates
+      setTmpStart('');
+      setTmpEnd('');
+      setActiveMinStay(null);
+      setActiveMaxStay(null);
+      setShowCalendar(true);
     }
 
     setInitialGuardChecked(true);
-  }, [
-    availableDates,
-    isCalLoading,
-    checkIn,
-    checkOut,
-    initialGuardChecked,
-  ]);
-
+  }, [availableDates, isCalLoading, checkIn, checkOut, initialGuardChecked]);
 
   // On first load of the page, request calendar availability
   useEffect(() => {
@@ -867,22 +757,16 @@ export default function HotelInfoPage() {
   const [showAbout, setShowAbout] = useState(false);
 
   const GRID_SHOWN = 5;
-  const extraPhotos = Math.max(
-    0,
-    (gallery?.length || 0) - GRID_SHOWN
-  );
+  const extraPhotos = Math.max(0, (gallery?.length || 0) - GRID_SHOWN);
 
   function goBooking() {
     if (isAuthed !== true) {
       try {
-        window.dispatchEvent(
-          new CustomEvent('dtc:open-login')
-        );
+        window.dispatchEvent(new CustomEvent('dtc:open-login'));
       } catch {}
       return;
     }
-    if (!available || !roomTotal || !checkIn || !checkOut)
-      return;
+    if (!available || !roomTotal || !checkIn || !checkOut) return;
 
     const params = new URLSearchParams({
       hotelId: resolvedHotelId || String(hotelId),
@@ -904,16 +788,10 @@ export default function HotelInfoPage() {
   return (
     <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6">
       <h1 className="text-2xl md:text-3xl font-semibold mb-2">
-        {meta?.brandName ||
-          displayName ||
-          meta?.name ||
-          'Property'}
+        {meta?.brandName || displayName || meta?.name || 'Property'}
       </h1>
-      {meta?.tagline && (
-        <div className="text-gray-600 mb-4">
-          {meta.tagline}
-        </div>
-      )}
+
+      {meta?.tagline && <div className="text-gray-600 mb-4">{meta.tagline}</div>}
 
       {/* GALLERY */}
       <div className="mb-6">
@@ -922,9 +800,7 @@ export default function HotelInfoPage() {
           <img
             src={img(gallery[0])}
             onError={(e) => {
-              (
-                e.currentTarget as HTMLImageElement
-              ).src = imgFallback(gallery[0]);
+              (e.currentTarget as HTMLImageElement).src = imgFallback(gallery[0]);
             }}
             className="w-full h-[260px] object-cover rounded-xl"
             alt={`${displayName} main`}
@@ -934,8 +810,7 @@ export default function HotelInfoPage() {
               onClick={() => setShowPhotos(true)}
               className="absolute bottom-3 right-3 bg-white/95 backdrop-blur text-gray-900 text-sm font-medium px-3 py-1.5 rounded-full shadow inline-flex items-center gap-1"
             >
-              <ImagePlus className="w-4 h-4" /> +{' '}
-              {gallery.length - 1} photos
+              <ImagePlus className="w-4 h-4" /> + {gallery.length - 1} photos
             </button>
           )}
         </div>
@@ -946,9 +821,7 @@ export default function HotelInfoPage() {
             <img
               src={img(gallery[0])}
               onError={(e) => {
-                (
-                  e.currentTarget as HTMLImageElement
-                ).src = imgFallback(gallery[0]);
+                (e.currentTarget as HTMLImageElement).src = imgFallback(gallery[0]);
               }}
               className="w-full h-[420px] object-cover rounded-xl"
               alt={`${displayName} main`}
@@ -962,9 +835,7 @@ export default function HotelInfoPage() {
                 <img
                   src={img(g)}
                   onError={(e) => {
-                    (
-                      e.currentTarget as HTMLImageElement
-                    ).src = imgFallback(g);
+                    (e.currentTarget as HTMLImageElement).src = imgFallback(g);
                   }}
                   className="w-full h-[200px] object-cover rounded-xl"
                   alt={`${displayName} photo ${i + 2}`}
@@ -988,12 +859,10 @@ export default function HotelInfoPage() {
         {/* LEFT */}
         <div>
           {meta?.descriptionShort && (
-            <div className="text-[15px] leading-7 text-gray-700">
-              {meta.descriptionShort}
-            </div>
+            <div className="text-[15px] leading-7 text-gray-700">{meta.descriptionShort}</div>
           )}
-          {(meta?.descriptionLong?.length || 0) >
-            0 && (
+
+          {(meta?.descriptionLong?.length || 0) > 0 && (
             <button
               onClick={() => setShowAbout(true)}
               className="mt-3 inline-flex items-center justify-center px-4 py-2 rounded-full border text-sm"
@@ -1001,29 +870,21 @@ export default function HotelInfoPage() {
               Show more
             </button>
           )}
+
           {!!amenitiesList.length && (
             <div className="mt-10">
-              <h2 className="text-xl font-semibold mb-3">
-                Amenities
-              </h2>
+              <h2 className="text-xl font-semibold mb-3">Amenities</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
-                {amenitiesList
-                  .slice(0, 8)
-                  .map((a, i) => (
-                    <Row
-                      key={i}
-                      Icon={amenityIcon(a)}
-                      text={a}
-                    />
-                  ))}
+                {amenitiesList.slice(0, 8).map((a, i) => (
+                  <Row key={i} Icon={amenityIcon(a)} text={a} />
+                ))}
               </div>
               {amenitiesList.length > 8 && (
                 <button
                   onClick={() => setShowAmenities(true)}
                   className="mt-4 inline-flex items-center justify-center px-4 py-2 rounded-full border text-sm"
                 >
-                  Show all {amenitiesList.length}{' '}
-                  amenities
+                  Show all {amenitiesList.length} amenities
                 </button>
               )}
             </div>
@@ -1031,19 +892,11 @@ export default function HotelInfoPage() {
 
           {!!meta?.houseRules?.length && (
             <div className="mt-10">
-              <h2 className="text-xl font-semibold mb-3">
-                Good to know
-              </h2>
+              <h2 className="text-xl font-semibold mb-3">Good to know</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
-                {meta.houseRules
-                  .slice(0, 6)
-                  .map((r, i) => (
-                    <Row
-                      key={i}
-                      Icon={ruleIcon(r)}
-                      text={r}
-                    />
-                  ))}
+                {meta.houseRules.slice(0, 6).map((r, i) => (
+                  <Row key={i} Icon={ruleIcon(r)} text={r} />
+                ))}
               </div>
               {meta.houseRules.length > 6 && (
                 <button
@@ -1060,51 +913,35 @@ export default function HotelInfoPage() {
         {/* RIGHT: pricing card */}
         <div className="border-2 border-gray-200 rounded-[16px] p-4 shadow-sm h-fit md:sticky md:top-4">
           <div className="flex items-baseline gap-2 mb-4">
-            <div className="text-xl font-semibold">
-              {nights && available
-                ? money(nightly, currency)
-                : '—'}
-            </div>
-            <div className="text-gray-500 text-sm">
-              per night
-            </div>
+            <div className="text-xl font-semibold">{nights && available ? money(nightly, currency) : '—'}</div>
+            <div className="text-gray-500 text-sm">per night</div>
           </div>
 
           {incomingRangeInvalid && (
-              <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
-                Some dates in your selected range are no longer available. Please choose new dates.
-              </div>
-            )}
+            <div className="mb-3 text-xs text-red-700 bg-red-50 border border-red-200 rounded px-3 py-2">
+              Some dates in your selected range are no longer available. Please choose new dates.
+            </div>
+          )}
 
           <div className="mb-3">
-            <label className="text-xs text-gray-500">
-              DATES
-            </label>
+            <label className="text-xs text-gray-500">DATES</label>
             <button
               onClick={() => {
                 setTmpStart(checkIn || '');
                 setTmpEnd(checkOut || '');
-                // every time they open calendar, hit backend again
-                loadCalendarAvailability();
+                loadCalendarAvailability(); // re-fetch on open
                 setShowCalendar(true);
               }}
               className="border rounded-lg px-3 py-2 w-full text-left"
             >
-              {checkIn && checkOut
-                ? `${fmtHuman(checkIn)} → ${fmtHuman(
-                    checkOut
-                  )}`
-                : 'Add dates'}
+              {checkIn && checkOut ? `${fmtHuman(checkIn)} → ${fmtHuman(checkOut)}` : 'Add dates'}
             </button>
           </div>
 
           {activeMinStay && (
             <p className="mb-2 text-sm font-medium text-slate-700">
-              Minimum stay is {activeMinStay} night
-              {activeMinStay > 1 ? 's' : ''}{' '}
-              {activeMaxStay && (
-                <> (maximum {activeMaxStay} nights)</>
-              )}
+              Minimum stay is {activeMinStay} night{activeMinStay > 1 ? 's' : ''}{' '}
+              {activeMaxStay && <> (maximum {activeMaxStay} nights)</>}
             </p>
           )}
 
@@ -1116,16 +953,9 @@ export default function HotelInfoPage() {
                 setTmpStart(start);
                 setTmpEnd(end);
 
-                // when user picks a check-in date, compute min/max stay rule
                 if (start) {
-                  const min =
-                    minStayMap[start] ??
-                    (defaultMinStay ?? 1);
-
-                  const max =
-                    maxStayMap[start] ??
-                    (defaultMaxStay ?? 365);
-
+                  const min = minStayMap[start] ?? (defaultMinStay ?? 1);
+                  const max = maxStayMap[start] ?? (defaultMaxStay ?? 365);
                   setActiveMinStay(min);
                   setActiveMaxStay(max);
                 } else {
@@ -1137,13 +967,7 @@ export default function HotelInfoPage() {
               onApply={() => {
                 if (tmpStart && tmpEnd) {
                   // 1) block ranges that hit an unavailable date
-                  if (
-                    hasUnavailableInRange(
-                      availableDates,
-                      tmpStart,
-                      tmpEnd
-                    )
-                  ) {
+                  if (hasUnavailableInRange(availableDates, tmpStart, tmpEnd)) {
                     alert(
                       'Your selected dates include at least one unavailable night. Please choose only dates that are not greyed out.'
                     );
@@ -1151,35 +975,21 @@ export default function HotelInfoPage() {
                   }
 
                   // 2) enforce min/max stay for the chosen start date
-                  const nights = diffInDays(
-                    tmpStart,
-                    tmpEnd
-                  );
+                  const nights = diffInDays(tmpStart, tmpEnd);
 
-                  const min =
-                    minStayMap[tmpStart] ??
-                    (defaultMinStay ?? 1);
-                  const max =
-                    maxStayMap[tmpStart] ??
-                    (defaultMaxStay ?? 365);
+                  const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
+                  const max = maxStayMap[tmpStart] ?? (defaultMaxStay ?? 365);
 
                   if (nights < min) {
-                    alert(
-                      `Minimum stay for this start date is ${min} night${
-                        min > 1 ? 's' : ''
-                      }.`
-                    );
+                    alert(`Minimum stay for this start date is ${min} night${min > 1 ? 's' : ''}.`);
                     return;
                   }
 
                   if (nights > max) {
-                    alert(
-                      `Maximum stay for this start date is ${max} nights.`
-                    );
+                    alert(`Maximum stay for this start date is ${max} nights.`);
                     return;
                   }
 
-                  // valid range → commit
                   setCheckIn(tmpStart);
                   setCheckOut(tmpEnd);
                   setIncomingRangeInvalid(false);
@@ -1187,78 +997,58 @@ export default function HotelInfoPage() {
 
                 setShowCalendar(false);
               }}
-              isDayBlocked={isBlockedDateFactory(
+              isDayUnavailable={isDayUnavailableFactory(availableDates, isCalLoading)}
+              isCheckoutBlocked={isCheckoutBlockedFactory(
                 availableDates,
-                isCalLoading,
-                tmpStart,
+                tmpStart || null,
                 minStayMap,
                 maxStayMap,
                 defaultMinStay,
                 defaultMaxStay
               )}
               isLoading={isCalLoading}
-              loadingText={
-                isCalLoading
-                  ? 'Getting availability…'
-                  : undefined
-              }
+              loadingText={isCalLoading ? 'Getting availability…' : undefined}
             />
           )}
 
           <div className="grid grid-cols-3 gap-2 mb-3">
             <div className="flex flex-col">
-              <label className="text-xs text-gray-500">
-                ADULTS
-              </label>
+              <label className="text-xs text-gray-500">ADULTS</label>
               <input
                 type="number"
                 min={1}
                 value={adult}
-                onChange={(e) =>
-                  setAdult(+e.target.value)
-                }
+                onChange={(e) => setAdult(+e.target.value)}
                 className="border rounded-lg px-2 py-2"
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-gray-500">
-                CHILDREN
-              </label>
+              <label className="text-xs text-gray-500">CHILDREN</label>
               <input
                 type="number"
                 min={0}
                 value={child}
-                onChange={(e) =>
-                  setChild(+e.target.value)
-                }
+                onChange={(e) => setChild(+e.target.value)}
                 className="border rounded-lg px-2 py-2"
               />
             </div>
             <div className="flex flex-col">
-              <label className="text-xs text-gray-500">
-                INFANTS
-              </label>
+              <label className="text-xs text-gray-500">INFANTS</label>
               <input
                 type="number"
                 min={0}
                 value={infant}
-                onChange={(e) =>
-                  setInfant(+e.target.value)
-                }
+                onChange={(e) => setInfant(+e.target.value)}
                 className="border rounded-lg px-2 py-2"
               />
             </div>
           </div>
 
           <div className="flex items-center justify-between mb-4">
-            <label className="text-xs text-gray-500">
-              PETS
-            </label>
+            <label className="text-xs text-gray-500">PETS</label>
             <select
               value={pet}
-              onChange={(e) =>
-                setPet(e.target.value as 'yes' | 'no')
-              }
+              onChange={(e) => setPet(e.target.value as 'yes' | 'no')}
               className="border rounded-lg px-2 py-2"
             >
               <option value="no">No</option>
@@ -1274,11 +1064,7 @@ export default function HotelInfoPage() {
 
             <div className="flex items-center justify-between">
               <span>Room subtotal</span>
-              <b>
-                {available
-                  ? money(roomSubtotal, currency)
-                  : '$0.00'}
-              </b>
+              <b>{available ? money(roomSubtotal, currency) : '$0.00'}</b>
             </div>
 
             <div className="flex items-center justify-between">
@@ -1300,50 +1086,29 @@ export default function HotelInfoPage() {
 
             <div className="flex items-center justify-between">
               <span>Total</span>
-              <b>
-                {available
-                  ? money(grandTotal, currency)
-                  : '$0.00'}
-              </b>
+              <b>{available ? money(grandTotal, currency) : '$0.00'}</b>
             </div>
           </div>
 
           {isAuthed === false && (
             <div className="mb-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-              To continue, please log in or join Dream
-              Trip Club.
+              To continue, please log in or join Dream Trip Club.
             </div>
           )}
 
           <button
-            disabled={
-              !checkIn ||
-              !checkOut ||
-              !available ||
-              roomSubtotal <= 0 ||
-              isAuthed !== true
-            }
+            disabled={!checkIn || !checkOut || !available || roomSubtotal <= 0 || isAuthed !== true}
             onClick={goBooking}
             className={`w-full rounded-xl py-3 font-medium ${
-              available &&
-              roomSubtotal > 0 &&
-              isAuthed === true
+              available && roomSubtotal > 0 && isAuthed === true
                 ? 'bg-[#211F45] text-white'
                 : 'bg-gray-300 text-gray-600 cursor-not-allowed'
             }`}
           >
-            {available &&
-            roomSubtotal > 0 &&
-            isAuthed === true
-              ? 'Book now'
-              : 'Sign in to book'}
+            {available && roomSubtotal > 0 && isAuthed === true ? 'Book now' : 'Sign in to book'}
           </button>
 
-          {loading && (
-            <div className="text-xs text-gray-500 mt-2">
-              Updating rates…
-            </div>
-          )}
+          {loading && <div className="text-xs text-gray-500 mt-2">Updating rates…</div>}
         </div>
       </div>
 
@@ -1352,13 +1117,8 @@ export default function HotelInfoPage() {
         <div className="fixed inset-0 z-50 bg-black/70 flex items-center justify-center">
           <div className="bg-white rounded-2xl w-full max-w-5xl p-5 max-h-[85vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-xl font-semibold">
-                Photos
-              </h3>
-              <button
-                onClick={() => setShowPhotos(false)}
-                className="p-1 text-gray-500 hover:text-gray-700"
-              >
+              <h3 className="text-xl font-semibold">Photos</h3>
+              <button onClick={() => setShowPhotos(false)} className="p-1 text-gray-500 hover:text-gray-700">
                 ✕
               </button>
             </div>
@@ -1368,14 +1128,10 @@ export default function HotelInfoPage() {
                   key={idx}
                   src={img(g)}
                   onError={(e) => {
-                    (
-                      e.currentTarget as HTMLImageElement
-                    ).src = imgFallback(g);
+                    (e.currentTarget as HTMLImageElement).src = imgFallback(g);
                   }}
                   className="w-full h-[240px] object-cover rounded-lg"
-                  alt={`${displayName} photo ${
-                    idx + 1
-                  }`}
+                  alt={`${displayName} photo ${idx + 1}`}
                 />
               ))}
             </div>
@@ -1384,18 +1140,12 @@ export default function HotelInfoPage() {
       ) : null}
 
       {/* ABOUT MODAL */}
-      {showAbout &&
-      (meta?.descriptionLong?.length || 0) > 0 ? (
+      {showAbout && (meta?.descriptionLong?.length || 0) > 0 ? (
         <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center">
           <div className="bg-white rounded-2xl w-full max-w-xl p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-semibold">
-                About this property
-              </h3>
-              <button
-                onClick={() => setShowAbout(false)}
-                className="p-1 text-gray-500 hover:text-gray-700"
-              >
+              <h3 className="text-xl font-semibold">About this property</h3>
+              <button onClick={() => setShowAbout(false)} className="p-1 text-gray-500 hover:text-gray-700">
                 ✕
               </button>
             </div>
@@ -1413,23 +1163,15 @@ export default function HotelInfoPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-xl p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-semibold">
-                Amenities
-              </h3>
-              <button
-                onClick={() => setShowAmenities(false)}
-                className="p-1 text-gray-500 hover:text-gray-700"
-              >
+              <h3 className="text-xl font-semibold">Amenities</h3>
+              <button onClick={() => setShowAmenities(false)} className="p-1 text-gray-500 hover:text-gray-700">
                 ✕
               </button>
             </div>
             <div className="divide-y">
               {amenitiesList.map((a, i) => (
                 <div key={i} className="py-2">
-                  <Row
-                    Icon={amenityIcon(a)}
-                    text={a}
-                  />
+                  <Row Icon={amenityIcon(a)} text={a} />
                 </div>
               ))}
             </div>
@@ -1442,23 +1184,15 @@ export default function HotelInfoPage() {
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <div className="bg-white rounded-2xl w-full max-w-xl p-6 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-2">
-              <h3 className="text-xl font-semibold">
-                House Rules
-              </h3>
-              <button
-                onClick={() => setShowRules(false)}
-                className="p-1 text-gray-500 hover:text-gray-700"
-              >
+              <h3 className="text-xl font-semibold">House Rules</h3>
+              <button onClick={() => setShowRules(false)} className="p-1 text-gray-500 hover:text-gray-700">
                 ✕
               </button>
             </div>
             <div className="divide-y">
-              {meta.houseRules.map((r, i) => (
+              {meta!.houseRules!.map((r, i) => (
                 <div key={i} className="py-2">
-                  <Row
-                    Icon={ruleIcon(r)}
-                    text={r}
-                  />
+                  <Row Icon={ruleIcon(r)} text={r} />
                 </div>
               ))}
             </div>
