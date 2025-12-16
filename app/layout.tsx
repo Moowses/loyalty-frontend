@@ -7,8 +7,8 @@ import HeaderGate from "@/components/HeaderGate";
 import FooterGate from "@/components/FooterGate";
 
 export const metadata: Metadata = {
-  title: "Dream Trip Club Membership Access",
-  description: "by Haybay Resort",
+  title: "Dream Trip Club Rewards",
+  description: "What will your next adventure be?",
 };
 
 const nunito = Nunito_Sans({ subsets: ["latin"], weight: ["400","600","700"], variable: "--font-nunito", display: "swap" });

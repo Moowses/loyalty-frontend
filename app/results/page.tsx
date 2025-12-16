@@ -33,7 +33,7 @@ import dynamic1 from 'next/dynamic';
 // Always render dynamically (avoid prerender errors for query-driven page)
 export const dynamic = 'force-dynamic';
 
-/* ───────────────── Icons ───────────────── */
+/* Icons */
 const PinIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
     <path
@@ -60,11 +60,11 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/* ───────────────── Types ───────────────── */
+/*  Types */
 type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
-/* ───────────────── chat bot ───────────────── */
+/*chat bot*/
 const ChatbotWidget = dynamic1(() => import('@/components/ChatbotWidget'), {
   ssr: false,
   loading: () => null,
@@ -72,7 +72,7 @@ const ChatbotWidget = dynamic1(() => import('@/components/ChatbotWidget'), {
 
 
 
-/* ───────────────── Destination Picker (shared) ───────────────── */
+/* Destination Picker */
 function DestinationPicker({
   isMobile,
   value,
@@ -540,9 +540,7 @@ function isPlaceholderRoom(item: any) {
 
 
 function safeArrayData(apiData: any): any[] | null {
-  // Accept both shapes:
-  // 1) { data: "No available rooms" }
-  // 2) { data: [ ... ] }
+  
   const payload = apiData?.data?.data;
   if (Array.isArray(payload)) return payload;
   if (typeof payload === 'string') return null; // signal "no hotels in area"
@@ -562,7 +560,7 @@ function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
 
 
 
-/* ───────── Calendar helpers ───────── */
+/* Calendar helpers */
 function buildMonth(monthStart: Date): Day[] {
   const gridStart = startOfWeek(startOfMonth(monthStart), { weekStartsOn: 0 });
   const days: Day[] = [];
@@ -596,7 +594,7 @@ const hotelTitle = (h: AnyHotel) => {
 
 
 
-/* ───────── Filter helpers ───────── */
+/* Filter helpers  */
 
   function encodeBase64(obj: unknown) {
   const s = JSON.stringify(obj);
@@ -604,7 +602,7 @@ const hotelTitle = (h: AnyHotel) => {
     ? btoa(unescape(encodeURIComponent(s)))
     : Buffer.from(s, 'utf-8').toString('base64'); // SSR fallback
 }
-/* ───────────────── Results Content (moved under Suspense) ───────────────── */
+/* Results Content (moved under Suspense) */
 const PROVINCE_ANCHORS: Record<string, { lat: number; lng: number }[]> = {
   Ontario: [
     { lat: 45.202, lng: -78.217 }, // Harcourt, ON
@@ -1388,7 +1386,6 @@ function getHotelImage(name?: string) {
 
 {/* Loading */}
 {loading && <p className="py-8">Loading availability...</p>}
-{/* (Optional) Avoid echoing fetchError again below, since the empty-state already shows it */}
 
       {/* Results list */}
     <div className="space-y-6">
@@ -1596,7 +1593,7 @@ function getHotelImage(name?: string) {
   );
 }
 
-/* ───────────────── Default export wrapped in Suspense ───────────────── */
+/* Default export wrapped in Suspense*/
 export default function SearchResultsPage() {
   return (
      <>

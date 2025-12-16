@@ -2,15 +2,19 @@
 
 import dynamic from 'next/dynamic';
 import Image from 'next/image';
+import Link from 'next/link';
 import MemberBenefitsSection from '@/components/MemberBenefitsSection';
 
 // start the components
 const ImageCarousel1 = dynamic(() => import('@/components/ImageCarousel1'), { ssr: false });
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {ssr: false,loading: () => null,});
+
 // end of components
 
 export default function HomePage() {
   return (
     <main className="w-full">
+      
       {/* HERO */}
       <section className="relative w-full overflow-hidden">
         {/* Background */}
@@ -22,12 +26,13 @@ export default function HomePage() {
         {/* seach bar*/}
         <div className="relative w-full md:min-h-[1700px]">
           {/* SEARCH IFRAME (overlay top) */}
-          <div className="absolute inset-x-0 top-6 z-20">
+        
+          <div className="absolute inset-x-0 top-6 z-20 pointer-events-none">
             <div className="mx-auto w-full max-w-6xl px-4">
               <div className="w-full md:min-h-[1000px]">
                 <iframe
                   src="/search"
-                  className="w-full"
+                  className="w-full pointer-events-auto"
                   height={720}
                   style={{ border: 'none', background: 'transparent' }}
                   allow="geolocation"
@@ -68,9 +73,21 @@ export default function HomePage() {
                   reward.
                 </p>
 
-                <button className="mt-5 rounded-full bg-orange-500 px-6 py-2 text-sm font-semibold text-white shadow hover:bg-orange-600">
-                  LEARN MORE
-                </button>
+                <div className="mt-6 flex flex-wrap items-center gap-3">
+                  <Link
+                    href="/rewards"
+                    className="inline-flex rounded-full bg-orange-500 px-7 py-2.5 text-sm font-semibold text-white shadow hover:bg-orange-600"
+                  >
+                    Learn More
+                  </Link>
+
+                  <Link
+                    href="/properties"
+                    className="inline-flex rounded-full bg-[#1E1C49] px-7 py-2.5 text-sm font-semibold text-white shadow hover:opacity-90"
+                  >
+                    View all Properties
+                  </Link>
+                </div>
 
                 {/*  MOBILE */}
                 <div className="h-14 md:hidden" />
@@ -96,6 +113,8 @@ export default function HomePage() {
                     <div className="mt-4">
                       {/* start the components */}
                       <ImageCarousel1 />
+                       <ChatbotWidget />
+                      
                       {/* end of components */}
                     </div>
                   </div>
@@ -141,34 +160,29 @@ export default function HomePage() {
       </section>
 
       {/* Rewards image section */}
-       <section className="mx-auto w-full max-w-6xl px-4 py-10 md:py-14">
-            <a
-                href="/rewards"
-                className="block rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
-                aria-label="Go to Rewards"
-            >
-                {/* Container controls height, image is NOT cropped */}
-                <div className="relative w-full overflow-hidden rounded-2xl bg-[#f6f6f6]">
-                <Image
-                    src="/rewardyourself.png"
-                    alt="Reward Yourself, Over and Over and Over"
-                    width={1600}
-                    height={420}
-                    className="
-                    w-full
-                    h-auto
-                    object-contain
-                    "
-                    priority={false}
-                />
-                </div>
-            </a>
-            </section>
+      <section className="mx-auto w-full max-w-6xl px-4 py-10 md:py-14">
+        <a
+          href="/rewards"
+          className="block rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+          aria-label="Go to Rewards"
+        >
+          {/* Container controls height, image is NOT cropped */}
+          <div className="relative w-full overflow-hidden rounded-2xl bg-[#f6f6f6]">
+            <Image
+              src="/rewardyourself.png"
+              alt="Reward Yourself, Over and Over and Over"
+              width={1600}
+              height={420}
+              className="w-full h-auto object-contain"
+              priority={false}
+            />
+          </div>
+        </a>
+      </section>
 
       {/* Member benefits section */}
       <section className="w-full bg-[#1E1C49] py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
-         
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />

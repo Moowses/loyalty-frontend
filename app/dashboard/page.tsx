@@ -64,7 +64,7 @@ const ImageCarousel = dynamic(() => import('@/components/ImageCarousel'), {
   ssr: false,
 });
 
-/* ========= Mocks (only if API + local fallback fail) ========= */
+/*Mocks (only if API + local fallback fail)*/
 const MOCK_DASH: Dashboard = {
   name: 'Member',
   membershipNo: '—',
@@ -221,7 +221,7 @@ function normalizeStays(json: any): StaysPayload {
   };
 }
 
-/* ========= Small UI helpers ========= */
+/*UI helpers*/
 function Card({
   title,
   children,
@@ -317,7 +317,7 @@ function Tile({
   );
 }
 
-/* ========= Header (unchanged) ========= */
+/* Header (unchanged)*/
 function NavIcon({
   href,
   icon,
@@ -342,7 +342,7 @@ function NavIcon({
   );
 }
 
-/* ========= Page ========= */
+/* Page*/
 export default function DashboardPage() {
   const router = useRouter();
 
@@ -602,7 +602,7 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8FB]">
-      {/* ===== BODY: Light DTC layout ===== */}
+      {/*BODY: Light DTC layout  */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-[#1F2042]">
         <ChatbotWidget />
 

@@ -6,6 +6,7 @@ import dynamic from 'next/dynamic';
 
 // start the components
 const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsSection'), { ssr: false });
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {ssr: false,loading: () => null,});
 // end of components
 
 export default function RewardsPage() {
@@ -169,9 +170,7 @@ export default function RewardsPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 3: SPECIAL MEMBER EXPERIENCES
-          ========================= */}
+      {/* SECTION 3: SPECIAL MEMBER EXPERIENCES*/}
       <section className="w-full bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
           <h2
@@ -225,14 +224,14 @@ export default function RewardsPage() {
         </div>
       </section>
 
-      {/* =========================
-          SECTION 4: */}
+      {/* SECTION 4: */}
       <section className="w-full bg-[#1E1C49] py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
 
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />
+            <ChatbotWidget />
             {/* end of components */}
           </div>
         </div>

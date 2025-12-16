@@ -4,6 +4,14 @@ import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {
+  ssr: false,
+  loading: () => null,
+});
+
 
 interface Profile {
   avatarUrl?: string | null;
@@ -16,6 +24,7 @@ interface Profile {
   membershipno?: string;
   email?: string;
 }
+
 
 const BRAND = '#211F45';
 const apiBase = () => (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/+$/, '');
@@ -316,6 +325,8 @@ function PasswordTab({ email }: { email: string }) {
           </button>
         </div>
       </form>
+      <ChatbotWidget />
     </SectionCard>
+    
   );
 }

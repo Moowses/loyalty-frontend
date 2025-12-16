@@ -8,6 +8,7 @@ import Link from 'next/link';
 // start the components
 const ImageCarousel1 = dynamic(() => import('@/components/ImageCarousel1'), { ssr: false });
 const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsSection'), { ssr: false });
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {ssr: false,loading: () => null,});
 // end of components
 
 export default function OffersPage() {
@@ -94,6 +95,7 @@ export default function OffersPage() {
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />
+            <ChatbotWidget/>
             {/* end of components */}
           </div>
         </div>

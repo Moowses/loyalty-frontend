@@ -80,7 +80,7 @@ function diffInDays(start: string, end: string) {
 }
 
 /**
- * ✅ NEW: hard disable ONLY if unavailable (PMS availability)
+ *hard disable ONLY if unavailable (PMS availability)
  */
 function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: boolean) {
   return (iso: string) => {
@@ -91,7 +91,7 @@ function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: bool
 }
 
 /**
- * ✅ NEW: rules-only blocking for CHECKOUT candidates (min/max + no gaps)
+ * rules-only blocking for CHECKOUT candidates (min/max + no gaps)
  * NOTE: this is NOT "disabled"; it's only "not clickable" for end selection.
  */
 function isCheckoutBlockedFactory(
@@ -105,7 +105,7 @@ function isCheckoutBlockedFactory(
   return (iso: string) => {
     if (!iso) return true;
 
-    // no start yet → rules don't apply
+    // no start yet- rules don't apply
     if (!tmpStart) return false;
 
     // cannot pick same/before start as checkout
@@ -148,7 +148,7 @@ function hasUnavailableInRange(available: Set<string>, start?: string, end?: str
   return false;
 }
 
-/* ========= icons ========= */
+/* icons */
 type IconC = ComponentType<{ className?: string }>;
 
 const amenityIcon = (name: string): IconC => {
@@ -191,7 +191,7 @@ const Row = ({ Icon, text }: { Icon: IconC; text: string }) => (
   </div>
 );
 
-/* ========== Calendar (supports availability + rules + loader) ========== */
+/* alendar (supports availability + rules + loader) */
 function DateRangePicker({
   start,
   end,

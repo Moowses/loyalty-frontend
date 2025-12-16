@@ -215,7 +215,7 @@ const [payMessage, setPayMessage] = useState('');
     }
   }, [isAuthed]); // 
 
-  // --- Fetch FINAL price from /availability ---
+  //  Fetch FINAL price from /availability 
   useEffect(() => {
     (async () => {
       try {
@@ -333,7 +333,7 @@ const [payMessage, setPayMessage] = useState('');
     })();
   }, [hotelIdParam, hotelNoParam, startTime, endTime, adults, children, infants, petYN, currency, nights]);
 
-  // --- Collect.js Configuration ---
+  //  Collect.js Configuration 
   const configuredRef = useRef(false);
   const tokenizationKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || "z78ur3-68sE66-c3YWM3-ZC6Q56";
 
@@ -358,12 +358,6 @@ const configureCollect = useCallback(() => {
         ccexp: { selector: "#ccexp", placeholder: "MM / YY" },
         cvv: { selector: "#cvv", placeholder: "CVV" },
       },
-
-     
-       //paymentRequest: { enabled: false },
-
-     // paymentSelector: "#bookNowBtn",
-
       // Hand the token back to app code
       callback: (resp: any) => {
         (window as any).__collectResolve?.(resp);
@@ -390,8 +384,6 @@ const configureCollect = useCallback(() => {
 
     return () => clearTimeout(timer);
   }, [configureCollect]);
-
-// --- Booking Handler ---
 
 // --- Booking Handler ---
 const onBookNow = async (e: React.FormEvent) => {
@@ -501,7 +493,7 @@ const onBookNow = async (e: React.FormEvent) => {
     setPaying(false);
   }
 };
- // --- Render ---
+ //Render
 
   if (loading) return <div className="mx-auto max-w-4xl p-6">Loading…</div>;
   if (err) return <div className="mx-auto max-w-4xl p-6 text-red-600">{err}</div>;

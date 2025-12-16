@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 
 // start the components
 const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsSection'), { ssr: false });
+const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {ssr: false,loading: () => null,});
 // end of components
 
 export default function HelpPage() {
@@ -112,6 +113,7 @@ export default function HelpPage() {
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />
+            <ChatbotWidget/>
             {/* end of components */}
           </div>
         </div>
