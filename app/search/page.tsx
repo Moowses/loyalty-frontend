@@ -26,7 +26,7 @@ const shadowUrl = 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png
 
 
 
-/* ================= Icons ================= */
+/* Icons  */
 const PinIcon = (p: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
     <path
@@ -53,12 +53,12 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/* ================= Shared types ================= */
+/* Shared types */
 type Place = { label: string; lat?: number; lng?: number };
 type Day = { date: Date; currentMonth: boolean };
 
 
-/* ================= Destination Picker ================= */
+/*Destination Picker  */
 function DestinationPicker({
   isMobile,
   value,
@@ -117,19 +117,19 @@ function DestinationPicker({
   const POPULAR_PROPERTIES = [
     {
       label: "Nordic Spa Getaway",
-      url: "https://member.dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake",
+      url: "https://dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake",
     },
     {
       label: "Your Dream Getaway",
-      url: "https://member.dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway",
+      url: "https://dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway",
     },
     {
       label: "Escape From Life",
-      url: "https://member.dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
+      url: "https://dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
     },
     {
       label: "Tiny Home Experience",
-      url: "https://member.dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience",
+      url: "https://dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience",
     },
   ];
 
@@ -578,10 +578,10 @@ const hotelMatches = HOTEL_POINTS
     </div>
   );
 }
-/* ===================== Main Bias Search Bar ===================== */
+/* Main Bias Search Bar */
 
 
-/* ===================== Main Search Bar ===================== */
+/* Main Search Bar */
 function SearchBar() {
   const router = useRouter();
 

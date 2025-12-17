@@ -143,7 +143,7 @@ export default function HomePage() {
                     Your next trip starts here
                   </h2>
 
-                  {/* ✅ FIX: reduce gap between title and images (was mt-10) */}
+                  {/* Image Carousel */}
                   <div className="mt-6">
                     {/* start the components */}
                     <ImageCarousel1 />
