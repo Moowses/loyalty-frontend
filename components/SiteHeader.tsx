@@ -101,57 +101,46 @@ export default function SiteHeader() {
   }, []);
 
 async function logout() {
+  
+  setChecking(true);
+  setLoggedIn(false);
+  setOpen(false);
+
+ 
+  try {
+    localStorage.setItem('dtc_auth_changed', String(Date.now()));
+  } catch {}
+
+ 
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), 8000);
+
   try {
     await fetch(`${API_BASE}/api/auth/logout`, {
       method: 'POST',
       credentials: 'include',
+      signal: ctrl.signal,
+      headers: { 'Content-Type': 'application/json' },
     });
-
-    if (typeof window !== 'undefined') {
-      // Marker if you ever want to read this after redirect
-      sessionStorage.setItem('justLoggedOut', 'true');
-    }
-  } catch (error) {
-    console.error('Logout error:', error);
+  } catch (e) {
+   
+    console.warn('Logout request failed/timeout:', e);
   } finally {
+    clearTimeout(t);
+
+   
     try {
-      if (typeof window !== 'undefined') {
-        //  Tell other tabs / windows that auth changed
-        try {
-          localStorage.setItem('dtc_auth_changed', String(Date.now()));
-        } catch (e) {
-          console.warn('localStorage dtc_auth_changed failed', e);
-        }
+      sessionStorage.setItem('justLoggedOut', 'true');
+      ['email', 'apiToken', 'dashboardData', 'membershipno'].forEach(k => {
+        try { localStorage.removeItem(k); } catch {}
+      });
+    } catch {}
 
-        //  Clear all local auth-related data
-        const keysToClear = ['email', 'apiToken', 'dashboardData', 'membershipno'];
-
-        for (const key of keysToClear) {
-          try {
-            localStorage.removeItem(key);
-          } catch (e) {
-            console.warn(`Failed to remove localStorage key ${key}`, e);
-          }
-        }
-
-        // Clear all cookies
-        try {
-          document.cookie.split(';').forEach(cookie => {
-            const [name] = cookie.split('=');
-            if (!name) return;
-            document.cookie = `${name.trim()}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
-          });
-        } catch (e) {
-          console.warn('Failed to clear cookies', e);
-        }
-      }
-    } finally {
-      
-      window.location.href = 'https://dreamtripclub.com';
-      window.location.reload();
-    }
+    
+    window.location.assign('/');
   }
 }
+
 
 
   return (
