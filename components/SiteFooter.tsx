@@ -127,11 +127,11 @@ export default function SiteFooter() {
 
           {/* Right */}
           <div className="flex w-full items-center justify-center gap-2 md:w-1/3 md:justify-end">
-            <Link href="/" className="underline underline-offset-4 hover:text-black">
+            <Link href="/terms" className="underline underline-offset-4 hover:text-black">
               Terms and Conditions
             </Link>
             <span className="text-black/40">|</span>
-            <Link href="/" className="underline underline-offset-4 hover:text-black">
+            <Link href="/privacy" className="underline underline-offset-4 hover:text-black">
               Privacy Policy
             </Link>
           </div>
