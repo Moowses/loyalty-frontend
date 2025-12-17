@@ -29,17 +29,17 @@ interface Profile {
   phone?: string;
 
   // Meta-aligned fields
-  profileId?: string;     // ProfileId (Mfpe...)
-  Title?: string;         // Mr/Ms
-  DateofBirth?: string;   // YYYY-MM-DD
-  Gender?: string;        // Male/Female
-  Nationality?: string;   // CA
-  Company?: string;       // DreamTripClub
-  DocumentType?: string;  // ID
-  Region?: string;        // Ontario
-  Country?: string;       // CA
+  profileId?: string; // ProfileId (Mfpe...)
+  Title?: string; // Mr/Ms
+  DateofBirth?: string; // YYYY-MM-DD
+  Gender?: string; // Male/Female
+  Nationality?: string; // CA
+  Company?: string; // DreamTripClub
+  DocumentType?: string; // ID
+  Region?: string; // Ontario
+  Country?: string; // CA
   StateProvince?: string; // Ontario
-  Destinations?: string;  // Canada
+  Destinations?: string; // Canada
 }
 
 const BRAND = '#211F45';
@@ -197,15 +197,21 @@ export default function AccountSettingsPage() {
         if (!me?.loggedIn) return deny();
         allow();
 
-        // 2) load profile (this already contains meta_pfprofile_id in your sample)
+        // 2) load profile (YOUR backend expects POST + { email }
+        const email = emailForCalls || getCookie('dtc_email') || '';
         const res = await fetch(`${base}/api/user/profile`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
           credentials: 'include',
+          body: JSON.stringify({ email }),
           signal: controller.signal,
         });
 
         if (res.ok) {
           const j = await res.json().catch(() => ({}));
-          const row = j?.data?.[0] || {};
+
+          // ✅ your backend wraps Meta response as { success, profile: { result, flag, data:[...] } }
+          const row = j?.profile?.data?.[0] || j?.data?.[0] || {};
 
           const countryCode = parseCountryCode(row.country) || 'CA';
           const province = (row.state || 'Ontario').trim();
@@ -213,9 +219,12 @@ export default function AccountSettingsPage() {
           const title = String(row.title || '').trim() || 'Mr';
           const dobISO = mmddyyyyToISO(row.birthday) || '';
 
-          const nationality = (row.nationality || '').trim() || countryCode || 'CA';
-          const company = (row.companyname || '').trim() || 'DreamTripClub';
-          const destinations = (row.destinations || '').trim() || 'Canada';
+          const nationality =
+            (row.nationality || '').trim() || countryCode || 'CA';
+          const company =
+            (row.companyname || '').trim() || 'DreamTripClub';
+          const destinations =
+            (row.destinations || '').trim() || 'Canada';
 
           const phoneBest =
             (row.phone || '').trim() ||
@@ -227,7 +236,12 @@ export default function AccountSettingsPage() {
               ...p,
 
               // display
-              email: row.primaryemail || getCookie('dtc_email') || p.email || '',
+              email:
+                row.primaryemail ||
+                email ||
+                getCookie('dtc_email') ||
+                p.email ||
+                '',
               membershipno: row.membershipno || p.membershipno || '',
               city: row.city || p.city || '',
               address1:
@@ -266,8 +280,7 @@ export default function AccountSettingsPage() {
           }
         }
 
-        // 3) optional: dashboard fetch (if ever needed) — keep for compatibility
-        // (Profile already gives meta_pfprofile_id in your sample, so this is just a fallback.)
+        // 3) optional: dashboard fallback (kept)
         try {
           const email = emailForCalls;
           if (email) {
@@ -287,8 +300,9 @@ export default function AccountSettingsPage() {
               rec.metaPfProfileId ??
               '';
 
-            if (!cancelled && pid && !profile.profileId) {
-              setProfile((p) => ({ ...p, profileId: pid }));
+            // ensure we don't overwrite once already set
+            if (!cancelled && pid) {
+              setProfile((p) => ({ ...p, profileId: p.profileId || pid }));
             }
           }
         } catch {
@@ -337,7 +351,9 @@ export default function AccountSettingsPage() {
     }
 
     if (!canSaveProfile) {
-      alert('Please complete required fields (ProfileId, First/Last name, Country, Province).');
+      alert(
+        'Please complete required fields (ProfileId, First/Last name, Country, Province).'
+      );
       return;
     }
 
@@ -369,11 +385,15 @@ export default function AccountSettingsPage() {
         body: JSON.stringify(payload),
       });
 
-      const isJSON = res.headers.get('content-type')?.includes('application/json');
+      const isJSON = res.headers
+        .get('content-type')
+        ?.includes('application/json');
       const data = isJSON ? await res.json().catch(() => null) : null;
 
       if (!res.ok || data?.result !== 'success') {
-        throw new Error(data?.message || 'Unable to update profile. Please try again.');
+        throw new Error(
+          data?.message || 'Unable to update profile. Please try again.'
+        );
       }
 
       alert('Profile updated successfully.');
@@ -498,7 +518,7 @@ function ProfileTab({
         </div>
       </div>
 
-      {/* Meta-aligned form (auto-populated from /api/user/profile) */}
+      {/* Meta-aligned form (auto-populated) */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>
@@ -549,7 +569,9 @@ function ProfileTab({
           <Label>Title</Label>
           <Select
             value={(profile.Title || 'Mr').trim()}
-            onChange={(e) => setProfile((p) => ({ ...p, Title: e.target.value }))}
+            onChange={(e) =>
+              setProfile((p) => ({ ...p, Title: e.target.value }))
+            }
           >
             <option value="Mr">Mr</option>
             <option value="Ms">Ms</option>
@@ -588,7 +610,10 @@ function ProfileTab({
           <Input
             value={profile.Nationality || ''}
             onChange={(e) =>
-              setProfile((p) => ({ ...p, Nationality: e.target.value.toUpperCase() }))
+              setProfile((p) => ({
+                ...p,
+                Nationality: e.target.value.toUpperCase(),
+              }))
             }
             placeholder="CA"
           />
@@ -622,7 +647,10 @@ function ProfileTab({
           <Input
             value={profile.Country || ''}
             onChange={(e) =>
-              setProfile((p) => ({ ...p, Country: e.target.value.toUpperCase() }))
+              setProfile((p) => ({
+                ...p,
+                Country: e.target.value.toUpperCase(),
+              }))
             }
             placeholder="CA"
           />
@@ -635,7 +663,11 @@ function ProfileTab({
           <Input
             value={profile.StateProvince || ''}
             onChange={(e) =>
-              setProfile((p) => ({ ...p, StateProvince: e.target.value, Region: e.target.value }))
+              setProfile((p) => ({
+                ...p,
+                StateProvince: e.target.value,
+                Region: e.target.value,
+              }))
             }
             placeholder="Ontario"
           />
@@ -770,10 +802,17 @@ function PasswordTab({ email }: { email: string }) {
         <span className="font-medium">{email || 'your account'}</span>.
       </p>
 
-      <form onSubmit={onSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form
+        onSubmit={onSubmit}
+        className="grid grid-cols-1 md:grid-cols-2 gap-4"
+      >
         <div className="md:col-span-2">
           <Label>Email</Label>
-          <Input value={email} readOnly className="bg-gray-100 cursor-not-allowed" />
+          <Input
+            value={email}
+            readOnly
+            className="bg-gray-100 cursor-not-allowed"
+          />
         </div>
 
         <div className="md:col-span-2">
