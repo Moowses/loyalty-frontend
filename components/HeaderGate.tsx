@@ -18,7 +18,8 @@ const SHOW_ON: RegExp[] = [
   /^\/offer/,  
   /^\/terms/, 
   /^\/privacy/,
-  /^\/appcenter/,            
+  /^\/appcenter/, 
+  /^\/properties/,           
 ];
 
 export default function HeaderGate() {

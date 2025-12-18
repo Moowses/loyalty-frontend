@@ -15,7 +15,8 @@ const SHOW_ON: RegExp[] = [
   /^\/help/,
   /^\/terms/, 
   /^\/privacy/,
-  /^\/appcenter/,  
+  /^\/appcenter/, 
+  /^\/properties/,  
 ];
 
 export default function FooterGate() {
