@@ -934,7 +934,7 @@ function SearchBar() {
           </div>
         ) : (
           
-          /* Mobile layout: single start button */
+          /* Mobile layout*/
           <div className="col-span-2">
             <button
               type="button"
@@ -974,7 +974,7 @@ function SearchBar() {
         
       </div>
 
-   {/* ===== Desktop: Guests Popover ===== */}
+   {/* Desktop Guests Popover*/}
           {mounted && !isMobile && showGuests &&
             createPortal(
               <>
@@ -1010,7 +1010,7 @@ function SearchBar() {
                       </div>
                     </div>
                   ))}
-                  {/* NEW: Pet row (Yes/No) */}
+                  {/* Pet row (Yes/No) */}
                       <div className="flex items-center justify-between py-3 border-b">
                         <div className="text-[15px] font-medium text-gray-900">Bringing a pet?</div>
                         <select
@@ -1032,17 +1032,16 @@ function SearchBar() {
               document.body,
             )
           }
-        {/* ===== Desktop: Calendar Popover (two months) ===== */}
+        {/*Desktop: Calendar Popover (two months) */}
            {mounted && showCal && createPortal(
   <div className="fixed inset-0 z-[99999] pointer-events-none">
-    {/* Click-away overlay */}
     <div
       className="absolute inset-0 bg-black/40 pointer-events-auto"
       onClick={() => setShowCal(false)}
     />
 
     {isMobile ? (
-      // ===== Mobile: full-screen bottom sheet (single month) =====
+      // Mobile: full-screen bottom sheet 
       <div
         className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4
                    animate-[slideup_200ms_ease-out] overflow-y-auto pointer-events-auto"
@@ -1106,7 +1105,7 @@ function SearchBar() {
         </div>
       </div>
     ) : (
-      // ===== Desktop: anchored popover (two months) =====
+      //  Desktop: anchored popover (two months) 
       <div
         className="absolute pointer-events-none"
         style={{ top: calPos.top, left: calPos.left }}
@@ -1115,7 +1114,7 @@ function SearchBar() {
         <div
           className="relative z-[100000] text-gray-700 bg-white border rounded-2xl shadow-2xl p-4 w-[860px] pointer-events-auto"
         >
-          {/* Header: month nav */}
+          {/*month nav */}
           <div className="flex items-center justify-between mb-3">
             <button
               className="px-3 py-1 rounded-lg border hover:bg-gray-50"
@@ -1198,7 +1197,7 @@ function SearchBar() {
 )}
 
 
-      {/* ===== Mobile: Guests bottom sheet ===== */}
+      {/* Mobile: Guests bottom sheet  */}
       {mounted && isMobile && showGuests &&
         createPortal(
           <div className="fixed inset-0 z-[999998]">
@@ -1239,7 +1238,7 @@ function SearchBar() {
                 </div>
               ))}
 
-                {/* NEW: Pet row (Yes/No) - mobile */}
+                {/*Pet row (Yes/No) - mobile */}
                 <div className="flex items-center justify-between py-3">
                   <div className="text-base font-medium text-gray-900">Bringing a pet?</div>
                   <select
@@ -1264,7 +1263,7 @@ function SearchBar() {
         )
       }
 
-      {/* ===== Mobile: Summary bottom sheet ===== */}
+      {/*Mobile Summary bottom sheet  */}
       {mounted && isMobile && showSummary &&
         createPortal(
           <div className="fixed inset-0 z-[999997]">
@@ -1299,7 +1298,7 @@ function SearchBar() {
     </div>
   );
 }
-// FittoMarkers
+
 
 
 

@@ -121,7 +121,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              {/* Spacer on mobile so content doesn’t crash */}
+              {/* Spacer on mobile */}
               <div className="h-10 md:hidden" />
             </div>
           </div>

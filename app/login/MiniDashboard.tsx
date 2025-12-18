@@ -3,6 +3,7 @@
 
 import { useEffect, useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 
 interface DashboardData {
   name: string;
@@ -263,14 +264,12 @@ async function handleLogout() {
     >
       View Full Dashboard
     </button>
-
-
-        <button
-          onClick={() => alert('Download our mobile app for full features')}
-          className="bg-[#93AFB9] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
+        <Link
+           href="/appcenter"
+          className="text-center bg-[#93AFB9] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
         >
           Download App
-        </button>
+        </Link>
       </div>
 
       {/* Logout Button */}

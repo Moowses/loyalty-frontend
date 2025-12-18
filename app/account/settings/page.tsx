@@ -197,7 +197,7 @@ export default function AccountSettingsPage() {
         if (!me?.loggedIn) return deny();
         allow();
 
-        // 2) load profile (YOUR backend expects POST + { email }
+        // 2) fetch profile
         const email = emailForCalls || getCookie('dtc_email') || '';
         const res = await fetch(`${base}/api/user/profile`, {
           method: 'POST',
@@ -210,7 +210,6 @@ export default function AccountSettingsPage() {
         if (res.ok) {
           const j = await res.json().catch(() => ({}));
 
-          // ✅ your backend wraps Meta response as { success, profile: { result, flag, data:[...] } }
           const row = j?.profile?.data?.[0] || j?.data?.[0] || {};
 
           const countryCode = parseCountryCode(row.country) || 'CA';
@@ -321,7 +320,7 @@ export default function AccountSettingsPage() {
       cancelled = true;
       controller.abort();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  
   }, [router, emailForCalls]);
 
   if (gate === 'checking') {
@@ -456,7 +455,6 @@ export default function AccountSettingsPage() {
                 saving={savingProfile}
               />
             ) : (
-              // ✅ DO NOT TOUCH password reset
               <PasswordTab email={profile.email || ''} />
             )}
           </div>
@@ -518,7 +516,7 @@ function ProfileTab({
         </div>
       </div>
 
-      {/* Meta-aligned form (auto-populated) */}
+      {/* auto-populated*/}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <Label>
