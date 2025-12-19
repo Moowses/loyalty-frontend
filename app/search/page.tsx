@@ -116,20 +116,20 @@ function DestinationPicker({
     // Fixed popular properties for direct booking
   const POPULAR_PROPERTIES = [
     {
-      label: "Nordic Spa Getaway",
-      url: "https://dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Nordic+Spa+Getaway+on+Stoney+Lake",
+      label: "Your Dream Getaway",
+      url: "https://dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=276301&name=Your+dream+getaway",
     },
     {
-      label: "Your Dream Getaway",
-      url: "https://dreamtripclub.com/hotel/276301?hotelId=276301&hotelNo=YDG&roomTypeId=425356&&name=Your+dream+getaway",
+      label: "Nordic Spa Getaway",
+      url: "https://dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&name=Nordic+Spa+Getaway+on+Stoney+Lake",
     },
     {
       label: "Escape From Life",
-      url: "https://dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
+      url: "https://dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&name=escape+from+life",
     },
     {
       label: "Tiny Home Experience",
-      url: "https://dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&&name=Tiny+Home+Experience",
+      url: "https://dreamtripclub.com/hotel/302995?hotelId=302995&hotelNo=SITHE&roomTypeId=302995&name=Tiny+Home+Experience",
     },
   ];
 
