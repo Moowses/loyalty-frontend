@@ -106,7 +106,7 @@ export default function SiteFooter() {
             © 2025 Cottage Dream Vacations. All rights reserved.
           </div>
 
-          {/* Center */}
+          {/* Center 
           <div className="flex w-full items-center justify-center gap-3 md:w-1/3">
             <Link href="/" aria-label="Facebook" className="text-black/80 hover:text-black">
               <span className="inline-block h-5 w-5 rounded-full border border-black/25" />
@@ -124,6 +124,7 @@ export default function SiteFooter() {
               <span className="inline-block h-5 w-5 rounded-full border border-black/25" />
             </Link>
           </div>
+          */}
 
           {/* Right */}
           <div className="flex w-full items-center justify-center gap-2 md:w-1/3 md:justify-end">
