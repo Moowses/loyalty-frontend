@@ -75,21 +75,31 @@ export default function SiteFooter() {
             {/* Store badges + QR */}
             <div className="mt-8 flex flex-wrap items-center justify-center gap-5 md:mt-10">
               <div className="relative h-[48px] w-[160px] md:h-[52px] md:w-[180px]">
-                <Image
+                <a 
+                  href="https://apps.apple.com/us/app/dream-trip-club/id6753647319"
+                  target="_blank"                 
+                >       
+                <Image 
                   src="/appstorefooter.png"
                   alt="Download on the App Store"
                   fill
                   className="object-contain"
                 />
+                </a>
               </div>
 
               <div className="relative h-[48px] w-[160px] md:h-[52px] md:w-[180px]">
+                 <a 
+                  href="https://play.google.com/store/apps/details?id=ai.guestapp.dreamtripclub&hl=en"
+                  target="_blank"                 
+                > 
                 <Image
                   src="/googleplayfooter.png"
                   alt="Get it on Google Play"
                   fill
                   className="object-contain"
                 />
+                </a>
               </div>
 
               <div className="relative h-[64px] w-[64px] md:h-[72px] md:w-[72px]">

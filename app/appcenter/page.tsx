@@ -19,7 +19,7 @@ export default function AppCenterPage() {
         <div className="flex flex-col items-center gap-6 sm:flex-row sm:gap-8">
           {/* iOS */}
           <a
-            href="#"
+            href="https://apps.apple.com/us/app/dream-trip-club/id6753647319"
             className="transition-transform hover:scale-[1.02] active:scale-[0.99]"
             aria-label="Download on the App Store"
           >
@@ -35,7 +35,7 @@ export default function AppCenterPage() {
 
           {/* Android */}
           <a
-            href="#"
+            href="https://play.google.com/store/apps/details?id=ai.guestapp.dreamtripclub&hl=en"
             className="transition-transform hover:scale-[1.02] active:scale-[0.99]"
             aria-label="Get it on Google Play"
           >
