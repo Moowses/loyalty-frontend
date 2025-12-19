@@ -46,7 +46,7 @@ export default function HomePage() {
           {/* HEADLINE AREA */}
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4">
             {/* push down below iframe bar */}
-            <div className="pt-[300px] md:pt-[700px]">
+            <div className="pt-[540px] sm:pt-[460px] md:pt-[700px]">
               <div className="max-w-3xl">
                 <h1
                   className="text-white font-[900] tracking-[-0.02em]"

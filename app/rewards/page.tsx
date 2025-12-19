@@ -37,7 +37,7 @@ export default function RewardsPage() {
 
           {/* hero text */}
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4">
-            <div className="pt-[300px] md:pt-[560px] pb-16 md:pb-24">
+            <div className="pt-[400px] md:pt-[560px] pb-16 md:pb-24">
               {/* push down text block (desktop) */}
               <div className="max-w-3xl mt-[220px]">
                 <h1

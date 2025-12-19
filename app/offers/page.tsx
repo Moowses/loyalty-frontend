@@ -39,7 +39,7 @@ export default function OffersPage() {
 
           {/* hero text */}
           <div className="relative z-10 mx-auto w-full max-w-6xl px-4">
-            <div className="pt-[300px] md:pt-[560px] pb-16 md:pb-24">
+            <div className="pt-[510px] md:pt-[560px] pb-16 md:pb-24">
               {/* keep consistent spacing behavior */}
               <div className="max-w-4xl mt-12 md:mt-[220px]">
                 <h1
