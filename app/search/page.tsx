@@ -117,7 +117,7 @@ function DestinationPicker({
   const POPULAR_PROPERTIES = [
     {
       label: "Nordic Spa Getaway",
-      url: "https://dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Getaway+on+Stoney+Lake",
+      url: "https://dreamtripclub.com/hotel/276302?hotelId=276302&hotelNo=GSL&roomTypeId=276302&&name=Nordic+Spa+Getaway+on+Stoney+Lake",
     },
     {
       label: "Your Dream Getaway",
