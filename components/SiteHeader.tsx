@@ -327,7 +327,7 @@ async function logout() {
           ) : (
             <button
               onClick={() => setShowLoginModal(true)}
-              className="px-3 py-1.5 rounded-[12px] text-[8px] font-semibold text-white shadow-sm transition-colors hover:opacity-90"
+              className="px-3 py-1.5 rounded-[12px] text-[8.5px] font-semibold text-white shadow-sm transition-colors hover:opacity-90"
               style={{ backgroundColor: BRAND }}
             >
               Join / Sign in
