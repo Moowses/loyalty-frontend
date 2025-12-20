@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { useEffect, useState } from 'react';
 
 type Props = {
   title?: string;
@@ -23,6 +24,26 @@ export default function MemberBenefitsSection({
   joinHref = 'https://dreamtripclub.com',
   signInHref = '/login',
 }: Props) {
+  const [showLoginModal, setShowLoginModal] = useState(false);
+
+
+  useEffect(() => {
+    const onMsg = (ev: MessageEvent) => {
+      if (!ev?.data?.type) return;
+
+      if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
+        setShowLoginModal(false);
+        try {
+          localStorage.setItem('dtc_auth_changed', String(Date.now()));
+        } catch {}
+        // small delay so the modal visually closes before reload
+        setTimeout(() => window.location.reload(), 50);
+      }
+    };
+    window.addEventListener('message', onMsg);
+    return () => window.removeEventListener('message', onMsg);
+  }, []);
+
   return (
     <section className="w-full bg-[#211F45] py-12">
       <div className="mx-auto max-w-6xl px-4">
@@ -76,8 +97,10 @@ export default function MemberBenefitsSection({
 
             {/* Buttons */}
             <div className="mt-8 flex gap-4">
-              <a
-                href={joinHref}
+              {/* JOIN now opens the right-docked login drawer (same as SiteHeader) */}
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
                 className="flex items-center justify-center"
                 style={{
                   width: 112,
@@ -91,8 +114,9 @@ export default function MemberBenefitsSection({
                 }}
               >
                 JOIN
-              </a>
+              </button>
 
+              {/* Keep SIGN IN link as-is */}
               <a
                 href={signInHref}
                 className="flex items-center justify-center border"
@@ -110,6 +134,9 @@ export default function MemberBenefitsSection({
               >
                 SIGN IN
               </a>
+
+           
+              <span className="hidden" data-join-href={joinHref} />
             </div>
           </div>
 
@@ -154,6 +181,48 @@ export default function MemberBenefitsSection({
           </div>
         </div>
       </div>
+
+      {/* Login Modal  */}
+      {showLoginModal && (
+        <div className="fixed inset-0 z-[9999] flex justify-end">
+          {/* Backdrop (click to close) */}
+          <button
+            aria-label="Close login"
+            onClick={() => setShowLoginModal(false)}
+            className="absolute inset-0 w-full h-full bg-black/50"
+          />
+
+          {/* Right panel */}
+          <div
+            className="
+              relative
+              w-full max-w-[530px]
+              h-[92vh] my-0 mr-0
+              bg-white shadow-2xl rounded-l-2xl overflow-hidden
+            "
+          >
+            {/* Close button */}
+            <button
+              onClick={() => {
+                setShowLoginModal(false);
+                setTimeout(() => window.location.reload(), 50);
+              }}
+              className="absolute top-4 right-3 text-2xl text-gray-500 hover:text-gray-700 z-10"
+              aria-label="Close"
+            >
+              ×
+            </button>
+
+            {/* Iframe */}
+            <iframe
+              src="/login"
+              className="w-full h-full border-0"
+              loading="lazy"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+            />
+          </div>
+        </div>
+      )}
     </section>
   );
 }
