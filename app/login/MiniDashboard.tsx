@@ -266,6 +266,7 @@ async function handleLogout() {
     </button>
         <Link
            href="/appcenter"
+           target="_blank"
           className="text-center bg-[#93AFB9] text-white py-2 px-3 rounded-lg text-sm hover:opacity-90 transition"
         >
           Download App
