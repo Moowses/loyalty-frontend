@@ -324,10 +324,10 @@ export default function PropertiesPage() {
 
   /*Build hotel URL*/
   const buildHotelUrl = (p: PropertyItem) => {
-    const hotelNo = p.hotelNo || ""; // if backend doesn’t provide, leave blank
+    const hotelNo = p.hotelNo || ""; 
     const params = new URLSearchParams({
       hotelId: p.hotelId,
-      hotelNo: hotelNo || "",                 // if you want p.hotelId here instead, change to p.hotelId
+      hotelNo: hotelNo || p.hotelId,                 
       roomTypeId: p.hotelId,                  // per your current rule
       checkIn: fmtParam(checkIn!),
       checkOut: fmtParam(checkOut!),
