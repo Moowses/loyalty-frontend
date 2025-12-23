@@ -28,7 +28,6 @@ import {
   ImagePlus,
 } from 'lucide-react';
 
-/* ========= types aligned to your meta.json ========= */
 type Meta = {
   hotelId: string;
   hotelNo?: string;
@@ -42,7 +41,7 @@ type Meta = {
   gallery?: string[];
 };
 
-/* ========= helpers ========= */
+//helpers 
 const toNum = (v: any) => Number(String(v ?? 0).replace(/[^0-9.-]/g, '')) || 0;
 const money = (n: number, ccy = 'CAD') =>
   new Intl.NumberFormat('en-CA', {
@@ -79,9 +78,8 @@ function diffInDays(start: string, end: string) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
-/**
- *hard disable ONLY if unavailable (PMS availability)
- */
+// *hard disable ONLY if unavailable (PMS availability)
+
 function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: boolean) {
   return (iso: string) => {
     if (isCalLoading) return true;
@@ -90,10 +88,10 @@ function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: bool
   };
 }
 
-/**
- * rules-only blocking for CHECKOUT candidates (min/max + no gaps)
- * NOTE: this is NOT "disabled"; it's only "not clickable" for end selection.
- */
+//Error Trap this is NOT "disabled"; it's only "not clickable" for end selection.
+
+ 
+
 function isCheckoutBlockedFactory(
   availableDates: Set<string>,
   tmpStart: string | null,
@@ -119,7 +117,7 @@ function isCheckoutBlockedFactory(
     if (nights < min) return true;
     if (nights > max) return true;
 
-    // ensure all intermediate nights are available (no gaps)
+    // ensure all intermediate nights are available
     const [sy, sm, sd] = tmpStart.split('-').map(Number);
     let cursor = new Date(sy, (sm || 1) - 1, sd || 1);
 

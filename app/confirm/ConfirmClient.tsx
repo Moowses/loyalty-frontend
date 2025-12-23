@@ -45,8 +45,8 @@ export default function ConfirmClient() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const payloadRaw = params.get('payload');                 // base64 JSON (preferred)
-  const reservationNumOnly = params.get('reservationNumber'); // minimal fallback
+  const payloadRaw = params.get('payload');                 
+  const reservationNumOnly = params.get('reservationNumber'); 
 
   const data = useMemo(() => decodeBase64Json<ConfirmPayload>(payloadRaw), [payloadRaw]);
 
@@ -195,7 +195,7 @@ export default function ConfirmClient() {
         </div>
       </section>
 
-      {/* Footer CTA (view booking) */}
+      {/* */}
       <div className="mt-6">
         <button
           onClick={() => router.push(`/booking/status?reservationNum=${encodeURIComponent(reservationNumber)}`)}

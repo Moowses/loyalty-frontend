@@ -15,7 +15,7 @@ import {
   FaUser,
 } from 'react-icons/fa6';
 
-/* ========= Types ========= */
+/*Types */
 type Txn = { date: string; description: string; points: number };
 
 type Dashboard = {
@@ -53,13 +53,13 @@ type StaysPayload = {
   missing?: StayBooking[];
 };
 
-/* chatbot - dynamically import to avoid SSR issues */
+//chatbot
 const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {
   ssr: false,
   loading: () => null,
 });
 
-/* image carousel */
+// image carousel
 const ImageCarousel = dynamic(() => import('@/components/ImageCarousel'), {
   ssr: false,
 });
@@ -77,7 +77,6 @@ const MOCK_DASH: Dashboard = {
 const MOCK_RESV: ReservationsPayload = { upcoming: [], past: [] };
 const MOCK_STAYS: StaysPayload = { upcoming: [], past: [] };
 
-/* ========= Helpers ========= */
 
 // cookie helper
 const getCookie = (name: string): string => {
@@ -695,7 +694,7 @@ export default function DashboardPage() {
             </div>
           </Card>
 
-          {/* RECENT ACTIVITY (with tabs) */}
+          {/* RECENT ACTIVITY */}
           <Card title="Recent Activity" headerClassName="text-[25px]">
             <div className="flex flex-col">
               {/* Tabs */}
@@ -735,7 +734,7 @@ export default function DashboardPage() {
                 Reward points will be reflected after your stay, and any points adjustments are updated in real time.
               </p>
 
-              {/* Tab 1: Points History (existing design) */}
+              {/* Tab 1 Points History*/}
               {activityTab === 'points' && (
                 <>
                   <div className="overflow-x-auto rounded-[14px] border border-[#93AFB9]">

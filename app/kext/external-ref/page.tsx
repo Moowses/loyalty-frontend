@@ -457,26 +457,27 @@ export default function KextExternalRefPage() {
               {status && <span>{status}</span>}
             </div>
 
-            {/* --- POS DIAGNOSTICS --- */}
+            {/* POS DIAGNOSTICS */}
             <div className="mt-4 p-3 bg-white border border-slate-300 rounded-lg text-[11px] text-slate-700">
               <div className="font-semibold mb-1">POS Diagnostics</div>
               <pre className="whitespace-pre-wrap text-[10px]">
                 {typeof window !== 'undefined'
                   ? `
-pos_addSpecialItemToCurrentAccount: ${
+                    pos_addSpecialItemToCurrentAccount: ${
                     typeof (window as any).pos_addSpecialItemToCurrentAccount
                   }
-pos_addExternalReference:          ${
+                  pos_addExternalReference:          ${
                     typeof (window as any).pos_addExternalReference
                   }
-pos_getCurrentAccount:             ${
+                  pos_getCurrentAccount:            
+                 ${
                     typeof (window as any).pos_getCurrentAccount
                   }
-hasCurrentAccount (state):         ${String(hasCurrentAccount)}
-posContext (state is set):         ${String(!!posContext)}
-userAgent:                         ${navigator.userAgent}
-origin:                            ${window.location.origin}
-`
+                      hasCurrentAccount (state):         ${String(hasCurrentAccount)}
+                      posContext (state is set):         ${String(!!posContext)}
+                      userAgent:                         ${navigator.userAgent}
+                      origin:                            ${window.location.origin}
+                      `
                   : 'Loading…'}
               </pre>
             </div>

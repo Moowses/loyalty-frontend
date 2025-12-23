@@ -48,7 +48,7 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-/*  Slug helpers*/
+// slug helpers
 function dashedSlug(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
@@ -56,14 +56,14 @@ function condensedSlug(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
 }
 function getHeroImg(propertyName: string) {
-  // per your instruction: direct path under public/properties/<slug>/hero.png
+  // direct path under public/properties/<slug>/hero.png
   return `/properties/${dashedSlug(propertyName)}/hero.png`;
 }
 function fmtParam(d: Date) {
   return format(d, "yyyy-MM-dd");
 }
 
-/* Page */
+//Page component
 export default function PropertiesPage() {
   const [all, setAll] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -231,7 +231,7 @@ export default function PropertiesPage() {
     );
   };
 
-  /* Guests popover*/
+  //
   const [showGuests, setShowGuests] = useState(false);
   const guestsRef = useRef<HTMLDivElement | null>(null);
   const [guestPos, setGuestPos] = useState({ top: 0, left: 0 });
@@ -262,7 +262,7 @@ export default function PropertiesPage() {
 
   const canSearch = !!checkIn && !!checkOut;
 
-  /* Gallery modal (read meta.json on click) */
+  // Gallery modal 
   const [showPhotos, setShowPhotos] = useState(false);
   const [activeTitle, setActiveTitle] = useState("");
   const [activeSlugDashed, setActiveSlugDashed] = useState("");
@@ -388,7 +388,7 @@ export default function PropertiesPage() {
                 </button>
               </div>
 
-              {/* Search button (filters live, but keeps UI consistent) */}
+              {/* Search button*/}
               <button
                 type="button"
                 disabled={!canSearch}
@@ -397,7 +397,7 @@ export default function PropertiesPage() {
                 }`}
                 onClick={() => {
                   // filtering is already live via q
-                  // this button is mainly to match the design + enforce date selection
+
                   if (!canSearch) alert("Please select check-in and check-out dates first.");
                 }}
               >
