@@ -1,4 +1,6 @@
 @import "tailwindcss";
+@import "react-international-phone/style.css";
+
 
 /* Light theme (DTC mock) */
 :root {

@@ -5,33 +5,33 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MiniDashboard from './MiniDashboard';
 
+// Option A phone input (you already added CSS in globals.css)
+import { PhoneInput } from 'react-international-phone';
+
 type Agreements = { marketing: boolean; dataSharing: boolean; terms: boolean };
 type FormState = {
   firstname: string;
   lastname: string;
   email: string;
-  mobilenumber: string; 
+  mobilenumber: string; // now controlled by PhoneInput
   password: string;
   country: string;
   postalcode: string;
 };
 
 const KNOWN_COUNTRIES = [
-  { country: 'Canada', dialCode: '+1', label: 'Canada (+1)' },
-  { country: 'United States', dialCode: '+1', label: 'USA (+1)' },
-  { country: 'Philippines', dialCode: '+63', label: 'Philippines (+63)' },
-  { country: 'United Kingdom', dialCode: '+44', label: 'UK (+44)' },
-  { country: 'Australia', dialCode: '+61', label: 'Australia (+61)' },
+  { country: 'Canada', iso2: 'ca' },
+  { country: 'United States', iso2: 'us' },
+  { country: 'Philippines', iso2: 'ph' },
+  { country: 'United Kingdom', iso2: 'gb' },
+  { country: 'Australia', iso2: 'au' },
 ] as const;
 
-const countryToDial = (c: string) =>
-  KNOWN_COUNTRIES.find((x) => x.country === c)?.dialCode || '+1';
-
-const dialToCountry = (d: string) =>
-  KNOWN_COUNTRIES.find((x) => x.dialCode === d)?.country || 'Canada';
+const countryToIso2 = (country: string) =>
+  KNOWN_COUNTRIES.find((c) => c.country === country)?.iso2 || 'ca';
 
 export default function LoginClient() {
-  const router = useRouter(); // 
+  const router = useRouter(); // kept (don’t remove to avoid breaking future uses)
   const search = useSearchParams();
   const redirectPath = search.get('redirect') || '/dashboard';
 
@@ -58,25 +58,6 @@ export default function LoginClient() {
     postalcode: '',
   });
 
-  // NEW: dial code + local phone (digits)
-  const [dialCode, setDialCode] = useState<string>(() => countryToDial('Canada'));
-  const [phoneLocal, setPhoneLocal] = useState<string>('');
-
-  // dialCode 
-  useEffect(() => {
-    setDialCode(countryToDial(form.country));
-    // eslint-disable-next-line
-  }, [form.country]);
-
-  //  country 
-  useEffect(() => {
-    const nextCountry = dialToCountry(dialCode);
-    if (form.country !== nextCountry) {
-      setForm((prev) => ({ ...prev, country: nextCountry }));
-    }
-   
-  }, [dialCode]);
-
   const [agreements, setAgreements] = useState<Agreements>({
     marketing: false,
     dataSharing: false,
@@ -90,10 +71,9 @@ export default function LoginClient() {
   }, []);
 
   const EMAIL_KEY = 'login_email';
-  const PASSWORD_KEY = 'login_password'; 
+  const PASSWORD_KEY = 'login_password';
   const REMEMBER_KEY = 'remember_me';
 
-  // Prefill Remember Me + saved email
   useEffect(() => {
     try {
       const savedPref = localStorage.getItem(REMEMBER_KEY); // "1" or "0"
@@ -131,7 +111,6 @@ export default function LoginClient() {
       return;
     }
 
-    // text/select updates
     setForm((prev) => {
       const next = { ...prev, [name]: value };
       try {
@@ -144,7 +123,7 @@ export default function LoginClient() {
     });
   };
 
-  // Auto-resize iframe
+  // ===== Auto-resize iframe + remove top space =====
   useEffect(() => {
     document.documentElement.style.margin = '0';
     document.body.style.margin = '0';
@@ -172,12 +151,6 @@ export default function LoginClient() {
     window.parent?.postMessage({ type: 'auth-success', redirectUrl: target }, '*');
   };
 
-  const buildE164 = () => {
-    const digits = phoneLocal.replace(/\D/g, '');
-    const normalizedDigits = dialCode === '+63' ? digits.replace(/^0+/, '') : digits;
-    return `${dialCode}${normalizedDigits}`;
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
@@ -190,28 +163,23 @@ export default function LoginClient() {
     }
 
     if (isSignup) {
-      // Ensure phone is present
-      if (!phoneLocal || phoneLocal.replace(/\D/g, '').length < 6) {
-        setError('Please enter a valid mobile number.');
+      const mobile = (form.mobilenumber || '').trim();
+      // react-international-phone returns E.164-ish values like +639...
+      if (!mobile || !mobile.startsWith('+') || mobile.length < 8) {
+        setError('Please enter a valid phone number.');
         setIsSubmitting(false);
         return;
       }
     }
 
     try {
-      // FIXED: Use correct endpoints
       const endpoint = isSignup ? 'signup' : 'login';
       const apiPath = '/api/auth';
-
-      const signupMobileE164 = isSignup ? buildE164() : '';
 
       const payload = isSignup
         ? {
             ...form,
-            // set E.164 mobile for backend/CRM
-            mobilenumber: signupMobileE164,
-
-            // keep these consistent with backend (backend can override/normalize)
+            // keep these consistent with backend (backend normalizes/overrides safely)
             communicationspreference: '111111',
             contactpreference: 'email',
             dateofbirth: '08/08/1988',
@@ -221,6 +189,9 @@ export default function LoginClient() {
             promotioncode: '',
             socialMediaType: '1',
 
+            // IMPORTANT: do NOT force nationality/flag here
+            // nationality: 'Canadian',
+            // flag: '@',
           }
         : { email: form.email, password: form.password };
 
@@ -234,7 +205,6 @@ export default function LoginClient() {
       const json = await res.json().catch(() => ({}));
       setIsSubmitting(false);
 
-      // Robust success detection
       const successFlag = json?.success === true || json?.success === 'true' || json?.result === 'success';
       const loginSuccess = !isSignup && (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
       const signupSuccess = isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
@@ -246,11 +216,11 @@ export default function LoginClient() {
           json?.error ||
           json?.errors?.[0] ||
           (isSignup ? 'Signup failed. Please review your details.' : 'Invalid login. Please check your credentials.');
-
         setError(apiMessage);
         console.log('Login/Signup failed:', json);
         return;
       }
+
       // Store email and remember me preference
       if (rememberMe) {
         localStorage.setItem('login_email', form.email);
@@ -275,12 +245,11 @@ export default function LoginClient() {
           localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
         }
 
-        // Show mini dashboard instead of redirecting
         setIsLoggedIn(true);
         setForm((prev) => ({
           ...prev,
           email: rememberMe ? prev.email : '',
-          password: '', 
+          password: '',
         }));
 
         try {
@@ -295,25 +264,21 @@ export default function LoginClient() {
           }
         } catch {}
       } else {
-        // Signup success: show message then return to login
         setShowSignupSuccess1(true);
 
         setTimeout(() => {
           setIsSignup(false);
           setShowSignupSuccess1(false);
-
-          // Pre-fill the email field for convenience
           setForm((prev) => ({ ...prev, email: form.email }));
-
-          // Keep phone data (optional): you can clear if you want
-          // setPhoneLocal('');
         }, 3000);
       }
-    } catch (err) {
+    } catch {
       setIsSubmitting(false);
       setError('Failed to connect to the server. Please try again.');
     }
   };
+
+  const iso2 = countryToIso2(form.country);
 
   return (
     <div className="w-full m-0 p-0 bg-transparent">
@@ -322,13 +287,11 @@ export default function LoginClient() {
           <MiniDashboard />
         ) : (
           <>
-         
+            {/* RESET PASSWORD */}
             {isReset ? (
               <>
                 <div className="mb-4">
-                  <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">
-                    Reset your password
-                  </h1>
+                  <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">Reset your password</h1>
                   <p className="mt-2 text-[14px] font-semibold text-neutral-900">
                     Enter your account email, and we’ll send you a reset link.
                   </p>
@@ -365,10 +328,7 @@ export default function LoginClient() {
                       if (!res.ok || json?.success !== true) {
                         setRpMsg({ type: 'err', text: json?.message || 'Request failed. Please try again.' });
                       } else {
-                        setRpMsg({
-                          type: 'ok',
-                          text: json?.message || `Reset link sent to ${rpEmail}.`,
-                        });
+                        setRpMsg({ type: 'ok', text: json?.message || `Reset link sent to ${rpEmail}.` });
                         setTimeout(() => {
                           setIsReset(false);
                           setRpMsg(null);
@@ -418,7 +378,6 @@ export default function LoginClient() {
                   </div>
                 </form>
 
-                {/* Divider */}
                 <hr className="my-6 border-neutral-200" />
               </>
             ) : (
@@ -471,35 +430,25 @@ export default function LoginClient() {
                         />
                       </div>
 
+                      {/* Phone Input (flag + all countries) */}
                       <div>
-                        <label className="mb-1 block text-sm text-neutral-700">Mobile Number</label>
-                        <div className="flex gap-2">
-                          <select
-                            value={dialCode}
-                            onChange={(e) => setDialCode(e.target.value)}
-                            className="w-[140px] rounded-md border border-neutral-300 px-2 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                            aria-label="Country code"
-                          >
-                            {KNOWN_COUNTRIES.map((c) => (
-                              <option key={`${c.country}-${c.dialCode}`} value={c.dialCode}>
-                                {c.label}
-                              </option>
-                            ))}
-                          </select>
+                        <label className="mb-1 block text-sm text-neutral-700">Phone Number</label>
 
-                          <input
-                            value={phoneLocal}
-                            onChange={(e) => {
-                              const digits = e.target.value.replace(/\D/g, '');
-                              setPhoneLocal(digits);
-                            }}
-                            placeholder="e.g. 9261142144"
-                            required
-                            className="flex-1 rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                            inputMode="numeric"
-                            autoComplete="tel-national"
+                        {/* key forces defaultCountry to apply when country dropdown changes */}
+                        <div className="w-full">
+                          <PhoneInput
+                            key={iso2}
+                            defaultCountry={iso2}
+                            value={form.mobilenumber}
+                            onChange={(phone) => setForm((prev) => ({ ...prev, mobilenumber: phone }))}
+                            className="!w-full !rounded-md !border !border-neutral-300 focus-within:!border-[#1b4a68]"
+                            inputClassName="!w-full !border-0 !outline-none !shadow-none !bg-transparent !text-neutral-900"
                           />
                         </div>
+
+                        <p className="mt-1 text-[11px] text-neutral-500">
+                          Format: + country code + number (example: +639261142144)
+                        </p>
                       </div>
 
                       <div className="grid grid-cols-2 gap-3">
@@ -637,12 +586,14 @@ export default function LoginClient() {
                       onClick={(e) => e.preventDefault()}
                       className="text-[#c85e1f] underline underline-offset-2 hover:opacity-80"
                     >
+                      {/* reserved */}
                     </a>
                   </div>
                 )}
 
-                {/* Divider */}
                 <hr className="my-6 border-neutral-200" />
+
+                {/* "Not a Member?" section (hide when joining) */}
                 {!isSignup && (
                   <section>
                     <h2 className="text-[22px] font-extrabold text-neutral-900">Not a Member?</h2>
@@ -651,39 +602,33 @@ export default function LoginClient() {
                       and starts rewarding you from your very first stay.
                     </p>
 
-                    {/* Benefits row */}
                     <div className="mt-4 grid grid-cols-4 gap-0 sm:grid-cols-4">
                       <div className="flex flex-col text-[#211F45] items-center text-center">
                         <Image src="/earnpoints.png" alt="Earn Points" width={30} height={30} />
                         <span className="mt-1 text-[11px] font-semibold leading-tight">
-                          EARN<br />
-                          POINTS
+                          EARN<br />POINTS
                         </span>
                       </div>
                       <div className="flex flex-col text-[#211F45] items-center text-center">
                         <Image src="/concierge.png" alt="Concierge Service" width={30} height={30} />
                         <span className="mt-1 text-[11px] font-semibold leading-tight">
-                          CONCIERGE<br />
-                          SERVICE
+                          CONCIERGE<br />SERVICE
                         </span>
                       </div>
                       <div className="flex flex-col text-[#211F45] items-center text-center">
                         <Image src="/wifi.png" alt="Free Wi-Fi" width={30} height={30} />
                         <span className="mt-1 text-[11px] font-semibold leading-tight">
-                          FREE<br />
-                          WI-FI
+                          FREE<br />WI-FI
                         </span>
                       </div>
                       <div className="flex flex-col text-[#211F45] items-center text-center">
                         <Image src="/memberoffer.png" alt="Member Offers" width={30} height={30} />
                         <span className="mt-1 text-[11px] font-semibold leading-tight">
-                          MEMBER<br />
-                          OFFERS
+                          MEMBER<br />OFFERS
                         </span>
                       </div>
                     </div>
 
-                    {/* Join button */}
                     <button
                       type="button"
                       onClick={() => setIsSignup(true)}
@@ -694,7 +639,6 @@ export default function LoginClient() {
                   </section>
                 )}
 
-                {/* Swap link beneath signup form */}
                 {isSignup && (
                   <p className="mt-4 text-sm text-neutral-700">
                     Already a member?{' '}
