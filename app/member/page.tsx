@@ -10,11 +10,14 @@ import {
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 
+// Option A phone input (CSS already in globals.css)
+import { PhoneInput } from 'react-international-phone';
+
 type FormState = {
   firstname: string;
   lastname: string;
   email: string;
-  mobilenumber: string;
+  mobilenumber: string; // now controlled by PhoneInput
   password: string;
   country: string;
   postalcode: string;
@@ -26,6 +29,17 @@ type Agreements = {
 };
 
 type ResetMessage = { type: 'ok' | 'err'; text: string };
+
+const KNOWN_COUNTRIES = [
+  { country: 'Canada', iso2: 'ca' },
+  { country: 'United States', iso2: 'us' },
+  { country: 'Philippines', iso2: 'ph' },
+  { country: 'United Kingdom', iso2: 'gb' },
+  { country: 'Australia', iso2: 'au' },
+] as const;
+
+const countryToIso2 = (country: string) =>
+  KNOWN_COUNTRIES.find((c) => c.country === country)?.iso2 || 'ca';
 
 export default function LandingPage() {
   const router = useRouter();
@@ -104,8 +118,7 @@ export default function LandingPage() {
             localStorage.removeItem(PASSWORD_KEY);
           } else {
             if (form.email) localStorage.setItem(EMAIL_KEY, form.email);
-            if (form.password)
-              localStorage.setItem(PASSWORD_KEY, form.password);
+            if (form.password) localStorage.setItem(PASSWORD_KEY, form.password);
           }
         } catch {
           // ignore
@@ -131,15 +144,20 @@ export default function LandingPage() {
     setIsSubmitting(true);
 
     // Signup requires both checkboxes
-    if (
-      isSignup &&
-      (!agreements.marketing || !agreements.dataSharing)
-    ) {
-      setError(
-        'Please agree to receive offers and data sharing before joining.'
-      );
+    if (isSignup && (!agreements.marketing || !agreements.dataSharing)) {
+      setError('Please agree to receive offers and data sharing before joining.');
       setIsSubmitting(false);
       return;
+    }
+
+    // Validate phone on signup (react-international-phone returns +E.164)
+    if (isSignup) {
+      const mobile = (form.mobilenumber || '').trim();
+      if (!mobile || !mobile.startsWith('+') || mobile.length < 8) {
+        setError('Please enter a valid phone number.');
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -147,26 +165,28 @@ export default function LandingPage() {
       const apiPath = '/api/auth';
       const apiUrl = `${apiBase}${apiPath}/${endpoint}`;
 
-      // Payload (same as LoginClient, plain password)
+      // Payload (aligned with updated backend)
       const payload = isSignup
         ? {
             firstname: form.firstname,
             lastname: form.lastname,
             email: form.email,
-            mobilenumber: form.mobilenumber,
+            mobilenumber: form.mobilenumber, // +639...
             password: form.password,
             country: form.country,
             postalcode: form.postalcode,
             communicationspreference: '111111',
             contactpreference: 'email',
             dateofbirth: '08/08/1988',
-            nationality: 'Canadian',
             mailingaddress: 'N/A',
             city: 'N/A',
             state: 'N/A',
             promotioncode: '',
-            flag: '@',
             socialMediaType: '1',
+
+            // IMPORTANT: removed risky overrides:
+            // nationality: 'Canadian',
+            // flag: '@',
           }
         : {
             email: form.email,
@@ -191,20 +211,14 @@ export default function LandingPage() {
 
       const loginSuccess =
         !isSignup &&
-        (Boolean(json?.loggedIn) ||
-          Boolean(json?.token) ||
-          successFlag);
+        (Boolean(json?.loggedIn) || Boolean(json?.token) || successFlag);
 
       const signupSuccess =
-        isSignup &&
-        (successFlag ||
-          Boolean(json?.created) ||
-          json?.status === 'created');
+        isSignup && (successFlag || Boolean(json?.created) || json?.status === 'created');
 
       const isSuccess = res.ok && (isSignup ? signupSuccess : loginSuccess);
 
       if (!isSuccess) {
-        const flag = json?.result?.flag ?? json?.flag ?? '';
         const apiMessage =
           json?.message ||
           json?.error ||
@@ -213,7 +227,7 @@ export default function LandingPage() {
             ? 'Signup failed. Please review your details.'
             : 'Invalid login. Please check your credentials.');
 
-        setError(flag ? `${apiMessage}` : apiMessage);
+        setError(apiMessage);
         console.log('Landing login/signup failed:', json);
         return;
       }
@@ -235,10 +249,7 @@ export default function LandingPage() {
         setAgreements({ marketing: false, dataSharing: false });
       } else {
         if (json.dashboard) {
-          localStorage.setItem(
-            'dashboardData',
-            JSON.stringify(json.dashboard)
-          );
+          localStorage.setItem('dashboardData', JSON.stringify(json.dashboard));
         }
 
         const email = json?.email ?? form.email;
@@ -246,16 +257,12 @@ export default function LandingPage() {
 
         if (email) {
           localStorage.setItem('email', email);
-          document.cookie = `email=${encodeURIComponent(
-            email
-          )}; Path=/; Max-Age=2592000; SameSite=Lax`;
+          document.cookie = `email=${encodeURIComponent(email)}; Path=/; Max-Age=2592000; SameSite=Lax`;
         }
 
         if (token) {
           localStorage.setItem('apiToken', token);
-          document.cookie = `apiToken=${encodeURIComponent(
-            token
-          )}; Path=/; Max-Age=2592000; SameSite=Lax`;
+          document.cookie = `apiToken=${encodeURIComponent(token)}; Path=/; Max-Age=2592000; SameSite=Lax`;
         }
 
         // Remember-me storage
@@ -267,8 +274,7 @@ export default function LandingPage() {
           } else {
             localStorage.setItem(REMEMBER_KEY, '1');
             if (form.email) localStorage.setItem(EMAIL_KEY, form.email);
-            if (form.password)
-              localStorage.setItem(PASSWORD_KEY, form.password);
+            if (form.password) localStorage.setItem(PASSWORD_KEY, form.password);
           }
         } catch {
           // ignore
@@ -294,16 +300,11 @@ export default function LandingPage() {
 
     try {
       setRpBusy(true);
-      const res = await fetch(
-        `${apiBase}/api/auth/request-password-reset`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            email: rpEmail.trim().toLowerCase(),
-          }),
-        }
-      );
+      const res = await fetch(`${apiBase}/api/auth/request-password-reset`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: rpEmail.trim().toLowerCase() }),
+      });
       const json = await res.json().catch(() => ({}));
       if (!res.ok || json?.success !== true) {
         setRpMsg({
@@ -321,10 +322,7 @@ export default function LandingPage() {
         }, 2000);
       }
     } catch {
-      setRpMsg({
-        type: 'err',
-        text: 'Network error. Please try again.',
-      });
+      setRpMsg({ type: 'err', text: 'Network error. Please try again.' });
     } finally {
       setRpBusy(false);
     }
@@ -333,10 +331,7 @@ export default function LandingPage() {
   // If you still use this page in iframe:
   useEffect(() => {
     const postSize = () => {
-      const h = Math.max(
-        document.body.scrollHeight,
-        document.documentElement.scrollHeight
-      );
+      const h = Math.max(document.body.scrollHeight, document.documentElement.scrollHeight);
       window.parent?.postMessage({ type: 'frame-height', height: h }, '*');
     };
     postSize();
@@ -348,6 +343,8 @@ export default function LandingPage() {
       clearInterval(t);
     };
   }, [isSignup, isReset]);
+
+  const iso2 = countryToIso2(form.country);
 
   return (
     <div className="relative min-h-screen w-full">
@@ -367,8 +364,7 @@ export default function LandingPage() {
               • Extraordinary Adventures • Exclusive Rewards
             </p>
             <p className="mt-7 text-[14px] sm:text-[16px] leading-relaxed sm:leading-[1.65] text-white/90 max-w-[52ch] mx-auto lg:mx-0">
-              Discover iconic destinations with member-only benefits and
-              once-in-a-lifetime experiences.
+              Discover iconic destinations with member-only benefits and once-in-a-lifetime experiences.
             </p>
           </div>
 
@@ -385,14 +381,13 @@ export default function LandingPage() {
               />
             </div>
 
-            {/* REWARDS label */}
             <div className="flex justify-center items-center gap-4 mb-3">
               <span className="font-[300] text-[20px] leading-[102.5%] tracking-[0.05em] text-black">
                 REWARDS
               </span>
             </div>
 
-            {/* === RESET PASSWORD SLIDE === */}
+            {/* RESET PASSWORD */}
             {isReset ? (
               <>
                 <div className="mb-4 text-center">
@@ -418,9 +413,7 @@ export default function LandingPage() {
 
                 <form onSubmit={handleResetSubmit} className="space-y-4">
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-700">
-                      Email
-                    </label>
+                    <label className="mb-1 block text-sm text-neutral-700">Email</label>
                     <input
                       type="email"
                       value={rpEmail}
@@ -436,9 +429,7 @@ export default function LandingPage() {
                       type="submit"
                       disabled={rpBusy}
                       className={`w-[160px] rounded-full px-5 py-2.5 text-sm font-bold text-white ${
-                        rpBusy
-                          ? 'bg-neutral-400'
-                          : 'bg-[#211F45] hover:opacity-90'
+                        rpBusy ? 'bg-neutral-400' : 'bg-[#211F45] hover:opacity-90'
                       }`}
                     >
                       {rpBusy ? 'Sending…' : 'Send Reset Link'}
@@ -462,9 +453,7 @@ export default function LandingPage() {
                 {/* Heading */}
                 <div className="mb-4 text-center">
                   <h1 className="text-[32px] font-extrabold leading-tight text-[#93AFB9]">
-                    {isSignup
-                      ? 'Create Your Account'
-                      : 'Welcome to Dream Trip Club Rewards'}
+                    {isSignup ? 'Create Your Account' : 'Welcome to Dream Trip Club Rewards'}
                   </h1>
                   {!isSignup && (
                     <p className="mt-2 text-[14px] font-semibold text-neutral-900">
@@ -473,21 +462,18 @@ export default function LandingPage() {
                   )}
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="bg-red-50 border border-red-300 text-red-800 p-3 rounded-[12px] text-sm mb-4">
                     {error}
                   </div>
                 )}
 
-                {/* === LOGIN / SIGNUP FORM === */}
+                {/* LOGIN / SIGNUP FORM */}
                 <form onSubmit={handleSubmit} className="space-y-3">
                   {isSignup && (
                     <>
                       <div>
-                        <label className="mb-1 block text-sm text-neutral-700">
-                          First Name
-                        </label>
+                        <label className="mb-1 block text-sm text-neutral-700">First Name</label>
                         <input
                           name="firstname"
                           value={form.firstname}
@@ -496,10 +482,9 @@ export default function LandingPage() {
                           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                         />
                       </div>
+
                       <div>
-                        <label className="mb-1 block text-sm text-neutral-700">
-                          Last Name
-                        </label>
+                        <label className="mb-1 block text-sm text-neutral-700">Last Name</label>
                         <input
                           name="lastname"
                           value={form.lastname}
@@ -508,23 +493,25 @@ export default function LandingPage() {
                           className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                         />
                       </div>
+
+                      {/* Phone Number (flag + full countries) */}
                       <div>
-                        <label className="mb-1 block text-sm text-neutral-700">
-                          Mobile Number
-                        </label>
-                        <input
-                          name="mobilenumber"
-                          value={form.mobilenumber}
-                          onChange={handleChange}
-                          required
-                          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                        />
+                        <label className="mb-1 block text-sm text-neutral-700">Phone Number</label>
+                        <div className="w-full">
+                          <PhoneInput
+                            key={iso2}
+                            defaultCountry={iso2}
+                            value={form.mobilenumber}
+                            onChange={(phone) => setForm((prev) => ({ ...prev, mobilenumber: phone }))}
+                            className="!w-full !rounded-md !border !border-neutral-300 focus-within:!border-[#1b4a68]"
+                            inputClassName="!w-full !border-0 !outline-none !shadow-none !bg-transparent !text-neutral-900"
+                          />
+                        </div>
                       </div>
+
                       <div className="grid grid-cols-2 gap-3">
                         <div>
-                          <label className="mb-1 block text-sm text-neutral-700">
-                            Country
-                          </label>
+                          <label className="mb-1 block text-sm text-neutral-700">Country</label>
                           <select
                             name="country"
                             value={form.country}
@@ -532,22 +519,17 @@ export default function LandingPage() {
                             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                             required
                           >
-                            <option value="Canada">Canada</option>
-                            <option value="United States">
-                              United States
-                            </option>
-                            <option value="Philippines">Philippines</option>
-                            <option value="Australia">Australia</option>
-                            <option value="United Kingdom">
-                              United Kingdom
-                            </option>
+                            {KNOWN_COUNTRIES.map((c) => (
+                              <option key={c.country} value={c.country}>
+                                {c.country}
+                              </option>
+                            ))}
                             <option value="Other">Other</option>
                           </select>
                         </div>
+
                         <div>
-                          <label className="mb-1 block text-sm text-neutral-700">
-                            Postal Code
-                          </label>
+                          <label className="mb-1 block text-sm text-neutral-700">Postal Code</label>
                           <input
                             name="postalcode"
                             value={form.postalcode}
@@ -560,11 +542,8 @@ export default function LandingPage() {
                     </>
                   )}
 
-                  {/* Email / Member Number */}
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-700">
-                      Email or Member Number
-                    </label>
+                    <label className="mb-1 block text-sm text-neutral-700">Email or Member Number</label>
                     <input
                       type="email"
                       name="email"
@@ -576,11 +555,8 @@ export default function LandingPage() {
                     />
                   </div>
 
-                  {/* Password */}
                   <div>
-                    <label className="mb-1 block text-sm text-neutral-700">
-                      Password
-                    </label>
+                    <label className="mb-1 block text-sm text-neutral-700">Password</label>
                     <input
                       type="password"
                       name="password"
@@ -592,7 +568,6 @@ export default function LandingPage() {
                     />
                   </div>
 
-                  {/* Signup consent – NOW under password */}
                   {isSignup && (
                     <div className="space-y-1 text-xs text-neutral-700">
                       <label className="flex items-start gap-2">
@@ -604,9 +579,7 @@ export default function LandingPage() {
                           className="mt-1 h-4 w-4"
                           required
                         />
-                        <span>
-                          I agree to receive personalized offers and updates.
-                        </span>
+                        <span>I agree to receive personalized offers and updates.</span>
                       </label>
                       <label className="flex items-start gap-2">
                         <input
@@ -617,14 +590,11 @@ export default function LandingPage() {
                           className="mt-1 h-4 w-4"
                           required
                         />
-                        <span>
-                          I agree to data sharing with authorized partners.
-                        </span>
+                        <span>I agree to data sharing with authorized partners.</span>
                       </label>
                     </div>
                   )}
 
-                  {/* Remember Me + Forgot password (login only) */}
                   {!isSignup && (
                     <div className="flex items-center justify-between text-sm pt-1">
                       <label className="inline-flex items-center gap-2 text-neutral-700">
@@ -642,10 +612,7 @@ export default function LandingPage() {
                         onClick={() => {
                           setRpMsg(null);
                           try {
-                            const savedEmail =
-                              form.email ||
-                              localStorage.getItem(EMAIL_KEY) ||
-                              '';
+                            const savedEmail = form.email || localStorage.getItem(EMAIL_KEY) || '';
                             setRpEmail(savedEmail);
                           } catch {
                             setRpEmail(form.email);
@@ -669,15 +636,10 @@ export default function LandingPage() {
                         : 'bg-[#1898C4] text-white hover:bg-[#211F45] hover:shadow-lg'
                     }`}
                   >
-                    {isSubmitting
-                      ? 'Processing…'
-                      : isSignup
-                      ? 'Join Now'
-                      : 'Sign In'}
+                    {isSubmitting ? 'Processing…' : isSignup ? 'Join Now' : 'Sign In'}
                   </button>
                 </form>
 
-                {/* Swap link beneath signup/login */}
                 {isSignup ? (
                   <p className="mt-4 text-sm text-neutral-700 text-center">
                     Already a member?{' '}
@@ -700,7 +662,6 @@ export default function LandingPage() {
                   </p>
                 )}
 
-                {/* Store links */}
                 <div className="mt-6 flex justify-center gap-4">
                   <a
                     href="https://play.google.com/store/apps/details?id=ai.guestapp.dreamtripclub"
@@ -708,12 +669,7 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    <Image
-                      src="/ggstore.png"
-                      alt="Google Play"
-                      width={130}
-                      height={40}
-                    />
+                    <Image src="/ggstore.png" alt="Google Play" width={130} height={40} />
                   </a>
                   <a
                     href="https://apps.apple.com/us/app/dream-trip-club/id6753647319"
@@ -721,12 +677,7 @@ export default function LandingPage() {
                     rel="noopener noreferrer"
                     className="hover:opacity-80 transition-opacity"
                   >
-                    <Image
-                      src="/applestore.png"
-                      alt="App Store"
-                      width={120}
-                      height={40}
-                    />
+                    <Image src="/applestore.png" alt="App Store" width={120} height={40} />
                   </a>
                 </div>
               </>
