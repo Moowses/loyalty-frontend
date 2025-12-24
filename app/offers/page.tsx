@@ -95,8 +95,7 @@ export default function OffersPage() {
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />
-            <ChatbotWidget/>
-            {/* end of components */}
+          
           </div>
         </div>
       </section>

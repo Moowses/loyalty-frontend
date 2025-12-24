@@ -113,7 +113,8 @@ export default function HomePage() {
                     <div className="mt-4">
                       {/* start the components */}
                       <ImageCarousel1 />
-                       <ChatbotWidget />
+                 
+
                       
                       {/* end of components */}
                     </div>

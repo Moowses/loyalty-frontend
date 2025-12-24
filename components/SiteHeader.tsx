@@ -4,7 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-
+import ChatbotWidget, { type ChatbotMember } from "./ChatbotWidget";
 const BRAND = '#211F45';
 
 // Define API base
@@ -24,6 +24,7 @@ export default function SiteHeader() {
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+const [member, setMember] = useState<ChatbotMember | null>(null);
 
  const pathname = usePathname();
   const currentPath = pathname || '';
@@ -37,17 +38,36 @@ export default function SiteHeader() {
     : '/dashboard';
 
   const checkAuth = useCallback(async () => {
-    try {
-      const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: 'include' });
-      if (!res.ok) return setLoggedIn(false);
-      const data = await res.json();
-      setLoggedIn(Boolean(data?.loggedIn));
-    } catch {
+  try {
+    const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: "include" });
+    if (!res.ok) {
       setLoggedIn(false);
-    } finally {
-      setChecking(false);
+      setMember(null);
+      return;
     }
-  }, []);
+
+    const data = await res.json();
+
+    const isLogged = Boolean(data?.loggedIn);
+    setLoggedIn(isLogged);
+
+    if (isLogged && data?.member?.membershipNo && data?.member?.email) {
+      setMember({
+        membershipNo: String(data.member.membershipNo),
+        name: String(data.member.name || "").trim(),
+        email: String(data.member.email),
+      });
+    } else {
+      setMember(null);
+    }
+  } catch {
+    setLoggedIn(false);
+    setMember(null);
+  } finally {
+    setChecking(false);
+  }
+}, []);
+
 
   useEffect(() => {
     checkAuth();
@@ -92,7 +112,7 @@ export default function SiteHeader() {
     return () => window.removeEventListener('message', onMsg);
   }, [checkAuth]);
 
-  // listen for login modal open requests
+  // login modal open requests
   useEffect(() => {
     const handler = () => setShowLoginModal(true);
     // listen for booking page request
@@ -105,6 +125,7 @@ async function logout() {
   setChecking(true);
   setLoggedIn(false);
   setOpen(false);
+  setMember(null);
 
  
   try {
@@ -434,6 +455,7 @@ async function logout() {
           </div>
         </div>
       )}
+       <ChatbotWidget member={member} />
     </header>
   );
 }

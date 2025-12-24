@@ -732,12 +732,12 @@ function ProfileTab({
         </button>
       </div>
 
-      <ChatbotWidget />
+      
     </SectionCard>
   );
 }
 
-/** ✅ DO NOT TOUCH this password reset logic */
+
 function PasswordTab({ email }: { email: string }) {
   const [currentPw, setCurrentPw] = useState('');
   const [pw1, setPw1] = useState('');
@@ -859,7 +859,7 @@ function PasswordTab({ email }: { email: string }) {
         </div>
       </form>
 
-      <ChatbotWidget />
+
     </SectionCard>
   );
 }

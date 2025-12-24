@@ -603,7 +603,7 @@ export default function DashboardPage() {
     <div className="min-h-screen bg-[#F6F8FB]">
       {/*BODY: Light DTC layout  */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-[#1F2042]">
-        <ChatbotWidget />
+        
 
         {/* Greeting banner */}
         <section className="mb-6">
