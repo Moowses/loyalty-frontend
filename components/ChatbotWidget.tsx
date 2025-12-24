@@ -28,6 +28,16 @@ function removeChatbotKitWidget() {
     .forEach((n) => n.remove());
 }
 
+function getGuestSessionId() {
+  const key = "dtc_chat_guest_session";
+  let id = localStorage.getItem(key);
+  if (!id) {
+    id = `guest-${crypto.randomUUID()}`;
+    localStorage.setItem(key, id);
+  }
+  return id;
+}
+
 export default function ChatbotWidget({
   member = null,
   widgetId = "cmfofmmqn84umyredb9q4j46d",
@@ -38,7 +48,6 @@ export default function ChatbotWidget({
   }, [member]);
 
   useEffect(() => {
-    
     removeChatbotKitWidget();
 
     const s = document.createElement("script");
@@ -60,17 +69,15 @@ export default function ChatbotWidget({
         })
       );
     } else {
-      
-      s.setAttribute("data-session", `guest-${Date.now()}`);
-     
+      //
+      s.setAttribute("data-session", getGuestSessionId());
+    
     }
 
     document.body.appendChild(s);
 
-    return () => {
-      removeChatbotKitWidget();
-    };
-  }, [identityKey, widgetId, member]);
+    return () => removeChatbotKitWidget();
+  }, [identityKey, widgetId]);
 
   return null;
 }
