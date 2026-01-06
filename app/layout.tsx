@@ -5,6 +5,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import HeaderGate from "@/components/HeaderGate"; 
 import FooterGate from "@/components/FooterGate";
+import ChatbotWidget from "@/components/ChatbotWidget";
 
 export const metadata: Metadata = {
   title: "Dream Trip Club Rewards",
@@ -30,6 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <HeaderGate />   {/* purely client, no Date.now etc. */}
         {children}
+        <ChatbotWidget />
         <FooterGate />
       </body>
     </html>
