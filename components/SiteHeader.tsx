@@ -24,7 +24,7 @@ export default function SiteHeader() {
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-const [member, setMember] = useState<ChatbotMember | null>(null);
+  const [member, setMember] = useState<ChatbotMember | null>(null);
 
  const pathname = usePathname();
   const currentPath = pathname || '';
