@@ -31,7 +31,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans antialiased">
         <HeaderGate />   {/* purely client, no Date.now etc. */}
         {children}
-        <ChatbotWidget />
+        
         <FooterGate />
       </body>
     </html>
