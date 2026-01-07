@@ -16,7 +16,7 @@ type Props = {
 
 const WIDGET_SRC = "https://static.chatbotkit.com/integrations/widget/v2.js";
 const SCRIPT_ID = "chatbotkit-widget-script";
-const WIDGET_ID = "cmfofmmqn84umyredb9q4j46d"; // your data-widget id
+const WIDGET_ID = "cmfofmmqn84umyredb9q4j46d"; 
 
 function getGuestSessionId() {
   const key = "dtc_chat_guest_session";

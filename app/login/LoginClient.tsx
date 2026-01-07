@@ -123,7 +123,7 @@ export default function LoginClient() {
     });
   };
 
-  // ===== Auto-resize iframe + remove top space =====
+  //Auto-resize iframe
   useEffect(() => {
     document.documentElement.style.margin = '0';
     document.body.style.margin = '0';
@@ -164,7 +164,6 @@ export default function LoginClient() {
 
     if (isSignup) {
       const mobile = (form.mobilenumber || '').trim();
-      // react-international-phone returns E.164-ish values like +639...
       if (!mobile || !mobile.startsWith('+') || mobile.length < 8) {
         setError('Please enter a valid phone number.');
         setIsSubmitting(false);
@@ -179,7 +178,6 @@ export default function LoginClient() {
       const payload = isSignup
         ? {
             ...form,
-            // keep these consistent with backend (backend normalizes/overrides safely)
             communicationspreference: '111111',
             contactpreference: 'email',
             dateofbirth: '08/08/1988',
@@ -189,9 +187,6 @@ export default function LoginClient() {
             promotioncode: '',
             socialMediaType: '1',
 
-            // IMPORTANT: do NOT force nationality/flag here
-            // nationality: 'Canadian',
-            // flag: '@',
           }
         : { email: form.email, password: form.password };
 
@@ -434,7 +429,6 @@ export default function LoginClient() {
                       <div>
                         <label className="mb-1 block text-sm text-neutral-700">Phone Number</label>
 
-                        {/* key forces defaultCountry to apply when country dropdown changes */}
                         <div className="w-full">
                           <PhoneInput
                             key={iso2}
@@ -564,7 +558,6 @@ export default function LoginClient() {
                   </button>
                 </form>
 
-                {/* Under-button links (only in Sign In mode) */}
                 {!isSignup && (
                   <div className="mt-3 flex gap-6 text-sm">
                     <a
@@ -593,7 +586,6 @@ export default function LoginClient() {
 
                 <hr className="my-6 border-neutral-200" />
 
-                {/* "Not a Member?" section (hide when joining) */}
                 {!isSignup && (
                   <section>
                     <h2 className="text-[22px] font-extrabold text-neutral-900">Not a Member?</h2>
