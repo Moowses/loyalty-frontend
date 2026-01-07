@@ -38,8 +38,15 @@ export default function SiteHeader() {
     : '/dashboard';
 
   const checkAuth = useCallback(async () => {
+  setChecking(true);
+
   try {
-    const res = await fetch(`${API_BASE}/api/auth/me`, { credentials: "include" });
+    // 1) Check auth + get cached identity
+    const res = await fetch(`${API_BASE}/api/auth/me`, {
+      credentials: "include",
+      cache: "no-store",
+    });
+
     if (!res.ok) {
       setLoggedIn(false);
       setMember(null);
@@ -47,26 +54,70 @@ export default function SiteHeader() {
     }
 
     const data = await res.json();
-
     const isLogged = Boolean(data?.loggedIn);
     setLoggedIn(isLogged);
 
-    if (isLogged && data?.member?.membershipNo && data?.member?.email) {
-      setMember({
-        membershipNo: String(data.member.membershipNo),
-        name: String(data.member.name || "").trim(),
-        email: String(data.member.email),
-      });
-    } else {
+    if (!isLogged) {
       setMember(null);
+      return;
     }
-  } catch {
+
+    const m = data?.member;
+
+    // 2) If /auth/me already has membershipNo (future-proof)
+    if (m?.membershipNo && m?.email) {
+      setMember({
+        membershipNo: String(m.membershipNo),
+        name:
+          `${m.firstName ?? ""} ${m.lastName ?? ""}`.trim() ||
+          String(m.email),
+        email: String(m.email),
+      });
+      return;
+    }
+
+    // 3) CURRENT FLOW: /auth/me gives email only → fetch dashboard
+    if (m?.email) {
+      const dashRes = await fetch(`${API_BASE}/api/user/dashboard`, {
+        method: "POST",
+        credentials: "include",
+        cache: "no-store",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: m.email }),
+      });
+
+      if (!dashRes.ok) {
+        throw new Error("Failed to fetch dashboard");
+      }
+
+      const dashData = await dashRes.json();
+      const d = dashData?.dashboard;
+
+      if (!d?.membershipNo || !d?.email) {
+        throw new Error("Dashboard missing identity");
+      }
+
+      setMember({
+        membershipNo: String(d.membershipNo),
+        name: String(d.name || d.email),
+        email: String(d.email),
+        tier: d.tier ?? undefined,
+        points: d.totalPoints ?? undefined,
+      });
+      return;
+    }
+
+    // fallback
+    setMember(null);
+  } catch (err) {
+    console.warn("[SiteHeader] checkAuth failed:", err);
     setLoggedIn(false);
     setMember(null);
   } finally {
     setChecking(false);
   }
 }, []);
+
 
 
   useEffect(() => {
@@ -104,8 +155,8 @@ export default function SiteHeader() {
           localStorage.setItem('dtc_auth_changed', String(Date.now()));
         } catch {}
         checkAuth();
-        // small delay so the modal visually closes before reload
-        setTimeout(() => window.location.reload(), 50);
+        // small delay
+       // setTimeout(() => window.location.reload(), 50);
       }
     };
     window.addEventListener('message', onMsg);
@@ -456,6 +507,8 @@ async function logout() {
         </div>
       )}
        <ChatbotWidget member={member} />
+
+       
     </header>
   );
 }
