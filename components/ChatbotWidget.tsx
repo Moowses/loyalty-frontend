@@ -16,7 +16,7 @@ type Props = {
 
 const WIDGET_SRC = "https://static.chatbotkit.com/integrations/widget/v2.js";
 const SCRIPT_ID = "chatbotkit-widget-script";
-const WIDGET_ID = "cmfofmmqn84umyredb9q4j46d"; 
+const WIDGET_ID = "cmfofmmqn84umyredb9q4j46d"; // your data-widget id
 
 function getGuestSessionId() {
   const key = "dtc_chat_guest_session";
@@ -33,8 +33,11 @@ function getGuestSessionId() {
 
 function ensureWidgetScript(session: string) {
   let s = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+
   if (s) {
     console.log("[Chatbot] Widget script already loaded");
+    //  initial load scenarios 
+    s.setAttribute("data-session", session);
     return;
   }
 
@@ -45,32 +48,40 @@ function ensureWidgetScript(session: string) {
   s.src = WIDGET_SRC;
   s.async = true;
 
+  // v2 embed attributes
   s.setAttribute("data-widget", WIDGET_ID);
   s.setAttribute("data-session", session);
+
+  s.onload = () => console.log("[Chatbot] Widget script loaded");
+  s.onerror = () => console.error("[Chatbot] Failed to load widget script");
 
   document.body.appendChild(s);
 }
 
-async function getWidgetInstance() {
-  const w = (window as any).chatbotkitWidget;
-  if (!w?.instancePromise) {
-    console.warn("[Chatbot] chatbotkitWidget not ready yet");
-    return null;
+async function getWidgetInstance(waitMs = 8000, stepMs = 150) {
+  const start = Date.now();
+
+  while (Date.now() - start < waitMs) {
+    const w = (window as any).chatbotkitWidget;
+
+    if (w?.instancePromise) {
+      const instance = await w.instancePromise;
+      console.log("[Chatbot] Widget instance ready");
+      return instance;
+    }
+
+    await new Promise((r) => setTimeout(r, stepMs));
   }
 
-  const instance = await w.instancePromise;
-  console.log("[Chatbot] Widget instance ready");
-  return instance;
+  console.warn("[Chatbot] Widget instance not ready after waiting", waitMs, "ms");
+  return null;
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
   const isLoggedIn = !!member?.membershipNo;
 
   const desiredSession = useMemo(() => {
-    const session = member?.membershipNo
-      ? member.membershipNo
-      : getGuestSessionId();
-
+    const session = member?.membershipNo ? member.membershipNo : getGuestSessionId();
     console.log("[Chatbot] Desired session:", session);
     return session;
   }, [member?.membershipNo]);
@@ -106,25 +117,25 @@ export default function ChatbotWidget({ member = null }: Props) {
     // 1) Ensure script exists ONCE
     ensureWidgetScript(desiredSession);
 
-    // 2) Update running widget instance
+    // 2) Update running widget instance (wait until ready)
     (async () => {
       const instance = await getWidgetInstance();
       if (!instance) return;
 
       const currentSession: string | undefined = instance.session;
+
       const wasLoggedIn =
-        typeof currentSession === "string" &&
-        !currentSession.startsWith("guest-");
+        typeof currentSession === "string" && !currentSession.startsWith("guest-");
 
       console.log("[Chatbot] Current session:", currentSession);
       console.log("[Chatbot] Was logged in:", wasLoggedIn);
       console.log("[Chatbot] Is logged in:", isLoggedIn);
 
-      // Apply identity
+      // Apply session + meta
       instance.session = desiredSession;
       instance.meta = meta;
 
-      // Helps Inbox labeling
+      
       (instance as any).contact = {
         name: meta.name,
         email: meta.email,
@@ -132,23 +143,20 @@ export default function ChatbotWidget({ member = null }: Props) {
 
       console.log("[Chatbot] Applied session + meta to widget");
 
-     
+      
       if (isLoggedIn !== wasLoggedIn) {
-        console.log(
-          "[Chatbot] Auth boundary changed → restarting conversation"
-        );
+        console.log("[Chatbot] Auth boundary changed → restarting conversation");
         instance.restartConversation();
         return;
       }
 
+      
       if (
         isLoggedIn === wasLoggedIn &&
         typeof currentSession === "string" &&
         currentSession !== desiredSession
       ) {
-        console.log(
-          "[Chatbot] Session value changed → restarting conversation"
-        );
+        console.log("[Chatbot] Session value changed → restarting conversation");
         instance.restartConversation();
       }
     })();
