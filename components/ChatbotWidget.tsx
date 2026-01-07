@@ -25,22 +25,26 @@ function getGuestSessionId() {
   if (!id) {
     id = `guest-${crypto.randomUUID()}`;
     localStorage.setItem(key, id);
+    console.log("[Chatbot] Generated new guest session:", id);
   }
 
   return id;
 }
 
 function ensureWidgetScript(session: string) {
-  // If script already exists, don't add another one (prevents double widget)
   let s = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
-  if (s) return;
+  if (s) {
+    console.log("[Chatbot] Widget script already loaded");
+    return;
+  }
+
+  console.log("[Chatbot] Injecting widget script with initial session:", session);
 
   s = document.createElement("script");
   s.id = SCRIPT_ID;
   s.src = WIDGET_SRC;
   s.async = true;
 
-  // v2 embed attributes
   s.setAttribute("data-widget", WIDGET_ID);
   s.setAttribute("data-session", session);
 
@@ -48,43 +52,57 @@ function ensureWidgetScript(session: string) {
 }
 
 async function getWidgetInstance() {
-  // Wait until the widget creates its global
   const w = (window as any).chatbotkitWidget;
-  if (!w?.instancePromise) return null;
-  return await w.instancePromise;
+  if (!w?.instancePromise) {
+    console.warn("[Chatbot] chatbotkitWidget not ready yet");
+    return null;
+  }
+
+  const instance = await w.instancePromise;
+  console.log("[Chatbot] Widget instance ready");
+  return instance;
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
+  const isLoggedIn = !!member?.membershipNo;
+
   const desiredSession = useMemo(() => {
-    return member?.membershipNo ? member.membershipNo : getGuestSessionId();
+    const session = member?.membershipNo
+      ? member.membershipNo
+      : getGuestSessionId();
+
+    console.log("[Chatbot] Desired session:", session);
+    return session;
   }, [member?.membershipNo]);
 
   const meta = useMemo(() => {
-    if (!member) {
-      return {
-        membershipId: null,
-        name: null,
-        email: null,
-        tier: null,
-        points: null,
-      };
-    }
+    const m = member
+      ? {
+          membershipId: member.membershipNo,
+          name: member.name,
+          email: member.email,
+          tier: member.tier ?? null,
+          points: member.points ?? null,
+        }
+      : {
+          membershipId: null,
+          name: null,
+          email: null,
+          tier: null,
+          points: null,
+        };
 
-    return {
-      membershipId: member.membershipNo,
-      name: member.name,
-      email: member.email,
-      tier: member.tier ?? null,
-      points: member.points ?? null,
-    };
+    console.log("[Chatbot] Desired meta:", m);
+    return m;
   }, [member]);
 
   const identityKey = useMemo(() => {
-    // triggers updates only when identity meaningfully changes
     return JSON.stringify({ session: desiredSession, meta });
   }, [desiredSession, meta]);
 
   useEffect(() => {
+    console.log("[Chatbot] Identity effect triggered");
+
     // 1) Ensure script exists ONCE
     ensureWidgetScript(desiredSession);
 
@@ -93,18 +111,48 @@ export default function ChatbotWidget({ member = null }: Props) {
       const instance = await getWidgetInstance();
       if (!instance) return;
 
-      const currentSession = instance.session;
+      const currentSession: string | undefined = instance.session;
+      const wasLoggedIn =
+        typeof currentSession === "string" &&
+        !currentSession.startsWith("guest-");
 
-      // Apply session + meta
+      console.log("[Chatbot] Current session:", currentSession);
+      console.log("[Chatbot] Was logged in:", wasLoggedIn);
+      console.log("[Chatbot] Is logged in:", isLoggedIn);
+
+      // Apply identity
       instance.session = desiredSession;
       instance.meta = meta;
 
-      // 3) If session changed (guest -> member or member -> guest), restart ONCE
-      if (currentSession && currentSession !== desiredSession) {
+      // Helps Inbox labeling
+      (instance as any).contact = {
+        name: meta.name,
+        email: meta.email,
+      };
+
+      console.log("[Chatbot] Applied session + meta to widget");
+
+     
+      if (isLoggedIn !== wasLoggedIn) {
+        console.log(
+          "[Chatbot] Auth boundary changed → restarting conversation"
+        );
+        instance.restartConversation();
+        return;
+      }
+
+      if (
+        isLoggedIn === wasLoggedIn &&
+        typeof currentSession === "string" &&
+        currentSession !== desiredSession
+      ) {
+        console.log(
+          "[Chatbot] Session value changed → restarting conversation"
+        );
         instance.restartConversation();
       }
     })();
-  }, [identityKey]);
+  }, [identityKey, isLoggedIn, desiredSession, meta]);
 
   return null;
 }
