@@ -25,7 +25,6 @@ export default function HomePage() {
 
         {/* seach bar*/}
         <div className="relative w-full md:min-h-[1700px]">
-          {/* SEARCH IFRAME (overlay top) */}
         
           <div className="absolute inset-x-0 top-6 z-20 pointer-events-none">
             <div className="mx-auto w-full max-w-6xl px-4">

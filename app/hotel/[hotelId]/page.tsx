@@ -188,8 +188,9 @@ const Row = ({ Icon, text }: { Icon: IconC; text: string }) => (
     <span className="text-[15px] leading-6 text-gray-800">{text}</span>
   </div>
 );
-
-/* alendar (supports availability + rules + loader) */
+//nigga
+//nigger please
+// calendar load 6months on open
 function DateRangePicker({
   start,
   end,
@@ -200,6 +201,8 @@ function DateRangePicker({
   isCheckoutBlocked,
   isLoading,
   loadingText,
+  prices,
+  currencyCode,
 }: {
   start?: string;
   end?: string;
@@ -207,11 +210,14 @@ function DateRangePicker({
   onClose: () => void;
   onApply: () => void;
   // hard disable (gray)
-  isDayUnavailable?: (iso: string) => boolean;
-  // rules-only for end-date candidates
+  isDayUnavailable?: (iso: string) => boolean; 
   isCheckoutBlocked?: (iso: string) => boolean;
-  isLoading?: boolean;
-  loadingText?: string;
+  isLoading?: boolean; 
+  loadingText?: string; 
+  prices?: Record<string, number>; 
+  currencyCode?: string;
+  
+ 
 }) {
   const today = new Date();
   const [view, setView] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -260,6 +266,18 @@ function DateRangePicker({
             const inRange = !!start && !!end && !!iso && iso > start && iso < end;
             const active = isStart || isEnd;
             const isSingle = !!start && !end && iso === start;
+            // Determine price display
+            const rawPrice = iso ? prices?.[iso] : undefined;
+            const showPrice = iso && typeof rawPrice === 'number' && rawPrice > 0;
+
+            const priceLabel =
+              showPrice
+                ? new Intl.NumberFormat('en-CA', {
+                    style: 'currency',
+                    currency: (currencyCode || 'CAD').toUpperCase(),
+                    maximumFractionDigits: 0,
+                  }).format(rawPrice!)
+                : '';
 
             // Can click = not disabled and not blocked by rules (when selecting checkout)
             const canClick = !!iso && !isDisabled && !blockedEnd;
@@ -288,7 +306,7 @@ function DateRangePicker({
                   }
                 }}
                 className={[
-                  'h-9 w-9 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
+                  'h-12 w-9 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
 
                   // hard disabled always wins
                   isDisabled
@@ -309,7 +327,21 @@ function DateRangePicker({
                   
                 ].join(' ')}
               >
-                {iso ? Number(iso.slice(8, 10)) : ''}
+                <div className="flex flex-col items-center leading-none">
+                  <span>{iso ? Number(iso.slice(8, 10)) : ''}</span>
+
+                  {showPrice && (
+                    <span
+                      className={[
+                        'text-[10px] mt-1',
+                        isDisabled ? 'text-gray-400' : 'text-gray-500',
+                        unavailable ? 'line-through opacity-70' : '',
+                      ].join(' ')}
+                    >
+                      {priceLabel}
+                    </span>
+                  )}
+                </div>
               </button>
             );
           })}
@@ -964,7 +996,7 @@ export default function HotelInfoPage() {
               onClose={() => setShowCalendar(false)}
               onApply={() => {
                 if (tmpStart && tmpEnd) {
-                  // 1) block ranges that hit an unavailable date
+                  // block ranges that hit an unavailable date
                   if (hasUnavailableInRange(availableDates, tmpStart, tmpEnd)) {
                     alert(
                       'Your selected dates include at least one unavailable night. Please choose only dates that are not greyed out.'
@@ -972,7 +1004,7 @@ export default function HotelInfoPage() {
                     return;
                   }
 
-                  // 2) enforce min/max stay for the chosen start date
+                  //  enforce min/max stay for the chosen start date
                   const nights = diffInDays(tmpStart, tmpEnd);
 
                   const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
@@ -1006,6 +1038,8 @@ export default function HotelInfoPage() {
               )}
               isLoading={isCalLoading}
               loadingText={isCalLoading ? 'Getting availability…' : undefined}
+              prices={calPrices}
+              currencyCode={currency}
             />
           )}
 

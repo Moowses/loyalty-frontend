@@ -23,6 +23,7 @@ import {
   isWithinInterval,
   parseISO,
   startOfMonth,
+  endOfMonth,
   startOfWeek,
 } from 'date-fns';
 
@@ -694,7 +695,7 @@ function ResultsContent() {
   const [infants, setInfants] = useState<number>(0);
   const [pet, setPet] = useState<boolean>(initialPet === 'yes' || initialPet === '1');
 
-  // Responsiveness
+  
   const [isMobile, setIsMobile] = useState(false);
   useEffect(() => {
     const r = () => setIsMobile(window.innerWidth < 768);
@@ -755,6 +756,8 @@ function ResultsContent() {
   const leftDays = buildMonth(leftMonth);
   const rightDays = buildMonth(rightMonth);
 
+  
+
   const disabledPast = (d: Date) =>
     isBefore(d, new Date(new Date().setHours(0, 0, 0, 0)));
   const inRange = (d: Date) =>
@@ -814,6 +817,8 @@ function ResultsContent() {
     );
   };
 
+  
+  // daily rates
   // Guests helpers
   const step = (
     setter: (n: number) => void,
@@ -869,7 +874,7 @@ useEffect(() => {
     } as const;
 
     try {
-      // ── Province-level search: fan out to anchor points and merge ──
+      //  Province-level search: fan out to anchor points and merge
       const provinceAnchors = anchorsForProvince(dest.label);
       if (provinceAnchors) {
         const responses = await Promise.all(
@@ -925,7 +930,7 @@ useEffect(() => {
         return; // IMPORTANT: stop here if we handled province fan-out
       }
 
-      // ── City-level search: single lat/lng ──
+      //  City-level search: single lat/lng 
       const latStr = dest?.lat?.toString() || '';
       const lngStr = dest?.lng?.toString() || '';
       if (!latStr || !lngStr) {
