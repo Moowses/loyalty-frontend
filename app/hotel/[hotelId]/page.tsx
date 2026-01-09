@@ -281,6 +281,7 @@ function DateRangePicker({
 
             // Can click = not disabled and not blocked by rules (when selecting checkout)
             const canClick = !!iso && !isDisabled && !blockedEnd;
+            const isSelectedDay = (active || isSingle) && !isDisabled;
 
             return (
               <button
@@ -306,7 +307,7 @@ function DateRangePicker({
                   }
                 }}
                 className={[
-                  'h-12 w-9 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
+                  'h-12 w-12 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
 
                   // hard disabled always wins
                   isDisabled
@@ -327,16 +328,17 @@ function DateRangePicker({
                   
                 ].join(' ')}
               >
+                
                 <div className="flex flex-col items-center leading-none">
                   <span>{iso ? Number(iso.slice(8, 10)) : ''}</span>
 
                   {showPrice && (
                     <span
-                      className={[
-                        'text-[10px] mt-1',
-                        isDisabled ? 'text-gray-400' : 'text-gray-500',
-                        unavailable ? 'line-through opacity-70' : '',
-                      ].join(' ')}
+                     className={[
+                      'text-[10px] mt-1',
+                      isSelectedDay ? '!text-white' : isDisabled ? 'text-gray-400' : 'text-gray-500',
+                      unavailable ? 'line-through opacity-70' : '',
+                    ].join(' ')}
                     >
                       {priceLabel}
                     </span>
