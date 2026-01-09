@@ -291,14 +291,14 @@ function DateRangePicker({
                 onClick={() => {
                   if (!iso) return;
 
-                  // Start selection: allow clicking available days, regardless of end rules
+                  // Start selection: allow clicking available days
                   if (!start || (start && end)) {
                     if (unavailable) return;
                     onChange(iso!, '');
                     return;
                   }
 
-                  // End selection: enforce rules-only
+                  // End selection
                   if (start && !end) {
                     if (!canClick) return;
 
