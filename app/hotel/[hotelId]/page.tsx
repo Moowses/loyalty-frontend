@@ -256,8 +256,8 @@ function DateRangePicker({
 
         <div className="grid grid-cols-7 gap-1">
           {cells.map((iso, idx) => {
-            const unavailable = !!iso && !!isDayUnavailable?.(iso); // gray+disabled
-            const blockedEnd = !!iso && !!isCheckoutBlocked?.(iso); // rules-only (not disabled)
+            const unavailable = !!iso && !!isDayUnavailable?.(iso); 
+            const blockedEnd = !!iso && !!isCheckoutBlocked?.(iso); 
             const isDisabled = !iso || unavailable;
 
             const isStart = !!start && iso === start;
@@ -266,7 +266,6 @@ function DateRangePicker({
             const inRange = !!start && !!end && !!iso && iso > start && iso < end;
             const active = isStart || isEnd;
             const isSingle = !!start && !end && iso === start;
-            // Determine price display
             const rawPrice = iso ? prices?.[iso] : undefined;
             const showPrice = iso && typeof rawPrice === 'number' && rawPrice > 0;
 
@@ -279,7 +278,6 @@ function DateRangePicker({
                   }).format(rawPrice!)
                 : '';
 
-            // Can click = not disabled and not blocked by rules (when selecting checkout)
             const canClick = !!iso && !isDisabled && !blockedEnd;
             const isSelectedDay = (active || isSingle) && !isDisabled;
 
@@ -290,8 +288,6 @@ function DateRangePicker({
                 disabled={isDisabled}
                 onClick={() => {
                   if (!iso) return;
-
-                  // Start selection: allow clicking available days
                   if (!start || (start && end)) {
                     if (unavailable) return;
                     onChange(iso!, '');
