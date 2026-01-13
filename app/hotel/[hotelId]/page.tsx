@@ -794,7 +794,7 @@ export default function HotelInfoPage() {
       } catch {}
       return;
     }
-    if (!available || !roomTotal || !checkIn || !checkOut) return;
+    if (!available || roomSubtotal <= 0 || !checkIn || !checkOut) return;
 
     const params = new URLSearchParams({
       hotelId: resolvedHotelId || String(hotelId),
@@ -806,7 +806,7 @@ export default function HotelInfoPage() {
       infants: String(infant),
       pets: pet === 'yes' ? '1' : '0',
       currency: currency || 'CAD',
-      total: String(roomTotal),
+      total: String(roomSubtotal),
       petFee: String(petFee),
     });
 
