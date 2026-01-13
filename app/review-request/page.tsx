@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import MemberBenefitsSection from '@/components/MemberBenefitsSection';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
@@ -50,6 +51,8 @@ function StarRating({
 }
 
 export default function ReviewRequestPage() {
+  const router = useRouter();
+
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
 
@@ -72,6 +75,22 @@ export default function ReviewRequestPage() {
   }, []);
 
   useEffect(() => {
+    if (!params) return;
+
+    const profileId = params.profileId || '';
+    const reservationId = params.reservationId || '';
+
+    if (!profileId || !reservationId) {
+      router.replace('/');
+    }
+  }, [params, router]);
+
+ 
+  if (!params?.profileId || !params?.reservationId) {
+    return null;
+  }
+
+  useEffect(() => {
     const run = async () => {
       setLoading(true);
       setError(null);
@@ -80,6 +99,7 @@ export default function ReviewRequestPage() {
         const profileId = params?.profileId || '';
         const reservationId = params?.reservationId || '';
 
+        // (still keep this validation as a backup)
         if (!profileId || !reservationId) {
           throw new Error('Missing profileId or reservationId in the URL.');
         }
