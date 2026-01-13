@@ -5,7 +5,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from "next/script";
 import { Suspense } from "react";
-
+import CountrySelect from "@/components/CountrySelect";
 declare global {
   interface Window {
     CollectJS?: {
@@ -555,24 +555,15 @@ const onBookNow = async (e: React.FormEvent) => {
                 <Field label="Last Name*" value={lastName} onChange={setLastName} required />
                 <Field label="Email Address*" type="email" value={email} onChange={setEmail} required />
                 <Field label="Member Number" value={memberNumber} onChange={setMemberNumber} disabled={!!memberNumber}/>
-                <div>
-                  <label htmlFor="country" className="block text-sm font-medium text-gray-700">Country*</label>
-                  <select
-                    id="country"
-                    name="country"
+               <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-700">
+                    Country*
+                  </label>
+
+                  <CountrySelect
                     value={country}
-                    onChange={(e) => setCountry(e.target.value)}
-                    required
-                    className="mt-1 block w-full rounded-md border border-gray-300 bg-white py-2 px-3 text-sm text-gray-900 shadow-sm focus:border-[#211F45] focus:ring-[#211F45] sm:text-sm"
-                  >
-                    <option value="">Select a country</option>
-                    <option value="Canada">Canada</option>
-                    <option value="United States">United States</option>
-                    <option value="Philippines">Philippines</option>
-                    <option value="Australia">Australia</option>
-                    <option value="United Kingdom">United Kingdom</option>
-                    <option value="Other">Other</option>
-                  </select>
+                    onChange={setCountry}
+                  />
                 </div>
               
                 <Field label="Address 1*" value={address1} onChange={setAddress1} required />
