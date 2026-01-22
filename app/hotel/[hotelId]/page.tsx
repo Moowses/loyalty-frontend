@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useMemo, useState, type ComponentType } from 'react';
-
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Bath,
@@ -41,18 +40,17 @@ type Meta = {
   gallery?: string[];
 };
 
-//helpers 
+// ===== Helpers =====
 const toNum = (v: any) => Number(String(v ?? 0).replace(/[^0-9.-]/g, '')) || 0;
 const money = (n: number, ccy = 'CAD') =>
-  new Intl.NumberFormat('en-CA', {
-    style: 'currency',
-    currency: ccy,
-  }).format(n || 0);
+  new Intl.NumberFormat('en-CA', { style: 'currency', currency: ccy }).format(n || 0);
+
 const slugify = (s: string) =>
   s
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/(^-|-$)+/g, '');
+
 const slugCondensed = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
 
 // LOCAL y-m-d (fixes UTC shift)
@@ -78,8 +76,7 @@ function diffInDays(start: string, end: string) {
   return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
-// *hard disable ONLY if unavailable (PMS availability)
-
+// Hard disable only if unavailable (PMS availability)
 function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: boolean) {
   return (iso: string) => {
     if (isCalLoading) return true;
@@ -88,10 +85,7 @@ function isDayUnavailableFactory(availableDates: Set<string>, isCalLoading: bool
   };
 }
 
-//Error Trap this is NOT "disabled"; it's only "not clickable" for end selection.
-
- 
-
+// Checkout guard: prevents invalid end-date selection (min/max stay, gaps)
 function isCheckoutBlockedFactory(
   availableDates: Set<string>,
   tmpStart: string | null,
@@ -188,9 +182,68 @@ const Row = ({ Icon, text }: { Icon: IconC; text: string }) => (
     <span className="text-[15px] leading-6 text-gray-800">{text}</span>
   </div>
 );
-//nigga
-//nigger please
-// calendar load 6months on open
+
+// ===== Reserve Choice Modal =====
+function ReserveChoiceModal({
+  open,
+  onClose,
+  onMember,
+  onGuest,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onMember: () => void;
+  onGuest: () => void;
+}) {
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-5 shadow-xl">
+        <div className="flex items-start justify-between gap-3">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900">Continue to Reserve</h3>
+            <p className="mt-1 text-sm text-gray-600">
+              Choose how you’d like to continue.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="rounded-full px-2 py-1 text-gray-500 hover:text-gray-700"
+            aria-label="Close"
+          >
+            ✕
+          </button>
+        </div>
+
+        <div className="mt-4 grid gap-3">
+          <button
+            type="button"
+            onClick={onMember}
+            className="w-full rounded-xl bg-[#211F45] py-3 font-medium text-white hover:opacity-95"
+          >
+            Member Login
+          </button>
+
+          <button
+            type="button"
+            onClick={onGuest}
+            className="w-full rounded-xl border border-gray-300 bg-white py-3 font-medium text-gray-900 hover:bg-gray-50"
+          >
+            Continue as Guest
+          </button>
+        </div>
+
+        <p className="mt-3 text-xs text-gray-500">
+          Members may see perks and faster checkout. Guests can still complete payment.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ===== Calendar Picker =====
 function DateRangePicker({
   start,
   end,
@@ -209,15 +262,12 @@ function DateRangePicker({
   onChange: (s: string, e: string) => void;
   onClose: () => void;
   onApply: () => void;
-  // hard disable (gray)
-  isDayUnavailable?: (iso: string) => boolean; 
+  isDayUnavailable?: (iso: string) => boolean;
   isCheckoutBlocked?: (iso: string) => boolean;
-  isLoading?: boolean; 
-  loadingText?: string; 
-  prices?: Record<string, number>; 
+  isLoading?: boolean;
+  loadingText?: string;
+  prices?: Record<string, number>;
   currencyCode?: string;
-  
- 
 }) {
   const today = new Date();
   const [view, setView] = useState(new Date(today.getFullYear(), today.getMonth(), 1));
@@ -240,10 +290,7 @@ function DateRangePicker({
     return (
       <div>
         <div className="text-center font-semibold mb-2">
-          {base.toLocaleString(undefined, {
-            month: 'long',
-            year: 'numeric',
-          })}
+          {base.toLocaleString(undefined, { month: 'long', year: 'numeric' })}
         </div>
 
         <div className="grid grid-cols-7 text-xs text-gray-500 mb-1">
@@ -256,8 +303,8 @@ function DateRangePicker({
 
         <div className="grid grid-cols-7 gap-1">
           {cells.map((iso, idx) => {
-            const unavailable = !!iso && !!isDayUnavailable?.(iso); 
-            const blockedEnd = !!iso && !!isCheckoutBlocked?.(iso); 
+            const unavailable = !!iso && !!isDayUnavailable?.(iso);
+            const blockedEnd = !!iso && !!isCheckoutBlocked?.(iso);
             const isDisabled = !iso || unavailable;
 
             const isStart = !!start && iso === start;
@@ -266,17 +313,17 @@ function DateRangePicker({
             const inRange = !!start && !!end && !!iso && iso > start && iso < end;
             const active = isStart || isEnd;
             const isSingle = !!start && !end && iso === start;
+
             const rawPrice = iso ? prices?.[iso] : undefined;
             const showPrice = iso && typeof rawPrice === 'number' && rawPrice > 0;
 
-            const priceLabel =
-              showPrice
-                ? new Intl.NumberFormat('en-CA', {
-                    style: 'currency',
-                    currency: (currencyCode || 'CAD').toUpperCase(),
-                    maximumFractionDigits: 0,
-                  }).format(rawPrice!)
-                : '';
+            const priceLabel = showPrice
+              ? new Intl.NumberFormat('en-CA', {
+                  style: 'currency',
+                  currency: (currencyCode || 'CAD').toUpperCase(),
+                  maximumFractionDigits: 0,
+                }).format(rawPrice!)
+              : '';
 
             const canClick = !!iso && !isDisabled && !blockedEnd;
             const isSelectedDay = (active || isSingle) && !isDisabled;
@@ -288,6 +335,8 @@ function DateRangePicker({
                 disabled={isDisabled}
                 onClick={() => {
                   if (!iso) return;
+
+                  // Start selection (or reset)
                   if (!start || (start && end)) {
                     if (unavailable) return;
                     onChange(iso!, '');
@@ -297,7 +346,6 @@ function DateRangePicker({
                   // End selection
                   if (start && !end) {
                     if (!canClick) return;
-
                     if (iso! < start) onChange(iso!, start);
                     else onChange(start, iso!);
                   }
@@ -305,36 +353,31 @@ function DateRangePicker({
                 className={[
                   'h-12 w-12 rounded-full flex items-center justify-center text-sm transition select-none border mx-auto',
 
-                  // hard disabled always wins
                   isDisabled
                     ? 'bg-gray-200 text-gray-400 cursor-not-allowed opacity-70 border-gray-200'
                     : 'bg-white text-gray-900 border-gray-200',
 
-                  // show pointer only when clickable
                   canClick ? 'hover:bg-gray-100 cursor-pointer' : '',
-                  isSingle && !isDisabled
-                  ? '!bg-[#211F45] !text-white !border-[#211F45]'
-                : active && !isDisabled
-                  ? '!bg-[#211F45] !text-white !border-[#211F45]'
-                : inRange && !isDisabled
-                  ? '!bg-[#E9E7F2] !text-[#211F45] !border-[#E9E7F2]'
-                : ''
-                
 
-                  
+                  isSingle && !isDisabled
+                    ? '!bg-[#211F45] !text-white !border-[#211F45]'
+                    : active && !isDisabled
+                    ? '!bg-[#211F45] !text-white !border-[#211F45]'
+                    : inRange && !isDisabled
+                    ? '!bg-[#E9E7F2] !text-[#211F45] !border-[#E9E7F2]'
+                    : '',
                 ].join(' ')}
               >
-                
                 <div className="flex flex-col items-center leading-none">
                   <span>{iso ? Number(iso.slice(8, 10)) : ''}</span>
 
                   {showPrice && (
                     <span
-                     className={[
-                      'text-[10px] mt-1',
-                      isSelectedDay ? '!text-white' : isDisabled ? 'text-gray-400' : 'text-gray-500',
-                      unavailable ? 'line-through opacity-70' : '',
-                    ].join(' ')}
+                      className={[
+                        'text-[10px] mt-1',
+                        isSelectedDay ? '!text-white' : isDisabled ? 'text-gray-400' : 'text-gray-500',
+                        unavailable ? 'line-through opacity-70' : '',
+                      ].join(' ')}
                     >
                       {priceLabel}
                     </span>
@@ -408,6 +451,10 @@ export default function HotelInfoPage() {
   const { hotelId } = useParams<{ hotelId: string }>();
   const sp = useSearchParams();
   const router = useRouter();
+
+  // IMPORTANT: /booking is your payment/checkout route
+  const PAYMENTS_PATH = '/booking';
+
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
   // calendar min/max stay
@@ -448,11 +495,7 @@ export default function HotelInfoPage() {
     if (!s) return '';
     const [y, m, d] = s.split('-').map(Number);
     const date = new Date(y, (m || 1) - 1, d || 1);
-    return date.toLocaleDateString(undefined, {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
+    return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' });
   }
 
   /* meta */
@@ -460,6 +503,7 @@ export default function HotelInfoPage() {
   const sDashed = slugify(displayName);
   const sCondensed = slugCondensed(displayName);
   const [meta, setMeta] = useState<Meta | null>(null);
+
   const amenitiesList = useMemo(() => {
     const a = (meta as any)?.amenities;
     if (!a) return [] as string[];
@@ -489,12 +533,14 @@ export default function HotelInfoPage() {
     if (displayName) load();
   }, [displayName, sDashed, sCondensed]);
 
-  const gallery = meta?.gallery?.length ? meta.gallery : ['hero.png', '1.png', '2.png', '3.png', '4.png', '5.png'];
+  const gallery = meta?.gallery?.length
+    ? meta.gallery
+    : ['hero.png', '1.png', '2.png', '3.png', '4.png', '5.png'];
+
   const img = (f: string) => `/properties/${sDashed}/${f}`;
   const imgFallback = (f: string) => `/properties/${sCondensed}/${f}`;
 
   /* totals & availability */
-  const [roomTotal, setRoomTotal] = useState(totalFromSearch);
   const [petFee, setPetFee] = useState(petFromSearch);
   const [available, setAvailable] = useState(totalFromSearch > 0);
   const [loading, setLoading] = useState(false);
@@ -532,20 +578,18 @@ export default function HotelInfoPage() {
       .catch(() => setIsAuthed(false));
   }, []);
 
-  // Prompt login if needed
+  // After successful login from modal, redirect to pending payment url
   useEffect(() => {
-    if (isAuthed === false) {
-      const hasPrompted = sessionStorage.getItem('dtc_login_prompted');
-      if (!hasPrompted) {
-        try {
-          window.dispatchEvent(new CustomEvent('dtc:open-login'));
-        } catch {}
-        sessionStorage.setItem('dtc_login_prompted', 'true');
-      }
+    if (isAuthed !== true) return;
+    const redirect = sessionStorage.getItem('dtc_post_login_redirect');
+    if (redirect) {
+      sessionStorage.removeItem('dtc_post_login_redirect');
+      router.replace(redirect);
     }
-  }, [isAuthed]);
+  }, [isAuthed, router]);
 
   const nightly = useMemo(() => (nights ? roomSubtotal / nights : 0), [roomSubtotal, nights]);
+
   const grandTotal = useMemo(
     () => (roomSubtotal || 0) + (petFee || 0) + (cleaningFee || 0) + (vat || 0),
     [roomSubtotal, petFee, cleaningFee, vat]
@@ -634,7 +678,8 @@ export default function HotelInfoPage() {
           const list: any[] = Array.isArray(j2?.data?.data) ? j2.data.data : [];
 
           const item =
-            list.find((x) => String(x.hotelId) === String(hotelId)) || list.find((x) => String(x.hotelNo) === String(hotelNo));
+            list.find((x) => String(x.hotelId) === String(hotelId)) ||
+            list.find((x) => String(x.hotelNo) === String(hotelNo));
 
           if (item) {
             let summed = 0;
@@ -653,9 +698,7 @@ export default function HotelInfoPage() {
 
             subtotal = summed;
             pfee =
-              pet === 'yes'
-                ? Number(String(item.petFeeAmount ?? 0).replace(/[^0-9.-]/g, '')) || 0
-                : 0;
+              pet === 'yes' ? Number(String(item.petFeeAmount ?? 0).replace(/[^0-9.-]/g, '')) || 0 : 0;
 
             cfee = 0;
             tax = 0;
@@ -672,6 +715,7 @@ export default function HotelInfoPage() {
       setCleaningFee(ok ? cfee : 0);
       setVat(ok ? tax : 0);
       setGrossAmount(ok ? gross : 0);
+      setNoRooms(noRoomsFlag);
     } catch (e) {
       console.error('refreshAvailability error', e);
       setAvailable(false);
@@ -751,7 +795,6 @@ export default function HotelInfoPage() {
   const [incomingRangeInvalid, setIncomingRangeInvalid] = useState(false);
   const [initialGuardChecked, setInitialGuardChecked] = useState(false);
 
-  // When user lands with checkIn/checkOut from search, verify against daily availability
   useEffect(() => {
     if (initialGuardChecked) return;
     if (isCalLoading) return;
@@ -772,7 +815,6 @@ export default function HotelInfoPage() {
     setInitialGuardChecked(true);
   }, [availableDates, isCalLoading, checkIn, checkOut, initialGuardChecked]);
 
-  // On first load of the page, request calendar availability
   useEffect(() => {
     loadCalendarAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -784,18 +826,14 @@ export default function HotelInfoPage() {
   const [showPhotos, setShowPhotos] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
 
+  // Reserve modal
+  const [showReserveModal, setShowReserveModal] = useState(false);
+
   const GRID_SHOWN = 5;
   const extraPhotos = Math.max(0, (gallery?.length || 0) - GRID_SHOWN);
 
-  function goBooking() {
-    if (isAuthed !== true) {
-      try {
-        window.dispatchEvent(new CustomEvent('dtc:open-login'));
-      } catch {}
-      return;
-    }
-    if (!available || roomSubtotal <= 0 || !checkIn || !checkOut) return;
-
+  // Build payment (booking) URL
+  function buildBookingUrl(isGuest: boolean) {
     const params = new URLSearchParams({
       hotelId: resolvedHotelId || String(hotelId),
       hotelNo: String(hotelNo || ''),
@@ -808,10 +846,77 @@ export default function HotelInfoPage() {
       currency: currency || 'CAD',
       total: String(roomSubtotal),
       petFee: String(petFee),
+
+      // optional extra context for summary display
+      name: String(displayName || ''),
+      cleaningFee: String(cleaningFee),
+      vat: String(vat),
+      grandTotal: String(grandTotal),
     });
 
-    router.push(`/booking?${params.toString()}`);
+    if (isGuest) params.set('guest', '1');
+    return `${PAYMENTS_PATH}?${params.toString()}`;
   }
+
+  function persistBookingContext(nextUrl: string) {
+    sessionStorage.setItem(
+      'dtc_pending_payment',
+      JSON.stringify({
+        nextUrl,
+        hotelId: resolvedHotelId || String(hotelId),
+        hotelNo: String(hotelNo || ''),
+        checkIn,
+        checkOut,
+        adult,
+        child,
+        infant,
+        pet,
+        currency,
+        roomSubtotal,
+        petFee,
+        cleaningFee,
+        vat,
+        grandTotal,
+        displayName,
+        ts: Date.now(),
+      })
+    );
+    sessionStorage.setItem('dtc_post_login_redirect', nextUrl);
+  }
+
+  // Reserve click -> open modal
+  function onClickReserve() {
+    if (!available || roomSubtotal <= 0 || !checkIn || !checkOut) return;
+    if (incomingRangeInvalid) return;
+    setShowReserveModal(true);
+  }
+
+  // Member path -> open auth modal, then redirect to /booking after login
+  function onMemberLogin() {
+    const nextUrl = buildBookingUrl(false);
+    persistBookingContext(nextUrl);
+    setShowReserveModal(false);
+
+    try {
+      window.dispatchEvent(new CustomEvent('dtc:open-login'));
+    } catch {}
+  }
+
+  // Guest path -> go straight to /booking as guest
+  function onContinueGuest() {
+    const nextUrl = buildBookingUrl(true);
+    // Keep for debugging/tracking; harmless even for guest
+    persistBookingContext(nextUrl);
+    setShowReserveModal(false);
+    router.push(nextUrl);
+  }
+
+  const canReserve =
+    !!checkIn &&
+    !!checkOut &&
+    available &&
+    roomSubtotal > 0 &&
+    !incomingRangeInvalid;
 
   return (
     <div className="max-w-[1200px] mx-auto px-4 md:px-6 py-6">
@@ -994,7 +1099,6 @@ export default function HotelInfoPage() {
               onClose={() => setShowCalendar(false)}
               onApply={() => {
                 if (tmpStart && tmpEnd) {
-                  // block ranges that hit an unavailable date
                   if (hasUnavailableInRange(availableDates, tmpStart, tmpEnd)) {
                     alert(
                       'Your selected dates include at least one unavailable night. Please choose only dates that are not greyed out.'
@@ -1002,7 +1106,6 @@ export default function HotelInfoPage() {
                     return;
                   }
 
-                  //  enforce min/max stay for the chosen start date
                   const nights = diffInDays(tmpStart, tmpEnd);
 
                   const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
@@ -1120,27 +1223,27 @@ export default function HotelInfoPage() {
             </div>
           </div>
 
-          {isAuthed === false && (
-            <div className="mb-2 text-xs text-yellow-800 bg-yellow-50 border border-yellow-200 rounded px-3 py-2">
-              To continue, please log in or join Dream Trip Club.
-            </div>
-          )}
-
           <button
-            disabled={!checkIn || !checkOut || !available || roomSubtotal <= 0 || isAuthed !== true}
-            onClick={goBooking}
+            disabled={!canReserve}
+            onClick={onClickReserve}
             className={`w-full rounded-xl py-3 font-medium ${
-              available && roomSubtotal > 0 && isAuthed === true
-                ? 'bg-[#211F45] text-white'
-                : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+              canReserve ? 'bg-[#211F45] text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'
             }`}
           >
-            {available && roomSubtotal > 0 && isAuthed === true ? 'Book now' : 'Sign in to book'}
+            Reserve
           </button>
 
           {loading && <div className="text-xs text-gray-500 mt-2">Updating rates…</div>}
         </div>
       </div>
+
+      {/* Reserve Modal */}
+      <ReserveChoiceModal
+        open={showReserveModal}
+        onClose={() => setShowReserveModal(false)}
+        onMember={onMemberLogin}
+        onGuest={onContinueGuest}
+      />
 
       {/* PHOTOS MODAL */}
       {showPhotos && gallery?.length ? (
