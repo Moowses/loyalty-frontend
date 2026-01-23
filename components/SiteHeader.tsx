@@ -145,39 +145,29 @@ export default function SiteHeader() {
     };
   }, [checkAuth]);
 
-useEffect(() => {
-  const onMsg = (ev: MessageEvent) => {
-    if (!ev?.data?.type) return;
+const onMsg = (ev: MessageEvent) => {
+  if (!ev?.data?.type) return;
 
-    if (ev.data.type === "auth-success" || ev.data.type === "auth-logout") {
-  setShowLoginModal(false);
+  if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
+    setShowLoginModal(false);
 
-  try {
-    localStorage.setItem("dtc_auth_changed", String(Date.now()));
-  } catch {}
+    try {
+      localStorage.setItem('dtc_auth_changed', String(Date.now()));
+    } catch {}
 
-  checkAuth();
+    checkAuth();
 
-  if (ev.data.type === "auth-success") {
-    const url = ev.data.redirectUrl;
-    if (typeof url === "string" && url.startsWith("/booking")) {
-      setTimeout(() => window.location.assign(url), 150);
-      return;
-    }
-
-    // fallback (keeps your current behavior)
-    const redirect = sessionStorage.getItem("dtc_post_login_redirect");
-    if (redirect) {
-      sessionStorage.removeItem("dtc_post_login_redirect");
-      window.location.assign(redirect);
+    if (ev.data.type === 'auth-success') {
+      try {
+        const redirect = sessionStorage.getItem('dtc_post_login_redirect');
+        if (redirect) {
+          // mimic manual close behavior that already works
+          setTimeout(() => window.location.reload(), 80);
+        }
+      } catch {}
     }
   }
-}
 };
-
-  window.addEventListener("message", onMsg);
-  return () => window.removeEventListener("message", onMsg);
-}, [checkAuth]);
 
   // login modal open requests
 useEffect(() => {
