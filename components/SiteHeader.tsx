@@ -151,12 +151,24 @@ export default function SiteHeader() {
 
       if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
         setShowLoginModal(false);
+
         try {
           localStorage.setItem('dtc_auth_changed', String(Date.now()));
         } catch {}
+
         checkAuth();
-        // small delay
-       // setTimeout(() => window.location.reload(), 50);
+
+        // Hotel page only: continue to booking after successful login
+        if (ev.data.type === 'auth-success') {
+          const path = window.location.pathname || '';
+          if (path.startsWith('/hotel/')) {
+            const redirect = sessionStorage.getItem('dtc_post_login_redirect');
+            if (redirect) {
+              sessionStorage.removeItem('dtc_post_login_redirect');
+              window.location.assign(redirect);
+            }
+          }
+        }
       }
     };
     window.addEventListener('message', onMsg);

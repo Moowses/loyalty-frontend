@@ -578,7 +578,6 @@ export default function HotelInfoPage() {
       .catch(() => setIsAuthed(false));
   }, []);
 
-  
 
   // After successful login from modal, redirect to pending payment url
   useEffect(() => {
