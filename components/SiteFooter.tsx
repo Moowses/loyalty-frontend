@@ -10,7 +10,6 @@ export default function SiteFooter() {
       <div className="mx-auto max-w-[1400px] px-4 pb-6 pt-6">
         {/* Footer Card */}
         <div className="w-full rounded-2xl border border-black/10 bg-white shadow-[0_10px_25px_-10px_rgba(0,0,0,0.25)]">
-          {/* ⬇️ taller section so logos can be bigger */}
           <div className="px-6 py-12 md:px-12 md:py-14">
             {/* Heading */}
             <h2
@@ -41,35 +40,46 @@ export default function SiteFooter() {
 
             {/* Logos row */}
             <div className="mt-10 flex flex-wrap items-center justify-center gap-x-7 gap-y-8 md:mt-10 md:gap-x-12 md:gap-y-10">
-              {/* Property logos (6 items) */}
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image
-                  src="/dtclogobig.png"
-                  alt="logo 1"
-                  fill
-                  className="object-contain opacity-90"
-                />
-              </div>
+             <Link href="https://dreamtripclub.com/" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image
+                    src="/dtclogobig.png"
+                    alt="logo 1"
+                    fill
+                    className="object-contain opacity-90"
+                  />
+                </div>
+              </Link>
 
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image src="/logo1.png" alt="logo 2" fill className="object-contain opacity-90" />
-              </div>
+              <Link href="https://www.haybayresort.com/" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image src="/logo1.png" alt="logo 2" fill className="object-contain opacity-90" />
+                </div>
+              </Link>
 
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image src="/logo2.png" alt="logo 3" fill className="object-contain opacity-90" />
-              </div>
+              <Link href="#" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image src="/logo2.png" alt="logo 3" fill className="object-contain opacity-90" />
+                </div>
+              </Link>
 
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image src="/logo3.png" alt="logo 4" fill className="object-contain opacity-90" />
-              </div>
+              <Link href="#" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image src="/logo3.png" alt="logo 4" fill className="object-contain opacity-90" />
+                </div>
+              </Link>
 
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image src="/logo4.png" alt="logo 5" fill className="object-contain opacity-90" />
-              </div>
+              <Link href="#" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image src="/logo4.png" alt="logo 5" fill className="object-contain opacity-90" />
+                </div>
+              </Link>
 
-              <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px]">
-                <Image src="/logo5.png" alt="logo 6" fill className="object-contain opacity-90" />
-              </div>
+              <Link href="https://cottagedreamvacations.com/" target="_blank" rel="noopener noreferrer">
+                <div className="relative h-[96px] w-[128px] md:h-[110px] md:w-[150px] cursor-pointer">
+                  <Image src="/logo5.png" alt="logo 6" fill className="object-contain opacity-90" />
+                </div>
+              </Link>
             </div>
 
             {/* Store badges + QR */}

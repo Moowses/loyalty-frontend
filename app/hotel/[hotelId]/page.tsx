@@ -885,22 +885,33 @@ export default function HotelInfoPage() {
   }
 
   // Reserve click -> open modal
-  function onClickReserve() {
-    if (!available || roomSubtotal <= 0 || !checkIn || !checkOut) return;
-    if (incomingRangeInvalid) return;
-    setShowReserveModal(true);
-  }
+ function onClickReserve() {
+  if (!available || roomSubtotal <= 0 || !checkIn || !checkOut) return;
+  if (incomingRangeInvalid) return;
 
-  // Member path -> open auth modal, then redirect to /booking after login
-  function onMemberLogin() {
+  // if already logged in, go straight to booking (member flow)
+  if (isAuthed === true) {
     const nextUrl = buildBookingUrl(false);
     persistBookingContext(nextUrl);
-    setShowReserveModal(false);
-
-    try {
-      window.dispatchEvent(new CustomEvent('dtc:open-login'));
-    } catch {}
+    router.push(nextUrl);
+    return;
   }
+
+  // otherwise show reserve choice modal
+  setShowReserveModal(true);
+}
+
+  // Member path -> open auth modal, then redirect to /booking after login
+function onMemberLogin() {
+  const nextUrl = buildBookingUrl(false);
+  persistBookingContext(nextUrl);
+  setShowReserveModal(false);
+
+  try {
+    sessionStorage.setItem('dtc_login_close_target', 'hotel-reserve');
+    window.dispatchEvent(new CustomEvent('dtc:open-login'));
+  } catch {}
+}
 
   // Guest path -> go straight to /booking as guest
   function onContinueGuest() {

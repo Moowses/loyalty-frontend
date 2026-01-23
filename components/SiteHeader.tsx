@@ -164,12 +164,16 @@ export default function SiteHeader() {
   }, [checkAuth]);
 
   // login modal open requests
-  useEffect(() => {
-    const handler = () => setShowLoginModal(true);
-    // listen for booking page request
-    window.addEventListener('dtc:open-login' as any, handler as any);
-    return () => window.removeEventListener('dtc:open-login' as any, handler as any);
-  }, []);
+useEffect(() => {
+  const handler = () => {
+    if (loggedIn) return; // ← key line
+    setShowLoginModal(true);
+  };
+
+  window.addEventListener('dtc:open-login' as any, handler as any);
+  return () =>
+    window.removeEventListener('dtc:open-login' as any, handler as any);
+}, [loggedIn]);
 
 async function logout() {
   

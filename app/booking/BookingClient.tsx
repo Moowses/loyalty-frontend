@@ -707,7 +707,7 @@ export default function BookingPage() {
 
               <div className="mt-4 border border-gray-200 bg-[#93AFB9] p-3 text-[12px] text-white">
                 By clicking Submit, you're agreeing to Dream Trip Club Rewards contacting you about offers,
-                updates, and more via email and/or SMS messages. You can unsubscribe, update your preferences or
+                updates, and more via Email and/or SMS messages. You can unsubscribe, update your preferences or
                 view our <a href="/privacy" className="underline">Privacy Policy</a> at any time.
                 <div className="mt-3 space-y-2 text-sm">
                   <label className="flex items-center gap-2">
@@ -717,7 +717,7 @@ export default function BookingPage() {
                       checked={consentEmail}
                       onChange={(e) => setConsentEmail(e.target.checked)}
                     />
-                    <span>I agree to receive email communications</span>
+                    <span>I agree to receive Email communications</span>
                   </label>
                   <label className="flex items-center gap-2">
                     <input
@@ -743,15 +743,18 @@ export default function BookingPage() {
                     <span>
                       <span className="font-semibold">Create an account</span>
                       <span className="block text-xs text-gray-600">
-                        Uncheck if you don’t want to create a Dream Trip Club account.
+                        By checking this box, you consent to the creation of a Dream Trip Club account using your reservation details. 
+                        You will earn points for your stay that can be redeemed for free vacations. 
+                        Trip communications will be delivered through the Dream Trip Club app, available after booking.
                       </span>
                     </span>
                   </label>
 
                   {createAccount && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                     
                       <PhoneInput
-                        defaultCountry="usa"
+                        defaultCountry="us"
                         value={mobileNumber}
                         onChange={setMobileNumber}
                         required
