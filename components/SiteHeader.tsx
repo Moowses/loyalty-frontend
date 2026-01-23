@@ -150,22 +150,30 @@ useEffect(() => {
     if (!ev?.data?.type) return;
 
     if (ev.data.type === "auth-success" || ev.data.type === "auth-logout") {
-      setShowLoginModal(false);
+  setShowLoginModal(false);
 
-      try {
-        localStorage.setItem("dtc_auth_changed", String(Date.now()));
-      } catch {}
+  try {
+    localStorage.setItem("dtc_auth_changed", String(Date.now()));
+  } catch {}
 
-      checkAuth();
+  checkAuth();
 
-      if (ev.data.type === "auth-success") {
-        const url = ev.data.redirectUrl;
-        if (typeof url === "string" && url.length > 1) {
-          window.location.assign(url);
-        }
-      }
+  if (ev.data.type === "auth-success") {
+    const url = ev.data.redirectUrl;
+    if (typeof url === "string" && url.startsWith("/booking")) {
+      setTimeout(() => window.location.assign(url), 150);
+      return;
     }
-  };
+
+    // fallback (keeps your current behavior)
+    const redirect = sessionStorage.getItem("dtc_post_login_redirect");
+    if (redirect) {
+      sessionStorage.removeItem("dtc_post_login_redirect");
+      window.location.assign(redirect);
+    }
+  }
+}
+};
 
   window.addEventListener("message", onMsg);
   return () => window.removeEventListener("message", onMsg);
@@ -193,7 +201,6 @@ useEffect(() => {
   window.addEventListener("dtc:open-login" as any, handler as any);
   return () => window.removeEventListener("dtc:open-login" as any, handler as any);
 }, [loggedIn]);
-
 async function logout() {
   
   setChecking(true);
@@ -520,11 +527,11 @@ async function logout() {
             </button>
 
             {/* Iframe */}
-            <iframe
+          <iframe
               src={authSrc}
               className="w-full h-full border-0"
               loading="lazy"
-              sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
+              sandbox="allow-scripts allow-forms allow-same-origin allow-popups allow-top-navigation-by-user-activation"
             />
           </div>
         </div>
