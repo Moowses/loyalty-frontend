@@ -25,8 +25,8 @@ export default function SiteHeader() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [member, setMember] = useState<ChatbotMember | null>(null);
-
- const pathname = usePathname();
+  const [authSrc, setAuthSrc] = useState("/login");
+  const pathname = usePathname();
   const currentPath = pathname || '';
 
   const isInsideMemberApp =
@@ -145,46 +145,53 @@ export default function SiteHeader() {
     };
   }, [checkAuth]);
 
-  useEffect(() => {
-    const onMsg = (ev: MessageEvent) => {
-      if (!ev?.data?.type) return;
+useEffect(() => {
+  const onMsg = (ev: MessageEvent) => {
+    if (!ev?.data?.type) return;
 
-      if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
-        setShowLoginModal(false);
+    if (ev.data.type === "auth-success" || ev.data.type === "auth-logout") {
+      setShowLoginModal(false);
 
-        try {
-          localStorage.setItem('dtc_auth_changed', String(Date.now()));
-        } catch {}
+      try {
+        localStorage.setItem("dtc_auth_changed", String(Date.now()));
+      } catch {}
 
-        checkAuth();
+      checkAuth();
 
-        // Hotel page only: continue to booking after successful login
-        if (ev.data.type === 'auth-success') {
-          const path = window.location.pathname || '';
-          if (path.startsWith('/hotel/')) {
-            const redirect = sessionStorage.getItem('dtc_post_login_redirect');
-            if (redirect) {
-              sessionStorage.removeItem('dtc_post_login_redirect');
-              window.location.assign(redirect);
-            }
-          }
+      if (ev.data.type === "auth-success") {
+        const url = ev.data.redirectUrl;
+        if (typeof url === "string" && url.length > 1) {
+          window.location.assign(url);
         }
       }
-    };
-    window.addEventListener('message', onMsg);
-    return () => window.removeEventListener('message', onMsg);
-  }, [checkAuth]);
+    }
+  };
+
+  window.addEventListener("message", onMsg);
+  return () => window.removeEventListener("message", onMsg);
+}, [checkAuth]);
 
   // login modal open requests
 useEffect(() => {
   const handler = () => {
-    if (loggedIn) return; // ← key line
+    if (loggedIn) return;
+
+    try {
+      const redirect = sessionStorage.getItem("dtc_post_login_redirect");
+      if (redirect) {
+        setAuthSrc(`/login?redirect=${encodeURIComponent(redirect)}`);
+      } else {
+        setAuthSrc("/login");
+      }
+    } catch {
+      setAuthSrc("/login");
+    }
+
     setShowLoginModal(true);
   };
 
-  window.addEventListener('dtc:open-login' as any, handler as any);
-  return () =>
-    window.removeEventListener('dtc:open-login' as any, handler as any);
+  window.addEventListener("dtc:open-login" as any, handler as any);
+  return () => window.removeEventListener("dtc:open-login" as any, handler as any);
 }, [loggedIn]);
 
 async function logout() {
@@ -514,7 +521,7 @@ async function logout() {
 
             {/* Iframe */}
             <iframe
-              src="/login"
+              src={authSrc}
               className="w-full h-full border-0"
               loading="lazy"
               sandbox="allow-scripts allow-forms allow-same-origin allow-popups"
