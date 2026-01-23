@@ -3,18 +3,17 @@
 import Image from 'next/image';
 import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
-import Script from "next/script";
-import { Suspense } from "react";
-import CountrySelect from "@/components/CountrySelect";
+import Script from 'next/script';
+import CountrySelect from '@/components/CountrySelect';
+
 declare global {
   interface Window {
     CollectJS?: {
       configure: (cfg: any) => void;
-      startPaymentRequest?: () => void;  // add this
+      startPaymentRequest?: () => void;
     };
   }
 }
-
 
 type Quote = {
   quoteId: string;
@@ -48,20 +47,27 @@ const money = (v: number, ccy = 'CAD') => {
   }
 };
 
+function isValidEmail(v: string) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(v || '').trim());
+}
+function isValidE164(v: string) {
+  const s = String(v || '').trim();
+  return /^\+\d{8,15}$/.test(s);
+}
+
 export default function BookingPage() {
   const router = useRouter();
   const params = useSearchParams();
 
-  // --- Read params ---
   const hotelIdParam = params.get('hotelId') || params.get('roomTypeId') || '';
   const hotelNoParam = params.get('hotelNo') || '';
   const startTime = params.get('startTime') || params.get('startDate') || '';
-  const endTime   = params.get('endTime')   || params.get('endDate')   || '';
-  const adults    = Number(params.get('adults')   || params.get('adult')  || '1');
-  const children  = Number(params.get('children') || params.get('child')  || '0');
-  const infants   = Number(params.get('infants')  || params.get('infant') || '0');
-  const petParam  = params.get('pet') || params.get('pets') || '0';
-  const currency  = (params.get('currency') || 'CAD').toUpperCase();
+  const endTime = params.get('endTime') || params.get('endDate') || '';
+  const adults = Number(params.get('adults') || params.get('adult') || '1');
+  const children = Number(params.get('children') || params.get('child') || '0');
+  const infants = Number(params.get('infants') || params.get('infant') || '0');
+  const petParam = params.get('pet') || params.get('pets') || '0';
+  const currency = (params.get('currency') || 'CAD').toUpperCase();
 
   const petYN: 'yes' | 'no' =
     String(petParam).toLowerCase() === 'yes' || String(petParam) === '1' ? 'yes' : 'no';
@@ -74,7 +80,6 @@ export default function BookingPage() {
     return isFinite(d) && d > 0 ? d : 0;
   }, [startTime, endTime]);
 
-  // --- State ---
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
   const [paying, setPaying] = useState(false);
@@ -84,114 +89,111 @@ export default function BookingPage() {
   const total = useMemo(() => {
     if (!quote) return 0;
     if (toNum(quote.grandTotal) > 0) return toNum(quote.grandTotal);
-    return toNum(quote.grossAmount) +
-           toNum(quote.petFeeAmount) +
-           toNum((quote as any).cleaningFeeAmount) +
-           toNum((quote as any).vatAmount);
+    return (
+      toNum(quote.grossAmount) +
+      toNum(quote.petFeeAmount) +
+      toNum((quote as any).cleaningFeeAmount) +
+      toNum((quote as any).vatAmount)
+    );
   }, [quote]);
 
-  // Guest form state
   const [firstName, setFirstName] = useState('');
-  const [lastName, setLastName]   = useState('');
-  const [email, setEmail]         = useState('');
+  const [lastName, setLastName] = useState('');
+  const [email, setEmail] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
-  const [country, setCountry]     = useState('');
-  const [address1, setAddress1]   = useState('');
-  const [address2, setAddress2]   = useState('');
-  const [city, setCity]           = useState('');
-  const [state, setState]         = useState('');
-  const [zip, setZip]             = useState('');
-  const [smsOpt, setSmsOpt]       = useState(false);
+  const [country, setCountry] = useState('');
+  const [address1, setAddress1] = useState('');
+  const [address2, setAddress2] = useState('');
+  const [city, setCity] = useState('');
+  const [state, setState] = useState('');
+  const [zip, setZip] = useState('');
   const [billingSame, setBillingSame] = useState(false);
   const [consentEmail, setConsentEmail] = useState(false);
-  const [consentSms, setConsentSms]     = useState(false);
+  const [consentSms, setConsentSms] = useState(false);
 
   const [isAuthed, setIsAuthed] = useState<boolean | null>(null);
 
+  const [createAccount, setCreateAccount] = useState(false);
+  const [mobileNumber, setMobileNumber] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+
   useEffect(() => {
-    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
-    fetch(`${base}/api/auth/status`, { credentials: "include" })
-      .then(r => {
-        if (r.ok) { setIsAuthed(true); return; }
-        // not authed → clear stale caches
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+    fetch(`${base}/api/auth/status`, { credentials: 'include' })
+      .then((r) => {
+        if (r.ok) {
+          setIsAuthed(true);
+          return;
+        }
         try {
-          localStorage.removeItem("dashboardData");
-          localStorage.removeItem("dtc_profile");
-          localStorage.removeItem("dtc_guestDetails");
-          localStorage.removeItem("membershipno");
-          localStorage.removeItem("firstname");
-          localStorage.removeItem("lastname");
-          localStorage.removeItem("primaryemail");
+          localStorage.removeItem('dashboardData');
+          localStorage.removeItem('dtc_profile');
+          localStorage.removeItem('dtc_guestDetails');
+          localStorage.removeItem('membershipno');
+          localStorage.removeItem('firstname');
+          localStorage.removeItem('lastname');
+          localStorage.removeItem('primaryemail');
         } catch {}
         setIsAuthed(false);
       })
-      .catch(() => { // network error → treat as logged out
+      .catch(() => {
         try {
-          localStorage.removeItem("dtc_profile");
-          localStorage.removeItem("dtc_guestDetails");
+          localStorage.removeItem('dtc_profile');
+          localStorage.removeItem('dtc_guestDetails');
         } catch {}
         setIsAuthed(false);
       });
   }, []);
-      useEffect(() => {
-      let bc: BroadcastChannel | null = null;
-      try {
-        bc = new BroadcastChannel('dtc-auth');
-        bc.onmessage = (e) => {
-          if (e?.data?.type === 'logout') {
-            try {
-              localStorage.removeItem('dtc_profile');
-              localStorage.removeItem('dtc_guestDetails');
-              localStorage.removeItem('dashboardData');
-            } catch {}
-            // Optional: clear visible fields too
-            setFirstName(''); 
-            setLastName(''); 
-            setEmail(''); 
-            setMemberNumber('');
-          }
-        };
-      } catch {}
-      return () => { try { bc?.close(); } catch {} };
-    }, []);
 
-  
-const getCookie = (name: string): string => {
-  if (typeof document === 'undefined') return '';
-  const m = document.cookie.match(new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)'));
-  return m ? decodeURIComponent(m[1]) : '';
-};
-// Auto-open SiteHeader login drawer if logged out
-useEffect(() => {
-  if (isAuthed === false) {
-    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
-  }
-}, [isAuthed]);
-
-
-
-// Modal state for payment process
-const [payModalOpen, setPayModalOpen] = useState(false);
-const [payStage, setPayStage] = useState<'idle' | 'verifying' | 'declined' | 'approved'>('idle');
-const [payMessage, setPayMessage] = useState('');
-
-  // poppulate member number from cache if available or localstorage
   useEffect(() => {
-    if (isAuthed !== true) return; // 
+    let bc: BroadcastChannel | null = null;
+    try {
+      bc = new BroadcastChannel('dtc-auth');
+      bc.onmessage = (e) => {
+        if (e?.data?.type === 'logout') {
+          try {
+            localStorage.removeItem('dtc_profile');
+            localStorage.removeItem('dtc_guestDetails');
+            localStorage.removeItem('dashboardData');
+          } catch {}
+          setFirstName('');
+          setLastName('');
+          setEmail('');
+          setMemberNumber('');
+          setIsAuthed(false);
+        }
+      };
+    } catch {}
+    return () => {
+      try {
+        bc?.close();
+      } catch {}
+    };
+  }, []);
 
-  
-    const cFirst = getCookie("dtc_firstName");
-    const cLast  = getCookie("dtc_lastName");
-    const cEmail = getCookie("dtc_email");
-    const cMemNo = getCookie("dtc_membershipNo");
+  const getCookie = (name: string): string => {
+    if (typeof document === 'undefined') return '';
+    const m = document.cookie.match(
+      new RegExp('(?:^|; )' + name.replace(/[$()*+.?[\\\]^{|}]/g, '\\$&') + '=([^;]*)')
+    );
+    return m ? decodeURIComponent(m[1]) : '';
+  };
+
+  useEffect(() => {
+    if (isAuthed !== true) return;
+
+    const cFirst = getCookie('dtc_firstName');
+    const cLast = getCookie('dtc_lastName');
+    const cEmail = getCookie('dtc_email');
+    const cMemNo = getCookie('dtc_membershipNo');
     if (cFirst) setFirstName(cFirst);
-    if (cLast)  setLastName(cLast);
+    if (cLast) setLastName(cLast);
     if (cEmail) setEmail(cEmail);
     if (cMemNo) setMemberNumber(cMemNo);
-  
 
     if (!cFirst || !cLast || !cEmail || !cMemNo) {
-      const ls = localStorage.getItem("dashboardData");
+      const ls = localStorage.getItem('dashboardData');
       if (ls) {
         const dash = JSON.parse(ls);
         const u = dash?.data?.[0] || dash;
@@ -213,9 +215,21 @@ const [payMessage, setPayMessage] = useState('');
         }
       }
     }
-  }, [isAuthed]); // 
+  }, [isAuthed]);
 
-  //  Fetch FINAL price from /availability 
+  useEffect(() => {
+    if (isAuthed === true) {
+      setCreateAccount(false);
+      setPassword('');
+      setConfirmPassword('');
+      setMobileNumber('');
+      return;
+    }
+    if (isAuthed === false) {
+      setCreateAccount(true);
+    }
+  }, [isAuthed]);
+
   useEffect(() => {
     (async () => {
       try {
@@ -225,37 +239,35 @@ const [payMessage, setPayMessage] = useState('');
         if (!hotelIdParam || !startTime || !endTime) {
           setErr('Missing booking details. Please return to results.');
           setAvailable(false);
-          setLoading(false);
+          setQuote(null);
           return;
         }
         if (!/^\d+$/.test(hotelIdParam)) {
           setErr('Invalid hotelId. Please return to results.');
           setAvailable(false);
-          setLoading(false);
+          setQuote(null);
           return;
         }
 
         const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
         const qs = new URLSearchParams({
           hotelId: hotelIdParam,
-          hotelNo: hotelNoParam,  
+          hotelNo: hotelNoParam,
           startDate: startTime,
           endDate: endTime,
           adults: String(adults),
           children: String(children),
           infant: String(infants),
           pet: petYN,
-          currency
+          currency,
         });
 
         const res = await fetch(`${base}/api/booking/availability?${qs.toString()}`, {
-          credentials: 'include'
+          credentials: 'include',
         });
-        
-        if (!res.ok) {
-          throw new Error(`HTTP error! status: ${res.status}`);
-        }
-        
+
+        if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
         const j = await res.json();
         const payload = j?.data;
 
@@ -275,7 +287,6 @@ const [payMessage, setPayMessage] = useState('');
           return;
         }
 
-        // Prefer summing dailyPrices for [startTime, endTime)
         let grossAmount = 0;
         let details: Quote['details'] = [];
         if (first.dailyPrices && nights > 0) {
@@ -295,7 +306,8 @@ const [payMessage, setPayMessage] = useState('');
         const petFeeAmount = petYN === 'yes' ? toNum(first.petFeeAmount) : 0;
         const cleaningFeeAmount = toNum(first.cleaningFeeAmount);
         const vatAmount = toNum(first.vatAmount ?? first.VAT ?? first.Vat);
-        const computedGrandTotal = toNum(first.grandTotal) || (grossAmount + petFeeAmount + cleaningFeeAmount + vatAmount);
+        const computedGrandTotal =
+          toNum(first.grandTotal) || grossAmount + petFeeAmount + cleaningFeeAmount + vatAmount;
 
         const q: Quote = {
           quoteId: `q_${Date.now()}_${Math.random().toString(36).slice(2)}`,
@@ -317,7 +329,7 @@ const [payMessage, setPayMessage] = useState('');
           adults,
           children,
           infants,
-          pets: petYN
+          pets: petYN,
         };
 
         setAvailable(grossAmount > 0);
@@ -331,177 +343,240 @@ const [payMessage, setPayMessage] = useState('');
         setLoading(false);
       }
     })();
-  }, [hotelIdParam, hotelNoParam, startTime, endTime, adults, children, infants, petYN, currency, nights]);
+  }, [
+    hotelIdParam,
+    hotelNoParam,
+    startTime,
+    endTime,
+    adults,
+    children,
+    infants,
+    petYN,
+    currency,
+    nights,
+  ]);
 
-  //  Collect.js Configuration 
   const configuredRef = useRef(false);
-  const tokenizationKey = process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || "z78ur3-68sE66-c3YWM3-ZC6Q56";
+  const tokenizationKey =
+    process.env.NEXT_PUBLIC_NMI_PUBLIC_KEY || 'z78ur3-68sE66-c3YWM3-ZC6Q56';
 
-const configureCollect = useCallback(() => {
-  if (!window.CollectJS || configuredRef.current) return;
+  const configureCollect = useCallback(() => {
+    if (!window.CollectJS || configuredRef.current) return;
 
-  // ensure payment fields exist
-  if (
-    !document.querySelector("#ccnumber") ||
-    !document.querySelector("#ccexp") ||
-    !document.querySelector("#cvv")
-  ) {
-    console.log("Collect.js fields not found in DOM");
-    return;
-  }
+    if (!document.querySelector('#ccnumber') || !document.querySelector('#ccexp') || !document.querySelector('#cvv')) {
+      return;
+    }
 
-  try {
-    window.CollectJS.configure({
-      variant: "inline",
-      fields: {
-        ccnumber: { selector: "#ccnumber", placeholder: "Card number" },
-        ccexp: { selector: "#ccexp", placeholder: "MM / YY" },
-        cvv: { selector: "#cvv", placeholder: "CVV" },
-      },
-      // Hand the token back to app code
-      callback: (resp: any) => {
-        (window as any).__collectResolve?.(resp);
-        (window as any).__collectResolve = undefined;
-      },
+    try {
+      window.CollectJS.configure({
+        variant: 'inline',
+        fields: {
+          ccnumber: { selector: '#ccnumber', placeholder: 'Card number' },
+          ccexp: { selector: '#ccexp', placeholder: 'MM / YY' },
+          cvv: { selector: '#cvv', placeholder: 'CVV' },
+        },
+        callback: (resp: any) => {
+          (window as any).__collectResolve?.(resp);
+          (window as any).__collectResolve = undefined;
+        },
+        styleSniffer: 'off',
+      });
 
-      styleSniffer: "off",
-    });
+      configuredRef.current = true;
+    } catch (error) {
+      console.error('Collect.js configuration error:', error);
+    }
+  }, []);
 
-    configuredRef.current = true;
-    console.log("Collect.js configured successfully");
-  } catch (error) {
-    console.error("Collect.js configuration error:", error);
-  }
-}, []);
-
-  // Load Collect.js script and configure
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (window.CollectJS && !configuredRef.current) {
-        configureCollect();
-      }
+      if (window.CollectJS && !configuredRef.current) configureCollect();
     }, 1000);
-
     return () => clearTimeout(timer);
   }, [configureCollect]);
 
-// --- Booking Handler ---
-const onBookNow = async (e: React.FormEvent) => {
-  e.preventDefault();
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payStage, setPayStage] = useState<'idle' | 'verifying' | 'declined' | 'approved'>('idle');
+  const [payMessage, setPayMessage] = useState('');
 
-  // Block submit if not logged in and open the header login drawer
-  if (isAuthed !== true) {
-    setErr('Please log in to continue to payment.');
-    try { window.dispatchEvent(new CustomEvent('dtc:open-login')); } catch {}
-    return;
-  }
+  const signupIfNeeded = async () => {
+    if (isAuthed === true) return;
+    if (!createAccount) return;
 
-  if (paying) return;
-  setErr('');
+    if (!isValidEmail(email)) throw new Error('Please enter a valid email address.');
+    if (!isValidE164(mobileNumber)) throw new Error('Mobile number must be in international format like +639xxxxxxxxx.');
+    if (!password || password.length < 8) throw new Error('Password must be at least 8 characters.');
+    if (password !== confirmPassword) throw new Error('Passwords do not match.');
 
-  if (!quote) {
-    setErr('Missing price check. Please return to results.');
-    return;
-  }
-  if (!available) {
-    setErr('This room is not available for your dates.');
-    return;
-  }
-  if (!firstName || !lastName || !email || !country || !address1 || !city || !state || !zip) {
-    setErr('Please fill in all required fields.');
-    return;
-  }
-  if (!window.CollectJS) {
-    setErr('Payment fields not ready. Please wait a moment and try again.');
-    return;
-  }
-
-  try {
-    setPaying(true);
-    setPayModalOpen(true);
-    setPayStage('verifying');
-    setPayMessage('Verifying payment… Please wait.');
-
-    // 1) Tokenize card
-    const paymentToken = await new Promise<string>((resolve, reject) => {
-      (window as any).__collectResolve = (resp: any) => {
-        const tok = resp?.payment_token || resp?.token;
-        if (tok) resolve(tok);
-        else reject(new Error(resp?.error?.message || resp?.error || "Tokenization failed"));
-      };
-      try {
-        (window as any).CollectJS.startPaymentRequest?.();
-      } catch (err) {
-        reject(new Error("Unable to start payment request."));
-      }
-    });
-
-    // 2) Confirm on backend
     const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-    const res = await fetch(`${base}/api/booking/confirm`, {
+    const res = await fetch(`${base}/api/auth/signup`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
-        quote,
-        guest: {
-          firstName, lastName, email,
-          phone: '',
-          country, city, address: `${address1}${address2 ? ', ' + address2 : ''}`,
-          membershipNo: memberNumber || '',
-        },
-        payment: { token: paymentToken },
+        firstname: firstName,
+        lastname: lastName,
+        email,
+        mobilenumber: mobileNumber,
+        password,
+        country,
+        communicationspreference: consentEmail ? 'Email' : '',
+        contactpreference: consentSms ? 'SMS' : '',
+        dateofbirth: '',
+        mailingaddress: `${address1}${address2 ? ', ' + address2 : ''}`,
+        city,
+        state,
+        zipcode: zip,
       }),
     });
 
     let j: any = null;
-    try { j = await res.json(); } catch {}
+    try {
+      j = await res.json();
+    } catch {}
 
     if (!res.ok || !j?.success) {
-      const msg =
-        j?.message ||
-        j?.error ||
-        (res.status === 402
-          ? 'Your card was declined: Do Not Honor. Please try a different card.'
-          : `HTTP error! status: ${res.status}`);
+      const msg = j?.message || j?.error || `Signup failed (HTTP ${res.status}).`;
+      throw new Error(msg);
+    }
+  };
 
-      setPayStage('declined');
-      setPayMessage(msg);
+  const onBookNow = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (paying) return;
+
+    setErr('');
+
+    if (!quote) {
+      setErr('Missing price check. Please return to results.');
+      return;
+    }
+    if (!available) {
+      setErr('This room is not available for your dates.');
       return;
     }
 
-    // 3) Success → show approved, then redirect
-    setPayStage('approved');
-    setPayMessage('Payment approved! Finalizing your reservation…');
+    if (!firstName || !lastName || !email || !country || !address1 || !city || !state || !zip) {
+      setErr('Please fill in all required fields.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setErr('Please enter a valid email address.');
+      return;
+    }
 
-    const payload = {
-      reservationNumber: j?.reservation?.reservationNumber || '',
-      hotelName: quote.roomTypeName || 'Your Dream Getaway',
-      arrivalDate: startTime, departureDate: endTime,
-      guests: { adult: adults, child: children, infant: infants, pet: petYN },
-      charges: { base: Number(quote.grossAmount), petFee: Number(quote.petFeeAmount || 0), total, currency: quote.currency },
-      payment: { transactionId: j?.payment?.transactionId || '' },
-      rewards: { earned: j?.rewards?.earned || 0 }
-    };
+    if (!window.CollectJS) {
+      setErr('Payment fields not ready. Please wait a moment and try again.');
+      return;
+    }
 
-    const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-    router.push(`/booking/confirm?payload=${encodeURIComponent(b64)}`);
-  } catch (e: any) {
-    console.error('Booking error:', e);
-    setPayStage('declined');
-    setPayMessage(e?.message || 'Checkout failed. Please try again.');
-  } finally {
-    setPaying(false);
-  }
-};
- //Render
+    try {
+      setPaying(true);
+
+      if (isAuthed !== true && createAccount) {
+        await signupIfNeeded();
+      }
+
+      setPayModalOpen(true);
+      setPayStage('verifying');
+      setPayMessage('Verifying payment… Please wait.');
+
+      const paymentToken = await new Promise<string>((resolve, reject) => {
+        (window as any).__collectResolve = (resp: any) => {
+          const tok = resp?.payment_token || resp?.token;
+          if (tok) resolve(tok);
+          else reject(new Error(resp?.error?.message || resp?.error || 'Tokenization failed'));
+        };
+        try {
+          (window as any).CollectJS.startPaymentRequest?.();
+        } catch {
+          reject(new Error('Unable to start payment request.'));
+        }
+      });
+
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+      const res = await fetch(`${base}/api/booking/confirm`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          quote,
+          guest: {
+            firstName,
+            lastName,
+            email,
+            phone: createAccount ? mobileNumber : '',
+            country,
+            city,
+            address: `${address1}${address2 ? ', ' + address2 : ''}`,
+            membershipNo: memberNumber || '',
+          },
+          payment: { token: paymentToken },
+        }),
+      });
+
+      let j: any = null;
+      try {
+        j = await res.json();
+      } catch {}
+
+      if (!res.ok || !j?.success) {
+        const msg =
+          j?.message ||
+          j?.error ||
+          (res.status === 402
+            ? 'Your card was declined: Do Not Honor. Please try a different card.'
+            : `HTTP error! status: ${res.status}`);
+
+        setPayStage('declined');
+        setPayMessage(msg);
+        return;
+      }
+
+      setPayStage('approved');
+      setPayMessage('Payment approved! Finalizing your reservation…');
+
+      const payload = {
+        reservationNumber: j?.reservation?.reservationNumber || '',
+        hotelName: quote.roomTypeName || 'Your Dream Getaway',
+        arrivalDate: startTime,
+        departureDate: endTime,
+        guests: { adult: adults, child: children, infant: infants, pet: petYN },
+        charges: {
+          base: Number(quote.grossAmount),
+          petFee: Number(quote.petFeeAmount || 0),
+          total,
+          currency: quote.currency,
+        },
+        payment: { transactionId: j?.payment?.transactionId || '' },
+        rewards: { earned: j?.rewards?.earned || 0 },
+      };
+
+      const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+      router.push(`/booking/confirm?payload=${encodeURIComponent(b64)}`);
+    } catch (e: any) {
+      console.error('Booking error:', e);
+      setErr(e?.message || 'Checkout failed. Please try again.');
+      setPayStage('declined');
+      setPayMessage(e?.message || 'Checkout failed. Please try again.');
+      if (!payModalOpen) {
+        setPayModalOpen(false);
+      }
+    } finally {
+      setPaying(false);
+    }
+  };
 
   if (loading) return <div className="mx-auto max-w-4xl p-6">Loading…</div>;
-  if (err) return <div className="mx-auto max-w-4xl p-6 text-red-600">{err}</div>;
-  if (!quote) return <div className="mx-auto max-w-4xl p-6">Not available for your dates.</div>;
+  if (!quote) {
+    return (
+      <div className="mx-auto max-w-4xl p-6">
+        {err ? <div className="text-red-600">{err}</div> : 'Not available for your dates.'}
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto max-w-full px-0 py-0 bg-white">
-      {/* Summary strip */}
       <div className="w-full border-b border-gray-200 bg-[#EEF2F4]">
         <div className="mx-auto max-w-4xl px-4 py-6">
           <div className="grid grid-cols-2 items-center py-3">
@@ -511,7 +586,9 @@ const onBookNow = async (e: React.FormEvent) => {
               </div>
               <div className="mt-0.5 font-semibold text-sm text-black">
                 {quote?.startTime && quote?.endTime
-                  ? `${new Date(quote.startTime).toLocaleDateString()} – ${new Date(quote.endTime).toLocaleDateString()}`
+                  ? `${new Date(quote.startTime).toLocaleDateString()} – ${new Date(
+                      quote.endTime
+                    ).toLocaleDateString()}`
                   : '—'}
               </div>
             </div>
@@ -527,7 +604,6 @@ const onBookNow = async (e: React.FormEvent) => {
         </div>
       </div>
 
-      {/* Member strip */}
       <div className="flex items-center justify-center gap-3 border-t border-gray-200 bg-white px-6 py-2.5">
         <Image src="/missingpoints.png" alt="" width={18} height={18} />
         <p className="text-[14px] font-semibold text-black">
@@ -535,7 +611,6 @@ const onBookNow = async (e: React.FormEvent) => {
         </p>
       </div>
 
-      {/* Panel */}
       <div className="mx-auto max-w-4xl px-4 py-6">
         <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 sm:p-8">
           <h1 className="text-2xl sm:text-4xl font-bold tracking-tight" style={{ color: '#211F45' }}>
@@ -545,27 +620,28 @@ const onBookNow = async (e: React.FormEvent) => {
             Your journey doesn't end at check-in—earn points, rise through tiers, and enjoy members-only perks year-round.
           </p>
 
-          {/* Guest details */}
           <section className="mt-6">
-            <h2 className="text-lg font-medium" style={{ color: '#211F45' }}>Guest details:</h2>
+            <h2 className="text-lg font-medium" style={{ color: '#211F45' }}>
+              Guest details:
+            </h2>
 
             <form onSubmit={onBookNow} className="mt-4 space-y-6">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="First Name*" value={firstName} onChange={setFirstName} required />
                 <Field label="Last Name*" value={lastName} onChange={setLastName} required />
                 <Field label="Email Address*" type="email" value={email} onChange={setEmail} required />
-                <Field label="Member Number" value={memberNumber} onChange={setMemberNumber} disabled={!!memberNumber}/>
-               <div className="flex flex-col gap-1">
-                  <label className="text-xs font-medium text-gray-700">
-                    Country*
-                  </label>
+                <Field
+                  label="Member Number"
+                  value={memberNumber}
+                  onChange={setMemberNumber}
+                  disabled={!!memberNumber}
+                />
 
-                  <CountrySelect
-                    value={country}
-                    onChange={setCountry}
-                  />
+                <div className="flex flex-col gap-1">
+                  <label className="text-xs font-medium text-gray-700">Country*</label>
+                  <CountrySelect value={country} onChange={setCountry} />
                 </div>
-              
+
                 <Field label="Address 1*" value={address1} onChange={setAddress1} required />
                 <Field label="Address 2" value={address2} onChange={setAddress2} />
                 <Field label="City*" value={city} onChange={setCity} required />
@@ -573,42 +649,37 @@ const onBookNow = async (e: React.FormEvent) => {
                 <Field label="Zip/Postal Code*" value={zip} onChange={setZip} required />
               </div>
 
-              {/* Payment details */}
-             {tokenizationKey && (
-              <Script
-                src="https://secure.nmi.com/token/Collect.js"
-                strategy="afterInteractive"
-                onLoad={configureCollect}
-                data-tokenization-key={tokenizationKey}
-                data-variant="inline"
-              />
-)}
-              
+              {tokenizationKey && (
+                <Script
+                  src="https://secure.nmi.com/token/Collect.js"
+                  strategy="afterInteractive"
+                  onLoad={configureCollect}
+                  data-tokenization-key={tokenizationKey}
+                  data-variant="inline"
+                />
+              )}
+
               <div className="pt-2">
                 <h2 className="text-lg font-medium" style={{ color: '#211F45' }}>
                   Payment details:
                 </h2>
 
                 <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {/* Credit card number */}
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Credit Card Number*</label>
                     <div id="ccnumber" className="nmi-field h-10 border rounded-md px-2 py-2 bg-white" />
                   </div>
 
-                  {/* Expiration date */}
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">Expiry Date*</label>
                     <div id="ccexp" className="nmi-field h-10 border rounded-md px-2 py-2 bg-white" />
                   </div>
 
-                  {/* CVV */}
                   <div>
                     <label className="block text-sm text-gray-600 mb-1">CVV*</label>
                     <div id="cvv" className="nmi-field h-10 border rounded-md px-2 py-2 bg-white" />
                   </div>
 
-                  {/* Billing Address */}
                   <div className="col-span-1 sm:col-span-2">
                     <Field
                       label="Billing Address*"
@@ -619,39 +690,90 @@ const onBookNow = async (e: React.FormEvent) => {
                     />
                   </div>
 
-                  {/* Same as above checkbox */}
                   <div className="col-span-1 sm:col-span-2 flex items-center gap-2 text-sm text-gray-700">
                     <input
                       id="sameAs"
                       type="checkbox"
                       className="h-4 w-4 rounded border-gray-300"
                       checked={billingSame}
-                      onChange={e => setBillingSame(e.target.checked)}
+                      onChange={(e) => setBillingSame(e.target.checked)}
                     />
                     <label htmlFor="sameAs">Same as above.</label>
                   </div>
                 </div>
               </div>
 
-              {/* Consents + policy box */}
               <div className="mt-4 border border-gray-200 bg-[#93AFB9] p-3 text-[12px] text-white">
                 By clicking Submit, you're agreeing to Dream Trip Club Rewards contacting you about offers,
                 updates, and more via email and/or SMS messages. You can unsubscribe, update your preferences or
                 view our <a href="/privacy" className="underline">Privacy Policy</a> at any time.
-                
                 <div className="mt-3 space-y-2 text-sm">
                   <label className="flex items-center gap-2">
-                    <input type="checkbox" className="h-4 w-4 rounded border-gray-300"
-                      checked={consentEmail} onChange={e => setConsentEmail(e.target.checked)} />
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300"
+                      checked={consentEmail}
+                      onChange={(e) => setConsentEmail(e.target.checked)}
+                    />
                     <span>I agree to receive email communications</span>
                   </label>
                   <label className="flex items-center gap-2">
-                    
+                    <input
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-300"
+                      checked={consentSms}
+                      onChange={(e) => setConsentSms(e.target.checked)}
+                    />
+                    <span>I agree to receive SMS communications</span>
                   </label>
                 </div>
               </div>
 
-              {/* Footer: totals + button */}
+              {isAuthed !== true && (
+                <div className="rounded-xl border border-gray-200 bg-white p-4">
+                  <label className="flex items-start gap-3 text-sm text-gray-800">
+                    <input
+                      type="checkbox"
+                      className="mt-1 h-4 w-4 rounded border-gray-300"
+                      checked={createAccount}
+                      onChange={(e) => setCreateAccount(e.target.checked)}
+                    />
+                    <span>
+                      <span className="font-semibold">Create an account</span>
+                      <span className="block text-xs text-gray-600">
+                        Uncheck if you don’t want to create a Dream Trip Club account.
+                      </span>
+                    </span>
+                  </label>
+
+                  {createAccount && (
+                    <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      <Field
+                        label="Mobile Number* (e.g. +639xxxxxxxxx)"
+                        value={mobileNumber}
+                        onChange={setMobileNumber}
+                        required
+                      />
+                      <div />
+                      <Field
+                        label="Password*"
+                        type="password"
+                        value={password}
+                        onChange={setPassword}
+                        required
+                      />
+                      <Field
+                        label="Confirm Password*"
+                        type="password"
+                        value={confirmPassword}
+                        onChange={setConfirmPassword}
+                        required
+                      />
+                    </div>
+                  )}
+                </div>
+              )}
+
               <div className="pt-2">
                 <p className="sm:text-1xl font-bold tracking-tight">
                   <span className="font-medium font-bold">Total:</span> {money(total, quote.currency)} ({quote.currency})
@@ -663,13 +785,12 @@ const onBookNow = async (e: React.FormEvent) => {
               <button
                 id="bookNowBtn"
                 type="submit"
-                disabled={paying || !available || nights <= 0 || isAuthed !== true} 
+                disabled={paying || !available || nights <= 0}
                 className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
               >
-                {paying ? 'Processing…' : (available ? 'BOOK NOW' : 'Not available')}
+                {paying ? 'Processing…' : available ? 'BOOK NOW' : 'Not available'}
               </button>
 
-              {/* Cancellation Policy */}
               <div className="pt-6 text-sm text-gray-700">
                 <h3 className="font-semibold mb-2">Cancellation Policy</h3>
                 {(() => {
@@ -688,8 +809,12 @@ const onBookNow = async (e: React.FormEvent) => {
 
                   return (
                     <p>
-                      You may cancel your reservation for no charge before 11:59 PM local hotel time on <strong>{fmt(deadline)}</strong> (2 day[s] before arrival).
-                      {' '}Please note that we will assess a fee of <strong>{cost} {ccy}</strong> if you must cancel after this deadline.
+                      You may cancel your reservation for no charge before 11:59 PM local hotel time on{' '}
+                      <strong>{fmt(deadline)}</strong> (2 day[s] before arrival). Please note that we will assess a fee of{' '}
+                      <strong>
+                        {cost} {ccy}
+                      </strong>{' '}
+                      if you must cancel after this deadline.
                     </p>
                   );
                 })()}
@@ -698,37 +823,38 @@ const onBookNow = async (e: React.FormEvent) => {
           </section>
         </div>
       </div>
-    {payModalOpen && (
-  <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-    <div className="max-w-md w-full bg-white rounded-xl p-6 shadow-lg">
-      <h3 className="text-lg font-semibold">
-        {payStage === 'verifying' && 'Verifying payment'}
-        {payStage === 'declined' && 'Payment declined'}
-        {payStage === 'approved' && 'Payment approved'}
-      </h3>
-      <p className="mt-3 text-sm text-gray-700">{payMessage}</p>
 
-      {payStage === 'declined' && (
-        <div className="mt-4 flex justify-end gap-2">
-          <button
-            onClick={() => setPayModalOpen(false)}
-            className="px-4 py-2 border rounded-md text-sm"
-          >
-            Close
-          </button>
+      {payModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+          <div className="max-w-md w-full bg-white rounded-xl p-6 shadow-lg">
+            <h3 className="text-lg font-semibold">
+              {payStage === 'verifying' && 'Verifying payment'}
+              {payStage === 'declined' && 'Payment declined'}
+              {payStage === 'approved' && 'Payment approved'}
+            </h3>
+            <p className="mt-3 text-sm text-gray-700">{payMessage}</p>
+
+            {payStage === 'declined' && (
+              <div className="mt-4 flex justify-end gap-2">
+                <button
+                  onClick={() => setPayModalOpen(false)}
+                  className="px-4 py-2 border rounded-md text-sm"
+                >
+                  Close
+                </button>
+              </div>
+            )}
+          </div>
         </div>
       )}
-    </div>
-  </div>
-)}
-
-
 
       <style jsx>{`
-        #ccnumber, #ccexp, #cvv { 
-          position: relative; 
-          z-index: 10; 
-          min-height: 44px; 
+        #ccnumber,
+        #ccexp,
+        #cvv {
+          position: relative;
+          z-index: 10;
+          min-height: 44px;
           display: flex;
           align-items: center;
         }
@@ -743,7 +869,12 @@ const onBookNow = async (e: React.FormEvent) => {
 }
 
 function Field({
-  label, value, onChange, required, disabled, type = 'text',
+  label,
+  value,
+  onChange,
+  required,
+  disabled,
+  type = 'text',
 }: {
   label: string;
   value: string;
@@ -755,7 +886,9 @@ function Field({
   const id = label.toLowerCase().replace(/[^a-z0-9]+/g, '-');
   return (
     <div className="flex flex-col gap-1">
-      <label htmlFor={id} className="text-xs font-medium text-gray-700">{label}</label>
+      <label htmlFor={id} className="text-xs font-medium text-gray-700">
+        {label}
+      </label>
       <input
         id={id}
         type={type}
