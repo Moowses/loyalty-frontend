@@ -258,6 +258,7 @@ export default function LoginClient() {
             if (form.password) localStorage.setItem(PASSWORD_KEY, form.password);
           }
         } catch {}
+        redirectAfterAuth(redirectPath);
       } else {
         setShowSignupSuccess1(true);
 
