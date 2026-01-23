@@ -578,6 +578,8 @@ export default function HotelInfoPage() {
       .catch(() => setIsAuthed(false));
   }, []);
 
+  
+
   // After successful login from modal, redirect to pending payment url
   useEffect(() => {
     if (isAuthed !== true) return;
@@ -587,6 +589,37 @@ export default function HotelInfoPage() {
       router.replace(redirect);
     }
   }, [isAuthed, router]);
+
+  // listerner 
+
+  useEffect(() => {
+  const tryRedirect = () => {
+    const redirect = sessionStorage.getItem('dtc_post_login_redirect');
+    if (redirect) {
+      sessionStorage.removeItem('dtc_post_login_redirect');
+      router.replace(redirect);
+    }
+  };
+
+  const onMsg = (ev: MessageEvent) => {
+    if (ev?.data?.type !== 'auth-success') return;
+    tryRedirect();
+  };
+
+  const onStorage = (e: StorageEvent) => {
+    if (e.key !== 'dtc_auth_changed') return;
+    tryRedirect();
+  };
+
+  window.addEventListener('message', onMsg);
+  window.addEventListener('storage', onStorage);
+
+  return () => {
+    window.removeEventListener('message', onMsg);
+    window.removeEventListener('storage', onStorage);
+  };
+}, [router]);
+
 
   const nightly = useMemo(() => (nights ? roomSubtotal / nights : 0), [roomSubtotal, nights]);
 
