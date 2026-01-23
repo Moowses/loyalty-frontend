@@ -5,6 +5,8 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import CountrySelect from '@/components/CountrySelect';
+import { PhoneInput } from 'react-international-phone';
+import 'react-international-phone/style.css';
 
 declare global {
   interface Window {
@@ -748,8 +750,8 @@ export default function BookingPage() {
 
                   {createAccount && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <Field
-                        label="Mobile Number* (e.g. +639xxxxxxxxx)"
+                      <PhoneInput
+                        defaultCountry="usa"
                         value={mobileNumber}
                         onChange={setMobileNumber}
                         required
