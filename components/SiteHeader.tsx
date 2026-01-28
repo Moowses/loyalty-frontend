@@ -4,10 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
-import type { ChatbotMember } from "@/lib/types/chatbot";
-import DTCChatLoader from "./DTCChatLoader";
-
-
+import ChatbotWidget, { type ChatbotMember } from "./ChatbotWidget";
 const BRAND = '#211F45';
 
 // Define API base
@@ -27,13 +24,6 @@ export default function SiteHeader() {
   const [checking, setChecking] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
-  type ChatbotMember = {
-  membershipNo: string;
-  name: string;
-  email: string;
-  tier?: string;
-  points?: number | string;
-};
   const [member, setMember] = useState<ChatbotMember | null>(null);
   const [authSrc, setAuthSrc] = useState("/login");
   const pathname = usePathname();
@@ -536,7 +526,7 @@ async function logout() {
           </div>
         </div>
       )}
-     {member && <DTCChatLoader member={member} />}
+      {member && <ChatbotWidget member={member} />}
 
        
     </header>
