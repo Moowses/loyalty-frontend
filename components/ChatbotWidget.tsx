@@ -12,6 +12,7 @@ export type ChatbotMember = {
 
 type Props = {
   member?: ChatbotMember | null;
+  ready?: boolean; // NEW
 };
 
 declare global {
@@ -28,6 +29,11 @@ declare global {
 const SCRIPT_ID = "dtc-chat-widget-loader";
 const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
 
+function removeLoaderScript() {
+  const s = document.getElementById(SCRIPT_ID);
+  if (s) s.remove();
+}
+
 function ensureLoaderScript() {
   const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) return;
@@ -37,14 +43,12 @@ function ensureLoaderScript() {
   s.src = LOADER_SRC;
   s.defer = true;
   s.async = true;
-
-  s.onload = () => console.log("[Chatbot] DTC widget loader loaded");
-  s.onerror = () => console.error("[Chatbot] Failed to load DTC widget loader");
-
   document.body.appendChild(s);
 }
 
-export default function ChatbotWidget({ member = null }: Props) {
+export default function ChatbotWidget({ member = null, ready = true }: Props) {
+  const isLoggedIn = !!member?.membershipNo;
+
   const dtMember = useMemo(() => {
     if (member?.membershipNo) {
       return {
@@ -54,25 +58,33 @@ export default function ChatbotWidget({ member = null }: Props) {
         memberNo: member.membershipNo,
       };
     }
-
-    return {
-      isLoggedIn: false,
-      name: undefined,
-      email: undefined,
-      memberNo: undefined,
-    };
+    return { isLoggedIn: false as const };
   }, [member?.membershipNo, member?.name, member?.email]);
 
-  // 1) Update global identity (what the new widget expects)
+  // Always keep global up to date
   useEffect(() => {
     window.DT_MEMBER = dtMember;
-    console.log("[Chatbot] window.DT_MEMBER set:", dtMember);
   }, [dtMember]);
 
-  // 2) Load the widget once
+  // Load widget only after auth check is done
   useEffect(() => {
+    if (!ready) return;
+
+    // Set DT_MEMBER first (again, just to be extra safe), then load
+    window.DT_MEMBER = dtMember;
+
+    // If script is already there but auth just changed to logged-in,
+    // reload it so the widget initializes with the correct identity.
+    const scriptAlreadyThere = !!document.getElementById(SCRIPT_ID);
+    if (scriptAlreadyThere && isLoggedIn) {
+      removeLoaderScript();
+      // small delay to avoid race with browser caching
+      setTimeout(() => ensureLoaderScript(), 50);
+      return;
+    }
+
     ensureLoaderScript();
-  }, []);
+  }, [ready, isLoggedIn, dtMember]);
 
   return null;
 }
