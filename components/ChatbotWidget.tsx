@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 
 export type ChatbotMember = {
   membershipNo: string;
@@ -11,59 +11,104 @@ export type ChatbotMember = {
 };
 
 type Props = {
-  member: ChatbotMember;
+  member?: ChatbotMember | null;
 };
 
-declare global {
-  interface Window {
-    DT_MEMBER?: any;
-  }
+const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
+const SCRIPT_ID = "dtc-chat-widget-loader";
+
+function removeExistingWidgetArtifacts() {
+  // Remove the loader script (so we can re-run fresh)
+  const existing = document.getElementById(SCRIPT_ID);
+  if (existing) existing.remove();
+
+  // Remove any iframes injected by the widget (conservative filter)
+  document
+    .querySelectorAll('iframe[src*="chat.dreamtripclub.com"]')
+    .forEach((el) => el.remove());
+
+  // Remove any obvious widget containers the loader might inject
+  document
+    .querySelectorAll('[id*="dtc"], [class*="dtc"], [data-dtc]')
+    .forEach((el) => {
+      // Avoid deleting your whole app by being strict:
+      // only remove nodes that look widget-related
+      const tag = el.tagName.toLowerCase();
+      const id = (el as HTMLElement).id?.toLowerCase() ?? "";
+      const cls = (el as HTMLElement).className?.toString().toLowerCase() ?? "";
+      const isProbablyWidget =
+        id.includes("chat") ||
+        id.includes("widget") ||
+        cls.includes("chat") ||
+        cls.includes("widget") ||
+        (el as HTMLElement).dataset?.dtc !== undefined;
+
+      if (isProbablyWidget && (tag === "div" || tag === "section")) {
+        (el as HTMLElement).remove();
+      }
+    });
 }
 
-const SCRIPT_ID = "dtc-chat-widget-loader";
-const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
+function injectLoaderScript() {
+  const exists = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
+  if (exists) return;
 
-export default function ChatbotWidget({ member }: Props) {
+  const s = document.createElement("script");
+  s.id = SCRIPT_ID;
+  s.src = LOADER_SRC;
+
+  // NOTE: "defer" doesn't really apply to dynamically injected scripts,
+  // but harmless to set.
+  s.defer = true;
+
+  s.onload = () => console.log(" [Chatbot] loader.js loaded");
+  s.onerror = () => console.error(" [Chatbot] loader.js failed to load");
+
+  document.body.appendChild(s);
+}
+
+export default function ChatbotWidget({ member = null }: Props) {
+  const identityKey = useMemo(() => {
+    const isLoggedIn = !!member?.membershipNo;
+    const memberNo = member?.membershipNo ? String(member.membershipNo) : "";
+    const name = member?.name ? String(member.name) : "";
+    const email = member?.email ? String(member.email) : "";
+    return JSON.stringify({ isLoggedIn, memberNo, name, email });
+  }, [member?.membershipNo, member?.name, member?.email]);
+
   useEffect(() => {
-    console.log(" [Chatbot] component mounted");
+    console.log(" [Chatbot] component mounted/identity changed");
     console.log(" [Chatbot] member prop:", member);
 
-    // 1️ Set DT_MEMBER
-    window.DT_MEMBER = {
-      isLoggedIn: true,
-      name: member.name,
-      email: member.email,
-      memberNo: member.membershipNo,
-    };
+    // Set DT_MEMBER first 
+    (window as any).DT_MEMBER = member?.membershipNo
+      ? {
+          isLoggedIn: true,
+          name: String(member.name),
+          email: String(member.email),
+          memberNo: String(member.membershipNo),
+        }
+      : {
+          isLoggedIn: false,
+          name: "",
+          email: "",
+          memberNo: "",
+        };
 
-    console.log(" [Chatbot] window.DT_MEMBER set to:", window.DT_MEMBER);
+    console.log(" [Chatbot] window.DT_MEMBER set to:", (window as any).DT_MEMBER);
 
-    // 2️ Check if script already exists
-    const existing = document.getElementById(SCRIPT_ID);
-    console.log(" [Chatbot] loader script exists?", !!existing);
+    // Hard reset + re-inject loader so it re-reads DT_MEMBER
+    console.log(" [Chatbot] resetting widget + reloading loader");
+    removeExistingWidgetArtifacts();
+    injectLoaderScript();
 
-    if (!existing) {
-      console.log(" [Chatbot] injecting loader.js");
+    // 3) Debug after a short delay
+    const t = window.setTimeout(() => {
+      console.log("[Chatbot] window.DT_MEMBER after load:", (window as any).DT_MEMBER);
+    }, 700);
 
-      const s = document.createElement("script");
-      s.id = SCRIPT_ID;
-      s.src = LOADER_SRC;
-      s.defer = true;
-      s.async = true;
-
-      s.onload = () => {
-        console.log(" [Chatbot] loader.js loaded");
-        console.log(" [Chatbot] window.DT_MEMBER after load:", window.DT_MEMBER);
-        console.log(" [Chatbot] window keys:", Object.keys(window));
-      };
-
-      s.onerror = () => {
-        console.error(" [Chatbot] failed to load loader.js");
-      };
-
-      document.body.appendChild(s);
-    }
-  }, [member.membershipNo]);
+    return () => window.clearTimeout(t);
+  }, [identityKey]);
 
   return null;
 }
