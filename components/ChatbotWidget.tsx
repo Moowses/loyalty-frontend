@@ -18,21 +18,17 @@ const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
 const SCRIPT_ID = "dtc-chat-widget-loader";
 
 function removeExistingWidgetArtifacts() {
-  // Remove the loader script (so we can re-run fresh)
+  // Remove the loader script 
   const existing = document.getElementById(SCRIPT_ID);
   if (existing) existing.remove();
 
-  // Remove any iframes injected by the widget (conservative filter)
+  // conservative filter
   document
     .querySelectorAll('iframe[src*="chat.dreamtripclub.com"]')
     .forEach((el) => el.remove());
-
-  // Remove any obvious widget containers the loader might inject
   document
     .querySelectorAll('[id*="dtc"], [class*="dtc"], [data-dtc]')
     .forEach((el) => {
-      // Avoid deleting your whole app by being strict:
-      // only remove nodes that look widget-related
       const tag = el.tagName.toLowerCase();
       const id = (el as HTMLElement).id?.toLowerCase() ?? "";
       const cls = (el as HTMLElement).className?.toString().toLowerCase() ?? "";
@@ -56,9 +52,6 @@ function injectLoaderScript() {
   const s = document.createElement("script");
   s.id = SCRIPT_ID;
   s.src = LOADER_SRC;
-
-  // NOTE: "defer" doesn't really apply to dynamically injected scripts,
-  // but harmless to set.
   s.defer = true;
 
   s.onload = () => console.log(" [Chatbot] loader.js loaded");
