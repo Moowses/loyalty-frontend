@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo } from "react";
 
 export type ChatbotMember = {
   membershipNo?: string;
@@ -43,23 +43,17 @@ function ensureLoaderScript() {
   document.body.appendChild(s);
 }
 
-function removeLoaderScript() {
-  const existing = document.getElementById(SCRIPT_ID);
-  if (existing) existing.remove();
-}
-
-function removeChatIframes() {
-  const iframes = Array.from(document.querySelectorAll("iframe")) as HTMLIFrameElement[];
-  let removed = 0;
-
-  for (const iframe of iframes) {
-    const src = iframe.getAttribute("src") || "";
-    if (!src.includes("chat.dreamtripclub.com")) continue;
-    iframe.remove();
-    removed++;
+function trySetDocumentDomainToRoot() {
+  // Only attempt on dreamtripclub.com + subdomains
+  const host = window.location.hostname || "";
+  if (host === "dreamtripclub.com" || host.endsWith(".dreamtripclub.com")) {
+    try {
+      document.domain = "dreamtripclub.com";
+      console.log("[Chatbot] document.domain set to dreamtripclub.com");
+    } catch (e) {
+      console.warn("[Chatbot] document.domain set failed (ok on some browsers/policies)", e);
+    }
   }
-
-  if (removed) console.log(`[Chatbot] removed ${removed} chat iframe(s)`);
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
@@ -85,8 +79,12 @@ export default function ChatbotWidget({ member = null }: Props) {
           firstName,
           name: fullName,
           email,
+
+          // NEW preferred
           memberId: membershipNo,
+          // keep old
           memberNo: membershipNo,
+          // keep original too
           membershipNo: membershipNo,
         }
       : {
@@ -100,37 +98,15 @@ export default function ChatbotWidget({ member = null }: Props) {
         };
   }, [member]);
 
-  const identityKey = useMemo(() => {
-    const id =
-      String(dtMember?.memberId || dtMember?.memberNo || dtMember?.membershipNo || "").trim();
-    const email = String(dtMember?.email || "").trim();
-    const loggedIn = dtMember?.isLoggedIn ? "1" : "0";
-    return `${loggedIn}:${id}:${email}`;
-  }, [dtMember]);
-
-  const lastIdentityKeyRef = useRef<string>("");
-
   useEffect(() => {
+    console.log("[Chatbot] DT_MEMBER to set:", dtMember);
+    trySetDocumentDomainToRoot();
+
     window.DT_MEMBER = dtMember;
-
-    const prevKey = lastIdentityKeyRef.current;
-    const changed = !!prevKey && prevKey !== identityKey;
-
-    if (!dtMember?.isLoggedIn) {
-      removeLoaderScript();
-      removeChatIframes();
-      lastIdentityKeyRef.current = identityKey;
-      return;
-    }
-
-    if (changed) {
-      removeLoaderScript();
-      removeChatIframes();
-    }
+    console.log("[Chatbot] setting DT_MEMBER:", window.DT_MEMBER);
 
     ensureLoaderScript();
-    lastIdentityKeyRef.current = identityKey;
-  }, [dtMember, identityKey]);
+  }, [dtMember]);
 
   return null;
 }
