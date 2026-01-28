@@ -1,5 +1,6 @@
 'use client';
 
+import Image from "next/image";
 import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -13,8 +14,17 @@ type ConfirmPayload = {
   charges?: { base: number; petFee?: number; total: number; currency: string };
   payment?: { transactionId?: string };
   rewards?: { earned: number };
-  // Optional extras (if you want to pass them later)
+
   customer?: { firstName?: string; lastName?: string; email?: string };
+
+  // NEW: optional account metadata (only show when present)
+  account?: {
+    requested?: boolean;
+    created?: boolean;
+    membershipNo?: string;
+    email?: string;
+    tempPassword?: string;
+  };
 };
 
 function decodeBase64Json<T = any>(b64?: string | null): T | null {
@@ -41,17 +51,23 @@ function money(v?: number, ccy = 'CAD') {
 
 const BRAND = '#211F45';
 
-export default function ConfirmClient() { 
+export default function ConfirmClient() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const payloadRaw = params.get('payload');                 
-  const reservationNumOnly = params.get('reservationNumber'); 
+  const payloadRaw = params.get('payload');
+  const reservationNumOnly = params.get('reservationNumber');
 
   const data = useMemo(() => decodeBase64Json<ConfirmPayload>(payloadRaw), [payloadRaw]);
 
-  const reservationNumber =
-    data?.reservationNumber || reservationNumOnly || '—';
+  // Account banner controls (works from payload OR query params)
+  const accountRequested = (data?.account?.requested ?? false) || params.get('account') === '1';
+  const accountCreated = (data?.account?.created ?? false) || params.get('accountCreated') === '1';
+  const accountEmail = data?.account?.email || data?.customer?.email || params.get('email') || '';
+  const accountMembershipNo = data?.account?.membershipNo || params.get('membershipNo') || '';
+  const accountTempPassword = data?.account?.tempPassword || params.get('tempPassword') || '';
+
+  const reservationNumber = data?.reservationNumber || reservationNumOnly || '—';
 
   const hotelName = data?.hotelName || 'Your Hotel';
   const roomType = data?.roomTypeName || 'Selected Room';
@@ -90,6 +106,52 @@ export default function ConfirmClient() {
           </div>
         </div>
       </div>
+
+      {/* Account confirmation (only if applicable) */}
+      {accountRequested && (
+        <div className="rounded-xl border border-indigo-100 bg-indigo-50 px-5 py-4 mb-6">
+          <div className="flex items-start gap-3">
+            <span
+              className="inline-flex h-6 w-6 items-center justify-center rounded-full text-white text-sm"
+              style={{ backgroundColor: BRAND }}
+            >
+              ✓
+            </span>
+            <div>
+              <div className="font-semibold" style={{ color: BRAND }}>
+                {accountCreated ? 'Dream Trip Club account created' : 'Dream Trip Club account requested'}
+              </div>
+              <div className="text-sm text-gray-700">
+                {accountCreated
+                  ? 'You can now use your details to sign in on the website or mobile app.'
+                  : 'If eligible, you’ll receive a separate email with your account details.'}
+              </div>
+
+              {!!accountEmail && (
+                <div className="mt-2 text-sm text-gray-700">
+                  Email:{' '}
+                  <span className="font-medium text-gray-900">
+                    {accountEmail}
+                  </span>
+                </div>
+              )}
+
+              {!!accountMembershipNo && (
+                <div className="mt-1 text-sm text-gray-700">
+                  Membership No:{' '}
+                  <span className="font-mono text-gray-900">{accountMembershipNo}</span>
+                </div>
+              )}
+
+              {!!accountTempPassword && (
+                <div className="mt-2 text-xs text-gray-600">
+                  Temporary password provided. For security, please sign in and change it right away.
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Header row with reservation # and actions */}
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
@@ -195,7 +257,48 @@ export default function ConfirmClient() {
         </div>
       </section>
 
-      {/* */}
+      {/* App download */}
+      <div className="mt-10 rounded-2xl border bg-white p-6">
+        <h2 className="text-lg font-semibold" style={{ color: BRAND }}>
+          Get the Dream Trip Club app
+        </h2>
+        <p className="mt-1 text-sm text-gray-600">
+          Manage your bookings, view your account, and access member perks on mobile.
+        </p>
+
+        <div className="mt-6 flex flex-col items-center justify-center gap-4 sm:flex-row sm:gap-8">
+          <a
+            href="https://apps.apple.com/us/app/dream-trip-club/id6753647319"
+            className="transition-transform hover:scale-[1.02] active:scale-[0.99]"
+            aria-label="Download on the App Store"
+          >
+            <Image
+              src="/applestoreblack-min.png"
+              alt="Download on the App Store"
+              width={260}
+              height={80}
+              className="h-auto w-[220px] sm:w-[260px]"
+              priority
+            />
+          </a>
+
+          <a
+            href="https://play.google.com/store/apps/details?id=ai.guestapp.dreamtripclub&hl=en"
+            className="transition-transform hover:scale-[1.02] active:scale-[0.99]"
+            aria-label="Get it on Google Play"
+          >
+            <Image
+              src="/googleplay-black-min.png"
+              alt="Get it on Google Play"
+              width={260}
+              height={80}
+              className="h-auto w-[220px] sm:w-[260px]"
+              priority
+            />
+          </a>
+        </div>
+      </div>
+
       <div className="mt-6">
         <button
           onClick={() => router.push(`/booking/status?reservationNum=${encodeURIComponent(reservationNumber)}`)}
