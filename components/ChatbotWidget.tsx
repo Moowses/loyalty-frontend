@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 export type ChatbotMember = {
   membershipNo?: string;
@@ -26,7 +26,9 @@ declare global {
 
 const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
 const SCRIPT_ID = "dtc-chat-widget-loader";
+const CHAT_ORIGIN = "https://chat.dreamtripclub.com";
 
+/** Loads loader.js once (unless we explicitly reset it). */
 function ensureLoaderScript() {
   const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) return;
@@ -43,17 +45,30 @@ function ensureLoaderScript() {
   document.body.appendChild(s);
 }
 
-function trySetDocumentDomainToRoot() {
-  // Only attempt on dreamtripclub.com + subdomains
-  const host = window.location.hostname || "";
-  if (host === "dreamtripclub.com" || host.endsWith(".dreamtripclub.com")) {
+/** Removes loader.js so it can re-bootstrap cleanly. */
+function removeLoaderScript() {
+  const existing = document.getElementById(SCRIPT_ID);
+  if (existing) existing.remove();
+}
+
+function postToChatIframes(message: any) {
+  const iframes = Array.from(document.querySelectorAll("iframe")) as HTMLIFrameElement[];
+  let count = 0;
+
+  for (const iframe of iframes) {
+    const src = iframe.getAttribute("src") || "";
+    // Most widgets use an iframe with chat.dreamtripclub.com
+    if (!src.includes("chat.dreamtripclub.com")) continue;
+
     try {
-      document.domain = "dreamtripclub.com";
-      console.log("[Chatbot] document.domain set to dreamtripclub.com");
-    } catch (e) {
-      console.warn("[Chatbot] document.domain set failed (ok on some browsers/policies)", e);
+      iframe.contentWindow?.postMessage(message, CHAT_ORIGIN);
+      count++;
+    } catch {
+      // ignore
     }
   }
+
+  console.log(`[Chatbot] postMessage sent to ${count} chat iframe(s):`, message);
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
@@ -79,12 +94,8 @@ export default function ChatbotWidget({ member = null }: Props) {
           firstName,
           name: fullName,
           email,
-
-          // NEW preferred
           memberId: membershipNo,
-          // keep old
           memberNo: membershipNo,
-          // keep original too
           membershipNo: membershipNo,
         }
       : {
@@ -98,15 +109,41 @@ export default function ChatbotWidget({ member = null }: Props) {
         };
   }, [member]);
 
+  // Track the last identity we bootstrapped the widget with.
+  const lastIdentityKeyRef = useRef<string>("");
+
+  const identityKey = useMemo(() => {
+    const id =
+      String(dtMember?.memberId || dtMember?.memberNo || dtMember?.membershipNo || "").trim();
+    const email = String(dtMember?.email || "").trim();
+    const loggedIn = dtMember?.isLoggedIn ? "1" : "0";
+    return `${loggedIn}:${id}:${email}`;
+  }, [dtMember]);
+
   useEffect(() => {
     console.log("[Chatbot] DT_MEMBER to set:", dtMember);
-    trySetDocumentDomainToRoot();
 
+    // Always keep DT_MEMBER updated for the widget handshake.
     window.DT_MEMBER = dtMember;
-    console.log("[Chatbot] setting DT_MEMBER:", window.DT_MEMBER);
 
     ensureLoaderScript();
-  }, [dtMember]);
+
+
+    const prevKey = lastIdentityKeyRef.current;
+    if (prevKey && prevKey !== identityKey) {
+      console.log("[Chatbot] identity changed:", { prevKey, identityKey });
+
+      // 1) Tell widget to logout/reset (if supported on their end)
+      postToChatIframes({ type: "DTC_LOGOUT" });
+      postToChatIframes({ type: "DTC_RESET_SESSION" });
+
+      // 2) Reload loader.js to re-bootstrap
+      removeLoaderScript();
+      ensureLoaderScript();
+    }
+
+    lastIdentityKeyRef.current = identityKey;
+  }, [dtMember, identityKey]);
 
   return null;
 }
