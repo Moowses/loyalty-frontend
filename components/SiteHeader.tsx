@@ -526,7 +526,7 @@ async function logout() {
           </div>
         </div>
       )}
-      {member && <ChatbotWidget member={member} />}
+      <ChatbotWidget member={member} />
 
        
     </header>
