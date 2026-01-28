@@ -26,9 +26,7 @@ declare global {
 
 const LOADER_SRC = "https://chat.dreamtripclub.com/widget/loader.js";
 const SCRIPT_ID = "dtc-chat-widget-loader";
-const CHAT_ORIGIN = "https://chat.dreamtripclub.com";
 
-/** Loads loader.js once (unless we explicitly reset it). */
 function ensureLoaderScript() {
   const existing = document.getElementById(SCRIPT_ID) as HTMLScriptElement | null;
   if (existing) return;
@@ -45,30 +43,23 @@ function ensureLoaderScript() {
   document.body.appendChild(s);
 }
 
-/** Removes loader.js so it can re-bootstrap cleanly. */
 function removeLoaderScript() {
   const existing = document.getElementById(SCRIPT_ID);
   if (existing) existing.remove();
 }
 
-function postToChatIframes(message: any) {
+function removeChatIframes() {
   const iframes = Array.from(document.querySelectorAll("iframe")) as HTMLIFrameElement[];
-  let count = 0;
+  let removed = 0;
 
   for (const iframe of iframes) {
     const src = iframe.getAttribute("src") || "";
-    // Most widgets use an iframe with chat.dreamtripclub.com
     if (!src.includes("chat.dreamtripclub.com")) continue;
-
-    try {
-      iframe.contentWindow?.postMessage(message, CHAT_ORIGIN);
-      count++;
-    } catch {
-      // ignore
-    }
+    iframe.remove();
+    removed++;
   }
 
-  console.log(`[Chatbot] postMessage sent to ${count} chat iframe(s):`, message);
+  if (removed) console.log(`[Chatbot] removed ${removed} chat iframe(s)`);
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
@@ -109,9 +100,6 @@ export default function ChatbotWidget({ member = null }: Props) {
         };
   }, [member]);
 
-  // Track the last identity we bootstrapped the widget with.
-  const lastIdentityKeyRef = useRef<string>("");
-
   const identityKey = useMemo(() => {
     const id =
       String(dtMember?.memberId || dtMember?.memberNo || dtMember?.membershipNo || "").trim();
@@ -120,28 +108,27 @@ export default function ChatbotWidget({ member = null }: Props) {
     return `${loggedIn}:${id}:${email}`;
   }, [dtMember]);
 
-  useEffect(() => {
-    console.log("[Chatbot] DT_MEMBER to set:", dtMember);
+  const lastIdentityKeyRef = useRef<string>("");
 
-    // Always keep DT_MEMBER updated for the widget handshake.
+  useEffect(() => {
     window.DT_MEMBER = dtMember;
 
-    ensureLoaderScript();
-
-
     const prevKey = lastIdentityKeyRef.current;
-    if (prevKey && prevKey !== identityKey) {
-      console.log("[Chatbot] identity changed:", { prevKey, identityKey });
+    const changed = !!prevKey && prevKey !== identityKey;
 
-      // 1) Tell widget to logout/reset (if supported on their end)
-      postToChatIframes({ type: "DTC_LOGOUT" });
-      postToChatIframes({ type: "DTC_RESET_SESSION" });
-
-      // 2) Reload loader.js to re-bootstrap
+    if (!dtMember?.isLoggedIn) {
       removeLoaderScript();
-      ensureLoaderScript();
+      removeChatIframes();
+      lastIdentityKeyRef.current = identityKey;
+      return;
     }
 
+    if (changed) {
+      removeLoaderScript();
+      removeChatIframes();
+    }
+
+    ensureLoaderScript();
     lastIdentityKeyRef.current = identityKey;
   }, [dtMember, identityKey]);
 
