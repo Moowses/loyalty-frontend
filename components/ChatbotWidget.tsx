@@ -3,18 +3,15 @@
 import { useEffect, useMemo } from "react";
 
 export type ChatbotMember = {
-  // Your app’s “clean” shape (but we’ll still normalize below)
   membershipNo?: string;
-  name?: string;
-  email?: string;
-  tier?: string;
-  points?: number | string;
-
-  // In case upstream sends alternate keys
   membershipno?: string;
   memberNo?: string;
   memberId?: string;
   memberID?: string;
+  name?: string;
+  email?: string;
+  tier?: string;
+  points?: number | string;
 };
 
 type Props = {
@@ -46,9 +43,21 @@ function ensureLoaderScript() {
   document.body.appendChild(s);
 }
 
+function trySetDocumentDomainToRoot() {
+  // Only attempt on dreamtripclub.com + subdomains
+  const host = window.location.hostname || "";
+  if (host === "dreamtripclub.com" || host.endsWith(".dreamtripclub.com")) {
+    try {
+      document.domain = "dreamtripclub.com";
+      console.log("[Chatbot] document.domain set to dreamtripclub.com");
+    } catch (e) {
+      console.warn("[Chatbot] document.domain set failed (ok on some browsers/policies)", e);
+    }
+  }
+}
+
 export default function ChatbotWidget({ member = null }: Props) {
-  // Normalize membership number the way Prasanna asked (backward compatible)
-  const normalized = useMemo(() => {
+  const dtMember = useMemo(() => {
     const rawMembership =
       (member as any)?.membershipNo ??
       (member as any)?.membershipno ??
@@ -64,18 +73,18 @@ export default function ChatbotWidget({ member = null }: Props) {
     const firstName = fullName.split(" ")[0] || "";
     const email = String((member as any)?.email || "").trim();
 
-    const dtMember = hasMember
+    return hasMember
       ? {
           isLoggedIn: true,
           firstName,
           name: fullName,
           email,
 
-          // ✅ NEW (preferred)
+          // NEW preferred
           memberId: membershipNo,
-          // ✅ keep old key
+          // keep old
           memberNo: membershipNo,
-          // ✅ keep original too
+          // keep original too
           membershipNo: membershipNo,
         }
       : {
@@ -87,20 +96,17 @@ export default function ChatbotWidget({ member = null }: Props) {
           memberNo: "",
           membershipNo: "",
         };
-
-    return { membershipNo, hasMember, dtMember };
   }, [member]);
 
-  // Set DT_MEMBER whenever member changes
   useEffect(() => {
-    window.DT_MEMBER = normalized.dtMember;
-    console.log("[Chatbot] setting DT_MEMBER:", window.DT_MEMBER);
-  }, [normalized.dtMember]);
+    console.log("[Chatbot] DT_MEMBER to set:", dtMember);
+    trySetDocumentDomainToRoot();
 
-  // Load loader.js ONCE only
-  useEffect(() => {
+    window.DT_MEMBER = dtMember;
+    console.log("[Chatbot] setting DT_MEMBER:", window.DT_MEMBER);
+
     ensureLoaderScript();
-  }, []);
+  }, [dtMember]);
 
   return null;
 }
