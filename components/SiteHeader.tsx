@@ -526,7 +526,7 @@ async function logout() {
           </div>
         </div>
       )}
-       <ChatbotWidget member={member} />
+       <ChatbotWidget member={member} ready={!checking} />
 
        
     </header>
