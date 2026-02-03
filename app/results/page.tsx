@@ -1445,7 +1445,7 @@ function getHotelImage(name?: string) {
     return (
       <div
         key={`${room.roomTypeId}-${room.hotelId}-${room.hotelName}`}
-        className="flex flex-col md:flex-row border rounded-xl p-4 shadow-sm bg-white"
+        className="flex flex-col md:flex-row rounded-xl p-4 bg-white shadow-md ring-1 ring-black/5"
       >
         {/* Image */}
         <div className="md:w-72 w-full md:mr-6 mb-3 md:mb-0">
