@@ -19,7 +19,8 @@ const SHOW_ON: RegExp[] = [
   /^\/terms/, 
   /^\/privacy/,
   /^\/appcenter/, 
-  /^\/properties/,           
+  /^\/properties/, 
+  /^\/calabogieresult/,          
 ];
 
 export default function HeaderGate() {
