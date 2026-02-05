@@ -752,7 +752,7 @@ export default function CalabogieSearchPage() {
       document.body.style.background = bodyPrev;
     };
   }, []);
-
+  //seach bar container     
   return (
     <div className="bg-transparent min-h-[120px] flex items-center justify-center px-3">
       <CalabogieSearchBar />
