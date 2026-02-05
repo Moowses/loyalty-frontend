@@ -234,24 +234,34 @@ function CalabogieSearchBar() {
   const lat = 45.294288;
   const lng = -76.7453235;
 
-  const handleSearch = () => {
-    if (!checkIn || !checkOut) return;
+const handleSearch = () => {
+  if (!checkIn || !checkOut) return;
 
-      const params: Record<string, string> = {
-        startDate: fmtParam(checkIn),
-        endDate: fmtParam(checkOut),
-        adult: String(adults),
-        child: String(children),
-        infant: String(infants),
-        pet: pet ? "yes" : "no",
-        rooms: String(rooms),
-        place: place,          // 🔹 NEW
-        lat: String(lat),
-        lng: String(lng),
-      };
-
-    router.push(`/calabogieresult?${new URLSearchParams(params).toString()}`);
+  const params: Record<string, string> = {
+    startDate: fmtParam(checkIn),
+    endDate: fmtParam(checkOut),
+    adult: String(adults),
+    child: String(children),
+    infant: String(infants),
+    pet: pet ? "yes" : "no",
+    rooms: String(rooms),
+    place,
+    lat: String(lat),
+    lng: String(lng),
   };
+
+  const qs = new URLSearchParams(params).toString();
+
+  const nextUrl = `${window.location.origin}/calabogieresult?${qs}`;
+
+  if (typeof window !== "undefined" && window.top && window.top !== window.self) {
+    window.top.location.href = nextUrl;
+    return;
+  }
+
+  router.push(`/calabogieresult?${qs}`);
+};
+
 
   return (
     <div className="w-full flex justify-center">
