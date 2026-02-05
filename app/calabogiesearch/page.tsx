@@ -265,7 +265,7 @@ const handleSearch = () => {
 
   return (
     <div className="w-full flex justify-center">
-      <div className="w-full max-w-4xl bg-white/0 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[95px]">
+      <div className="w-full max-w-4xl bg-white/35 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-gray-200 px-4 py-4 md:px-6 md:py-4 h-[95px]">
         {/* Desktop */}
         {!isMobile ? (
           <div className="flex items-center gap-4">
