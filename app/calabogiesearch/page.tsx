@@ -443,7 +443,7 @@ function CalabogieSearchBar() {
         showGuests &&
         createPortal(
           <div className="fixed inset-0 z-[99999] pointer-events-none">
-            <div className="absolute inset-0 bg-black/40 pointer-events-auto" onClick={() => setShowGuests(false)} />
+            <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={() => setShowGuests(false)} />
             <div
               className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4
                  animate-[slideup_200ms_ease-out] overflow-y-auto pointer-events-auto"
@@ -525,7 +525,7 @@ function CalabogieSearchBar() {
         showCal &&
         createPortal(
           <div className="fixed inset-0 z-[99999] pointer-events-none">
-            <div className="absolute inset-0 bg-black/40 pointer-events-auto" onClick={() => setShowCal(false)} />
+            <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={() => setShowCal(false)} />
             {!isMobile ? (
               // Desktop floating 2-month calendar
               <div className="absolute pointer-events-none" style={{ top: calPos.top, left: calPos.left }}>
