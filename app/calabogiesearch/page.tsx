@@ -724,40 +724,43 @@ export default function CalabogieSearchPage() {
         @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
       `}</style>
 
-      {/* Single aligned container: hero text + search bar share SAME left/right edges */}
-      <div className="w-full flex justify-center">
-        <div
-          className="w-[92%] max-w-[1200px]"
-          style={{ fontFamily: "Nunito, ui-sans-serif, system-ui" }}
-        >
-          {/* Hero text */}
-          <div className="text-white text-left mb-6">
-            <h1 className="font-semibold leading-[1.05] text-[2.2rem] md:text-[3.25rem]">
-              A Luxury Resort on Calabogie Lake
-            </h1>
+  <div className="w-full flex justify-center px-4 md:px-6">
+  {/* ONE COLUMN: everything shares this exact width */}
+  <div
+    className="w-full max-w-[960px]"
+    style={{ fontFamily: "Nunito, ui-sans-serif, system-ui" }}
+  >
+    {/* Hero text */}
+    <div className="text-white text-left">
+      <h1 className="font-semibold leading-[1.05] text-[2rem] sm:text-[2.4rem] md:text-[3.25rem]">
+        A Luxury Resort on Calabogie Lake
+      </h1>
 
-            <div className="mt-4 space-y-1">
-              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
-                Where historic shoreline meets modern wellness.
-              </p>
-              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
-                Where mountains, forest, and lake converge.
-              </p>
-              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
-                Where relaxation and adventure live side by side.
-              </p>
-            </div>
-
-            <p className="mt-5 text-[16px] md:text-[18px] leading-relaxed max-w-[60ch]">
-              A flagship luxury wellness getaway on Calabogie Lake, featuring winterized cottages with private hot tubs and
-              saunas, a chef-driven restaurant, and year-round nature adventures in the “Muskoka of the Ottawa Valley.”
-            </p>
-          </div>
-
-          {/* Search bar */}
-          <CalabogieSearchBar />
-        </div>
+      <div className="mt-4 space-y-1">
+        <p className="text-[1.1rem] sm:text-[1.25rem] md:text-[1.75rem] leading-snug">
+          Where historic shoreline meets modern wellness.
+        </p>
+        <p className="text-[1.1rem] sm:text-[1.25rem] md:text-[1.75rem] leading-snug">
+          Where mountains, forest, and lake converge.
+        </p>
+        <p className="text-[1.1rem] sm:text-[1.25rem] md:text-[1.75rem] leading-snug">
+          Where relaxation and adventure live side by side.
+        </p>
       </div>
+
+      <p className="mt-5 text-[15px] sm:text-[16px] md:text-[18px] leading-relaxed">
+        A flagship luxury wellness getaway on Calabogie Lake, featuring winterized cottages with private hot tubs and
+        saunas, a chef-driven restaurant, and year-round nature adventures in the “Muskoka of the Ottawa Valley.”
+      </p>
     </div>
+
+    {/* Search bar (SAME column width, same left/right edges) */}
+    <div className="mt-6">
+      <CalabogieSearchBar />
+    </div>
+  </div>
+</div>
+</div>
+   
   );
 }
