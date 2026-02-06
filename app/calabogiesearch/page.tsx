@@ -49,6 +49,7 @@ function CalabogieSearchBar() {
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
   useEffect(() => {
     setMounted(true);
     const onResize = () => setIsMobile(window.innerWidth < 768);
@@ -64,6 +65,7 @@ function CalabogieSearchBar() {
 
   useLayoutEffect(() => {
     if (!showCal || !triggerRef.current || isMobile) return;
+
     const calc = () => {
       const r = triggerRef.current!.getBoundingClientRect();
       setCalPos({
@@ -71,6 +73,7 @@ function CalabogieSearchBar() {
         left: Math.min(r.left, window.innerWidth - 860),
       });
     };
+
     calc();
     window.addEventListener("scroll", calc, true);
     window.addEventListener("resize", calc);
@@ -110,11 +113,13 @@ function CalabogieSearchBar() {
 
   const pickDate = (d: Date) => {
     if (disabledPast(d)) return;
+
     if (!checkIn || (checkIn && checkOut)) {
       setCheckIn(d);
       setCheckOut(null);
       return;
     }
+
     if (isBefore(d, checkIn)) {
       setCheckOut(checkIn);
       setCheckIn(d);
@@ -123,9 +128,7 @@ function CalabogieSearchBar() {
     } else {
       setCheckOut(d);
       if (isMobile) {
-        setTimeout(() => {
-          setShowCal(false);
-        }, 120);
+        setTimeout(() => setShowCal(false), 120);
       }
     }
   };
@@ -173,6 +176,7 @@ function CalabogieSearchBar() {
 
   useLayoutEffect(() => {
     if (!showGuests || !guestsRef.current || isMobile) return;
+
     const calc = () => {
       const r = guestsRef.current!.getBoundingClientRect();
       setGuestPos({
@@ -181,6 +185,7 @@ function CalabogieSearchBar() {
         width: Math.min(380, r.width + 120),
       });
     };
+
     calc();
     window.addEventListener("scroll", calc, true);
     window.addEventListener("resize", calc);
@@ -244,9 +249,9 @@ function CalabogieSearchBar() {
   const datesComplete = !!(checkIn && checkOut);
 
   return (
-    <div className="w-full flex justify-center">
-      {/* transparent container + reduced width (WP iframe-safe) */}
-      <div className="w-[90%] max-w-4xl bg-white/35 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-white/40 px-4 py-4 md:px-6 md:py-4 h-[95px]">
+    <div className="w-full">
+      {/* Search bar container (transparent-friendly, iframe-safe) */}
+      <div className="w-full bg-white/35 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-white/40 px-4 py-4 md:px-6 md:py-4">
         {/* Desktop */}
         {!isMobile ? (
           <div className="flex items-center gap-4">
@@ -292,9 +297,7 @@ function CalabogieSearchBar() {
                   <UsersIcon className="w-4 h-4 text-[#05728f]" />
                   Rooms & Guests
                 </div>
-                <div className="text-lg md:text-[16px] font-medium text-white">
-                  {summaryLabel}
-                </div>
+                <div className="text-lg md:text-[16px] font-medium text-white">{summaryLabel}</div>
               </button>
             </div>
 
@@ -443,6 +446,7 @@ function CalabogieSearchBar() {
         showGuests &&
         createPortal(
           <div className="fixed inset-0 z-[99999] pointer-events-none">
+            {/* ✅ removed black dim background */}
             <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={() => setShowGuests(false)} />
             <div
               className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4
@@ -525,7 +529,9 @@ function CalabogieSearchBar() {
         showCal &&
         createPortal(
           <div className="fixed inset-0 z-[99999] pointer-events-none">
+            {/* ✅ removed black dim background */}
             <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={() => setShowCal(false)} />
+
             {!isMobile ? (
               // Desktop floating 2-month calendar
               <div className="absolute pointer-events-none" style={{ top: calPos.top, left: calPos.left }}>
@@ -543,12 +549,8 @@ function CalabogieSearchBar() {
                       Prev
                     </button>
                     <div className="flex items-center gap-8">
-                      <div className="text-base font-semibold text-gray-900">
-                        {format(leftMonth, "MMMM yyyy")}
-                      </div>
-                      <div className="text-base font-semibold text-gray-900">
-                        {format(rightMonth, "MMMM yyyy")}
-                      </div>
+                      <div className="text-base font-semibold text-gray-900">{format(leftMonth, "MMMM yyyy")}</div>
+                      <div className="text-base font-semibold text-gray-900">{format(rightMonth, "MMMM yyyy")}</div>
                     </div>
                     <button
                       className="px-3 py-1 rounded-lg border hover:bg-gray-50"
@@ -597,7 +599,10 @@ function CalabogieSearchBar() {
                       {!checkIn && !checkOut && "Select a check-in date"}
                     </div>
                     <div className="flex items-center gap-2">
-                      <button className="text-sm px-4 py-2 rounded-lg border hover:bg-gray-50" onClick={() => setShowCal(false)}>
+                      <button
+                        className="text-sm px-4 py-2 rounded-lg border hover:bg-gray-50"
+                        onClick={() => setShowCal(false)}
+                      >
                         Close
                       </button>
                       <button
@@ -620,11 +625,12 @@ function CalabogieSearchBar() {
                    animate-[slideup_200ms_ease-out] overflow-y-auto pointer-events-auto"
                 onClick={(e) => e.stopPropagation()}
               >
-                <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
-
                 <div className="flex items-center justify-between mb-2">
                   <div className="text-lg font-semibold">Select dates</div>
-                  <button className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50" onClick={() => setShowCal(false)}>
+                  <button
+                    className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50"
+                    onClick={() => setShowCal(false)}
+                  >
                     Close
                   </button>
                 </div>
@@ -712,9 +718,46 @@ export default function CalabogieSearchPage() {
   }, []);
 
   return (
-    <div className="bg-transparent min-h-[120px] flex items-center justify-center px-0">
-      <CalabogieSearchBar />
-      <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
+    <div className="bg-transparent w-full">
+      {/* Nunito font inside iframe so WP doesn’t control typography */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700&display=swap');
+      `}</style>
+
+      {/* Single aligned container: hero text + search bar share SAME left/right edges */}
+      <div className="w-full flex justify-center">
+        <div
+          className="w-[92%] max-w-[1200px]"
+          style={{ fontFamily: "Nunito, ui-sans-serif, system-ui" }}
+        >
+          {/* Hero text */}
+          <div className="text-white text-left mb-6">
+            <h1 className="font-semibold leading-[1.05] text-[2.2rem] md:text-[3.25rem]">
+              A Luxury Resort on Calabogie Lake
+            </h1>
+
+            <div className="mt-4 space-y-1">
+              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
+                Where historic shoreline meets modern wellness.
+              </p>
+              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
+                Where mountains, forest, and lake converge.
+              </p>
+              <p className="text-[1.15rem] md:text-[1.75rem] leading-snug">
+                Where relaxation and adventure live side by side.
+              </p>
+            </div>
+
+            <p className="mt-5 text-[16px] md:text-[18px] leading-relaxed max-w-[60ch]">
+              A flagship luxury wellness getaway on Calabogie Lake, featuring winterized cottages with private hot tubs and
+              saunas, a chef-driven restaurant, and year-round nature adventures in the “Muskoka of the Ottawa Valley.”
+            </p>
+          </div>
+
+          {/* Search bar */}
+          <CalabogieSearchBar />
+        </div>
+      </div>
     </div>
   );
 }
