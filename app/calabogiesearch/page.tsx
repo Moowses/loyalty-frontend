@@ -35,6 +35,11 @@ const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
 
 function CalabogieSearchBar() {
   const router = useRouter();
+  const [redirectCountdown, setRedirectCountdown] = useState<number | null>(null);
+  const [pendingRedirect, setPendingRedirect] = useState<{
+    nextUrl: string;
+    relativeUrl: string;
+  } | null>(null);
 
   /* ---- dates ---- */
   const [checkIn, setCheckIn] = useState<Date | null>(null);
@@ -235,15 +240,32 @@ function CalabogieSearchBar() {
 
     const qs = new URLSearchParams(params).toString();
     const nextUrl = `${window.location.origin}/calabogieresult?${qs}`;
+    setShowCal(false);
+    setShowGuests(false);
+    setPendingRedirect({ nextUrl, relativeUrl: `/calabogieresult?${qs}` });
+    setRedirectCountdown(3);
+  };
 
-    // If embedded in WP iframe, navigate the top window so it "redirects" the whole page.
-    if (typeof window !== "undefined" && window.top && window.top !== window.self) {
-      window.top.location.href = nextUrl;
+  useEffect(() => {
+    if (!pendingRedirect || redirectCountdown === null) return;
+
+    if (redirectCountdown === 0) {
+      // If embedded in WP iframe, navigate the top window so it "redirects" the whole page.
+      if (typeof window !== "undefined" && window.top && window.top !== window.self) {
+        window.top.location.href = pendingRedirect.nextUrl;
+        return;
+      }
+
+      router.push(pendingRedirect.relativeUrl);
       return;
     }
 
-    router.push(`/calabogieresult?${qs}`);
-  };
+    const timer = window.setTimeout(() => {
+      setRedirectCountdown((prev) => (prev === null ? null : Math.max(0, prev - 1)));
+    }, 1000);
+
+    return () => window.clearTimeout(timer);
+  }, [pendingRedirect, redirectCountdown, router]);
 
   // Mobile step flow: require dates first, then show Rooms & Guests.
   const datesComplete = !!(checkIn && checkOut);
@@ -304,9 +326,9 @@ function CalabogieSearchBar() {
             {/* Search button */}
             <button
               onClick={handleSearch}
-              disabled={!checkIn || !checkOut}
+              disabled={!checkIn || !checkOut || redirectCountdown !== null}
               className={`w-full md:w-auto font-semibold px-6 py-3 md:px-8 md:py-3 rounded-full inline-flex items-center justify-center gap-2 transition ${
-                checkIn && checkOut
+                checkIn && checkOut && redirectCountdown === null
                   ? "bg-[#05728f] hover:brightness-95 text-white"
                   : "bg-[#05728f] text-white cursor-not-allowed"
               }`}
@@ -358,15 +380,34 @@ function CalabogieSearchBar() {
 
             <button
               onClick={handleSearch}
-              disabled={!datesComplete}
+              disabled={!datesComplete || redirectCountdown !== null}
               className={`w-full font-semibold px-6 py-4 rounded-full ${
-                datesComplete ? "bg-[#F05A28] text-white" : "bg-gray-300 text-gray-500 cursor-not-allowed"
+                datesComplete && redirectCountdown === null
+                  ? "bg-[#F05A28] text-white"
+                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
               }`}
               type="button"
             >
               SEARCH
             </button>
           </div>
+        )}
+
+      {mounted &&
+        redirectCountdown !== null &&
+        createPortal(
+          <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/40 px-4">
+            <div className="w-full max-w-xl rounded-2xl bg-white p-6 md:p-7 shadow-2xl text-center">
+              <p className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed">
+                You are being redirected to our booking partner, Dream Trip Club, where you will begin
+                your guest journey to complete your booking.
+              </p>
+              <p className="mt-4 text-sm md:text-base text-gray-700">
+                Redirecting in {redirectCountdown} second{redirectCountdown === 1 ? "" : "s"}...
+              </p>
+            </div>
+          </div>,
+          document.body
         )}
       </div>
 
