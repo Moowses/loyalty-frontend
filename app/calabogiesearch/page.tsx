@@ -3,6 +3,7 @@
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 import {
   addDays,
   addMonths,
@@ -243,7 +244,7 @@ function CalabogieSearchBar() {
     setShowCal(false);
     setShowGuests(false);
     setPendingRedirect({ nextUrl, relativeUrl: `/calabogieresult?${qs}` });
-    setRedirectCountdown(3);
+    setRedirectCountdown(4);
   };
 
   useEffect(() => {
@@ -397,12 +398,23 @@ function CalabogieSearchBar() {
         redirectCountdown !== null &&
         createPortal(
           <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/40 px-4">
-            <div className="w-full max-w-xl rounded-2xl bg-white p-6 md:p-7 shadow-2xl text-center">
-              <p className="text-base md:text-lg font-semibold text-gray-900 leading-relaxed">
+            <div className="w-full max-w-xl rounded-2xl bg-[#f7f6fc] p-6 md:p-7 shadow-2xl text-center">
+              <div className="mb-4 rounded-xl bg-gray-50 p-2 md:p-3">
+                <Image
+                  src="/calabogie-dtc.png"
+                  alt="Calabogie to Dream Trip Club"
+                  width={1200}
+                  height={320}
+                  className="w-full h-auto rounded-lg object-contain"
+                  priority
+                />
+              </div>
+              <div className="mb-4 h-px w-full bg-gradient-to-r from-transparent via-[#d8cfeb] to-transparent" />
+              <p className="text-base md:text-lg font-semibold text-[#2f2b3a] leading-relaxed">
                 You are being redirected to our booking partner, Dream Trip Club, where you will begin
                 your guest journey to complete your booking.
               </p>
-              <p className="mt-4 text-sm md:text-base text-gray-700">
+              <p className="mt-4 text-sm md:text-base text-[#5a5568]">
                 Redirecting in {redirectCountdown} second{redirectCountdown === 1 ? "" : "s"}...
               </p>
             </div>
