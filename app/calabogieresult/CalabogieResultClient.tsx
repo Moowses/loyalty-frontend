@@ -41,22 +41,9 @@ const CalIcon = (p: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
-  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
-    <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" strokeWidth="2" />
-    <circle cx="9" cy="7" r="4" strokeWidth="2" />
-    <path d="M22 21v-2a4 4 0 00-3-3.87" strokeWidth="2" />
-    <path d="M16 3.13a4 4 0 010 7.75" strokeWidth="2" />
-  </svg>
-);
-
 function dashedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
-function condensedSlug(s: string) {
-  return s.toLowerCase().replace(/[^a-z0-9]/g, "");
-}
-
 // exact folder names in /public/properties
 const slugMap: Record<string, string> = {
   "Your Dream Getaway": "your-dream-getaway",
@@ -73,9 +60,7 @@ function getHotelImage(name?: string) {
   if (!name) return "";
   const exact = slugMap[name];
   if (exact) return `/properties/${exact}/hero.png`;
-  const dashed = dashedSlug(name);
-  const _condensed = condensedSlug(name);
-  return `/properties/${dashed}/hero.png`;
+  return `/properties/${dashedSlug(name)}/hero.png`;
 }
 
 function money(n: number) {
@@ -192,14 +177,6 @@ export default function CalabogieResultPage() {
     window.addEventListener("resize", onResize);
     return () => window.removeEventListener("resize", onResize);
   }, []);
-
-  const nights = useMemo(
-    () =>
-      checkIn && checkOut
-        ? Math.max(1, differenceInCalendarDays(checkOut, checkIn))
-        : 0,
-    [checkIn, checkOut]
-  );
 
   const startDate = checkIn ? format(checkIn, "yyyy-MM-dd") : "";
   const endDate = checkOut ? format(checkOut, "yyyy-MM-dd") : "";
@@ -326,14 +303,6 @@ export default function CalabogieResultPage() {
     setter(next);
   };
 
-  const summaryLabel = `${rooms} ${
-    rooms > 1 ? "Rooms" : "Room"
-  } • ${adults} ${adults > 1 ? "Adults" : "Adult"} • ${children} ${
-    children === 1 ? "Child" : "Children"
-  }${infants > 0 ? ` • ${infants} Infant${infants > 1 ? "s" : ""}` : ""}${
-    pet ? " • Pet" : ""
-  }`;
-
   //Fetch availability
 
   useEffect(() => {
@@ -400,6 +369,45 @@ export default function CalabogieResultPage() {
     () => (availableRooms || []).filter((r) => !isPlaceholderRoom(r) && isCalabogieListing(r)),
     [availableRooms]
   );
+  const [sortBy, setSortBy] = useState<"recommended" | "price-low" | "price-high">("recommended");
+  const [selectedLayouts, setSelectedLayouts] = useState<string[]>([]);
+  const [showMobileDatePanel, setShowMobileDatePanel] = useState(false);
+
+  const nightsCount =
+    checkIn && checkOut
+      ? Math.max(1, differenceInCalendarDays(checkOut, checkIn))
+      : 0;
+
+  const getLayoutName = (room: any) =>
+    String(room?.roomTypeName || room?.roomType || room?.RoomType || room?.hotelName || "Cottage Layout");
+
+  const layoutOptions = useMemo(() => {
+    return Array.from(new Set(visibleRooms.map((room: any) => getLayoutName(room)).filter(Boolean))).sort();
+  }, [visibleRooms]);
+
+  const filteredSortedRooms = useMemo(() => {
+    let list = [...visibleRooms];
+
+    if (selectedLayouts.length > 0) {
+      list = list.filter((room: any) => selectedLayouts.includes(getLayoutName(room)));
+    }
+
+    if (sortBy === "price-low") {
+      list.sort((a: any, b: any) => {
+        const aNight = nightsCount > 0 ? toNum(a?.totalPrice) / nightsCount : toNum(a?.totalPrice);
+        const bNight = nightsCount > 0 ? toNum(b?.totalPrice) / nightsCount : toNum(b?.totalPrice);
+        return aNight - bNight;
+      });
+    } else if (sortBy === "price-high") {
+      list.sort((a: any, b: any) => {
+        const aNight = nightsCount > 0 ? toNum(a?.totalPrice) / nightsCount : toNum(a?.totalPrice);
+        const bNight = nightsCount > 0 ? toNum(b?.totalPrice) / nightsCount : toNum(b?.totalPrice);
+        return bNight - aNight;
+      });
+    }
+
+    return list;
+  }, [visibleRooms, selectedLayouts, sortBy, nightsCount]);
 
   //Search apply
 
@@ -416,126 +424,313 @@ export default function CalabogieResultPage() {
       lat: String(CALABOGIE_LAT),
       lng: String(CALABOGIE_LNG),
     });
-    router.push(`/calabogie/result?${query.toString()}`);
+    router.push(`/calabogieresult?${query.toString()}`);
   };
 
-  // render search  
-
-  const nightsCount =
-    checkIn && checkOut
-      ? Math.max(1, differenceInCalendarDays(checkOut, checkIn))
-      : 0;
+  // render search
 
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
-      {/* Search pill – same overall style as main results, but no location field */}
-      <div className="w-full bg-white rounded-[25px] shadow-xl border border-gray-200 px-4 py-3 md:px-6 md:py-4 mb-6">
-        {!isMobile ? (
-          <div className="flex items-center gap-4">
-            {/* Dates */}
-            <div className="flex-1" ref={datesRef}>
-              <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
-                <CalIcon className="w-3.5 h-3.5 text-[#F05A28]" />
+      <div className="grid grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_300px] gap-6 items-start">
+        <aside className="order-1 lg:order-1 lg:sticky lg:top-6">
+          <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5 shadow-sm">
+            <h2 className="text-base font-semibold text-gray-900">Sort & Filter</h2>
+
+            <div className="mt-4">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-2">
+                Sort by
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "recommended" | "price-low" | "price-high")}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+
+            <div className="mt-5">
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  Cottage Type
+                </label>
+                <button
+                  type="button"
+                  className="text-xs text-[#05728f] hover:underline"
+                  onClick={() => setSelectedLayouts([])}
+                >
+                  Clear
+                </button>
+              </div>
+
+              <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                {layoutOptions.length === 0 && (
+                  <p className="text-xs text-gray-500">No layout options yet.</p>
+                )}
+                {layoutOptions.map((layout) => {
+                  const checked = selectedLayouts.includes(layout);
+                  return (
+                    <label key={layout} className="flex items-start gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedLayouts((prev) =>
+                            prev.includes(layout) ? prev.filter((x) => x !== layout) : [...prev, layout]
+                          );
+                        }}
+                        className="mt-0.5"
+                      />
+                      <span>{layout}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </aside>
+
+        <div className="order-2 lg:order-2">
+          <div className="mb-5">
+            <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
+              Search Results
+            </h1>
+            <p className="mt-1 text-sm text-gray-600">
+              {loading
+                ? "Checking current availability..."
+                : `${filteredSortedRooms.length} layout${filteredSortedRooms.length === 1 ? "" : "s"} available`}
+            </p>
+          </div>
+
+          {!loading && filteredSortedRooms.length === 0 && (
+            <div className="mt-4">
+              <div className="rounded-2xl border border-gray-200 p-6 text-center bg-white">
+                <div className="text-lg font-semibold text-gray-900 mb-1">
+                  {fetchError || "No available rooms for these dates."}
+                </div>
+                <div className="text-sm text-gray-600 mb-4">
+                  Try changing your dates, adjusting guest counts, or removing the
+                  pet option.
+                </div>
+              </div>
+            </div>
+          )}
+
+          {loading && (
+            <p className="py-8 text-sm text-gray-700">Loading availability...</p>
+          )}
+
+          {!loading && filteredSortedRooms.length > 0 && (
+            <div className="space-y-4">
+              {filteredSortedRooms.map((room: any, i: number) => {
+                if (
+                  isPlaceholderRoom(room) ||
+                  !isCalabogieListing(room) ||
+                  Number(room?.totalPrice ?? 0) <= 0 ||
+                  !String(room?.roomTypeId ?? "").trim()
+                ) {
+                  return null;
+                }
+
+                const hotelName =
+                  room.hotelName || room.hotelNameEN || room.RoomType || "Property";
+                const layoutName = getLayoutName(room);
+                const imgSrc = getHotelImage(hotelName);
+                const slug = slugMap[hotelName] || dashedSlug(hotelName);
+
+                let meta: any = {};
+                try {
+                  // eslint-disable-next-line @typescript-eslint/no-var-requires
+                  meta = require(`@/public/properties/${slug}/meta.json`);
+                } catch {
+                  meta = {};
+                }
+
+                const shortDescription =
+                  String(
+                    meta?.ShortDescription ??
+                      meta?.shortDescription ??
+                      meta?.Description ??
+                      meta?.description ??
+                      "Private cottage stay with premium amenities and resort access."
+                  ).trim() || "Private cottage stay with premium amenities and resort access.";
+
+                const roomTotal = toNum(room.totalPrice);
+                const petFee = toNum(room.petFeeAmount);
+                const grandTotal = roomTotal + petFee;
+                const nightlyRoomsOnly =
+                  nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+                const currency = room.currencyCode || "CAD";
+                const minNights = Number(room?.minNights ?? 1);
+
+                const hotelId =
+                  room.hotelId || room.RoomTypeId || room.RoomTypeID || room.roomTypeId;
+                const hotelNo = room.hotelNo || room.hotelCode || "";
+
+                const link = `/hotel/${hotelId}?hotelId=${encodeURIComponent(
+                  hotelId
+                )}&hotelNo=${encodeURIComponent(
+                  hotelNo
+                )}&roomTypeId=${encodeURIComponent(
+                  room.roomTypeId || ""
+                )}&checkIn=${startDate}&checkOut=${endDate}&adult=${adults}&child=${children}&infant=${infants}&pet=${
+                  pet ? "yes" : "no"
+                }&total=${grandTotal}&petFee=${petFee}&currency=${currency}&lat=${CALABOGIE_LAT}&lng=${CALABOGIE_LNG}&name=${encodeURIComponent(
+                  hotelName
+                )}`;
+
+                return (
+                  <div
+                    key={`${hotelId}-${room.roomTypeId || i}`}
+                    className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm"
+                  >
+                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                      <div className="w-full md:w-[210px] h-40 md:h-[150px] relative rounded-xl overflow-hidden bg-gray-100">
+                        {imgSrc ? (
+                          <Image
+                            src={imgSrc}
+                            alt={layoutName}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full bg-gray-200" />
+                        )}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h2 className="text-lg md:text-xl font-semibold text-gray-900">
+                          {layoutName}
+                        </h2>
+                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+                          {shortDescription}
+                        </p>
+                        {minNights > 1 && (
+                          <p className="mt-2 text-xs text-gray-500">
+                            Minimum stay: {minNights} nights
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="md:text-right md:min-w-[220px]">
+                        <div className="text-sm text-gray-700">Price per night</div>
+                        <div className="text-2xl font-semibold text-gray-900">
+                          {money(nightlyRoomsOnly)}
+                        </div>
+                        <div className="text-xs text-gray-500">{currency} / night (room only)</div>
+                        <button
+                          type="button"
+                          onClick={() => router.push(link)}
+                          className="mt-4 inline-flex items-center justify-center rounded-full bg-[#15153E] text-white px-5 py-2.5 text-sm font-semibold hover:brightness-110"
+                        >
+                          Reserve
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <aside className="order-3 lg:order-3 lg:sticky lg:top-6">
+          <div className="w-full bg-white/35 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-white/40 px-4 py-3 md:px-6 md:py-5">
+            <div className="hidden lg:flex items-center gap-2 mb-4 text-[#05728f] uppercase tracking-wide text-[10px] font-semibold">
+              <CalIcon className="w-3.5 h-3.5" />
+              Date
+            </div>
+
+            <button
+              type="button"
+              className="w-full lg:hidden flex items-center justify-between rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-left"
+              onClick={() => setShowMobileDatePanel((prev) => !prev)}
+            >
+              <span className="text-sm font-semibold text-[#2f2b3a]">Date & Guests</span>
+              <span className="text-xs font-medium text-[#5a5568]">
+                {showMobileDatePanel ? "Hide" : "Edit"}
+              </span>
+            </button>
+
+            <div className={`${showMobileDatePanel || !isMobile ? "mt-3 space-y-3" : "hidden"}`}>
+              <div ref={datesRef}>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Check-in Date
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCal(true)}
+                  className="w-full rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-white"
+                >
+                  {checkIn ? fmtShort(checkIn) : "Add check-in date"}
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Check-out Date
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCal(true)}
+                  className="w-full rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-white"
+                >
+                  {checkOut ? fmtShort(checkOut) : "Add check-out date"}
+                </button>
+              </div>
+
+              <div ref={guestsRef}>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Adults
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowGuests(true)}
+                  className="w-full rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-white"
+                >
+                  {adults}
+                </button>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Children
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowGuests(true)}
+                  className="w-full rounded-xl border border-white/60 bg-white/70 px-4 py-3 text-left text-sm font-medium text-gray-900 hover:bg-white"
+                >
+                  {children}
+                </button>
+              </div>
+
+              <button
+                onClick={applySearch}
+                disabled={!startDate || !endDate}
+                className={`mt-5 w-full font-semibold px-6 py-3 rounded-full inline-flex items-center justify-center gap-2 transition ${
+                  startDate && endDate
+                    ? "bg-[#05728f] hover:brightness-95 text-white"
+                    : "bg-[#05728f] text-white cursor-not-allowed"
+                }`}
+                type="button"
+              >
+                SEARCH
+              </button>
+
+              <p className="mt-2 text-xs text-gray-600">
                 {nightsCount > 0
-                  ? `${nightsCount} Night${nightsCount > 1 ? "s" : ""}`
-                  : "Dates"}
-              </div>
-              <button
-                className="w-full text-left"
-                onClick={() => setShowCal(true)}
-                type="button"
-              >
-                <div className="text-lg md:text-[16px] font-semibold text-gray-900">
-                  {checkIn ? fmtShort(checkIn) : "Add dates"}{" "}
-                  <span className="mx-1 text-gray-500"></span>
-                  {checkOut ? fmtShort(checkOut) : ""}
-                </div>
-              </button>
+                  ? `${nightsCount} night${nightsCount > 1 ? "s" : ""} selected`
+                  : "Select dates to see rates"}
+              </p>
             </div>
-
-            {/* Divider */}
-            <div className="hidden md:block w-px self-stretch bg-gray-200" />
-
-            {/* Guests */}
-            <div className="flex-1" ref={guestsRef}>
-              <button
-                type="button"
-                onClick={() => setShowGuests(true)}
-                className="w-full text-left"
-              >
-                <div className="flex items-center gap-2 text-black uppercase tracking-wide text-[10px] font-semibold mb-1">
-                  <UsersIcon className="w-4 h-4 text-[#F05A28]" />
-                  Rooms & Guests
-                </div>
-                <div className="text-lg md:text-[16px] font-medium text-gray-900">
-                  {summaryLabel}
-                </div>
-              </button>
-            </div>
-
-            {/* Search button */}
-            <button
-              onClick={applySearch}
-              disabled={!startDate || !endDate}
-              className={`w-full md:w-auto font-semibold px-6 py-3 md:px-8 md:py-3 rounded-full inline-flex items-center justify-center gap-2 transition ${
-                startDate && endDate
-                  ? "bg-[#F05A28] hover:brightness-95 text-white"
-                  : "bg-[#F05A28] text-white cursor-not-allowed"
-              }`}
-              type="button"
-            >
-              SEARCH
-            </button>
           </div>
-        ) : (
-          // Mobile: stacked
-          <div className="flex flex-col gap-3">
-            <button
-              type="button"
-              className="w-full flex items-center bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm"
-              onClick={() => setShowCal(true)}
-            >
-              <div className="flex-1 px-4 py-3 text-left">
-                <div className="flex items-center gap-1 text-[10px] uppercase font-semibold tracking-wide text-[#F05A28]">
-                  <CalIcon className="w-3.5 h-3.5" /> Dates
-                </div>
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {checkIn && checkOut
-                    ? `${fmtShort(checkIn)} - ${fmtShort(checkOut)}`
-                    : "Add dates"}
-                </div>
-              </div>
-            </button>
+        </aside>
+      </div>
 
-            <button
-              type="button"
-              className="w-full flex items-center bg-white border border-gray-300 rounded-xl overflow-hidden shadow-sm"
-              onClick={() => setShowGuests(true)}
-            >
-              <div className="flex-1 px-4 py-3 text-left">
-                <div className="flex items-center gap-1 text-[10px] uppercase font-semibold tracking-wide text-[#F05A28]">
-                  <UsersIcon className="w-3.5 h-3.5" /> Rooms & Guests
-                </div>
-                <div className="text-sm font-medium text-gray-900 truncate">
-                  {summaryLabel}
-                </div>
-              </div>
-            </button>
-
-            <button
-              onClick={applySearch}
-              disabled={!startDate || !endDate}
-              className={`w-full font-semibold px-6 py-4 rounded-full ${
-                startDate && endDate
-                  ? "bg-[#F05A28] text-white"
-                  : "bg-gray-300 text-gray-500 cursor-not-allowed"
-              }`}
-              type="button"
-            >
-              SEARCH
-            </button>
-          </div>
-        )}
+      <div className="mt-24">
+        <ImageCarousel />
       </div>
 
       {/* Guests popover (desktop) */}
@@ -883,165 +1078,8 @@ export default function CalabogieResultPage() {
         </div>
       )}
 
-      {/* Empty state + carousel */}
-      {!loading && visibleRooms.length === 0 && (
-        <div className="mt-4">
-          <div className="rounded-2xl border border-gray-200 p-6 text-center bg-white">
-            <div className="text-lg font-semibold text-gray-900 mb-1">
-              {fetchError || "No available rooms for these dates."}
-            </div>
-            <div className="text-sm text-gray-600 mb-4">
-              Try changing your dates, adjusting guest counts, or removing the
-              pet option.
-            </div>
-          </div>
-
-          <div className="mt-6">
-            <ImageCarousel />
-          </div>
-        </div>
-      )}
-
-      {loading && (
-        <p className="py-8 text-sm text-gray-700">Loading availability…</p>
-      )}
-
-      {/* Results list – same card style as main results */}
-      {!loading && visibleRooms.length > 0 && (
-        <div className="mt-6 space-y-6">
-          {visibleRooms.map((room: any, i: number) => {
-            if (
-              isPlaceholderRoom(room) ||
-              !isCalabogieListing(room) ||
-              Number(room?.totalPrice ?? 0) <= 0 ||
-              !String(room?.roomTypeId ?? "").trim()
-            ) {
-              return null;
-            }
-
-            const hotelName =
-              room.hotelName || room.hotelNameEN || room.RoomType || "Property";
-            const imgSrc = getHotelImage(hotelName);
-
-            const roomTotal = toNum(room.totalPrice);
-            const petFee = toNum(room.petFeeAmount);
-            const grandTotal = roomTotal + petFee;
-            const nightlyRoomsOnly =
-              nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
-
-            const hero = imgSrc;
-            const slug = hero
-              ? hero.replace(/^\/properties\/|\/hero\.png$/g, "")
-              : "";
-
-            let meta: any = {};
-            try {
-              // eslint-disable-next-line @typescript-eslint/no-var-requires
-              meta = require(`@/public/properties/${slug}/meta.json`);
-            } catch {
-              meta = {};
-            }
-
-            const address = meta?.Address ?? meta?.address ?? null;
-            const minNights = Number(room?.minNights ?? 1);
-            const currency = room.currencyCode || "CAD";
-
-            const hotelId =
-              room.hotelId || room.RoomTypeId || room.RoomTypeID || room.roomTypeId;
-            const hotelNo = room.hotelNo || room.hotelCode || "";
-
-            const link = `/hotel/${hotelId}?hotelId=${encodeURIComponent(
-              hotelId
-            )}&hotelNo=${encodeURIComponent(
-              hotelNo
-            )}&roomTypeId=${encodeURIComponent(
-              room.roomTypeId || ""
-            )}&checkIn=${startDate}&checkOut=${endDate}&adult=${adults}&child=${children}&infant=${infants}&pet=${
-              pet ? "yes" : "no"
-            }&total=${grandTotal}&petFee=${petFee}&currency=${currency}&lat=${CALABOGIE_LAT}&lng=${CALABOGIE_LNG}&name=${encodeURIComponent(
-              hotelName
-            )}`;
-
-            return (
-              <div
-                key={`${hotelId}-${room.roomTypeId || i}`}
-                className="flex flex-col md:flex-row gap-4 rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm"
-              >
-                {/* Image */}
-                <div className="md:w-64 relative h-52 md:h-auto">
-                  {imgSrc ? (
-                    <Image
-                      src={imgSrc}
-                      alt={hotelName}
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gray-200" />
-                  )}
-                </div>
-
-                {/* Content */}
-                <div className="flex-1 flex flex-col justify-between p-4 md:p-5 gap-3">
-                  <div>
-                    <div className="flex items-center justify-between gap-3 mb-1">
-                      <h2 className="text-base md:text-lg font-semibold text-gray-900">
-                        {hotelName}
-                      </h2>
-                    </div>
-                    {address && (
-                      <p className="text-xs text-gray-500 mb-1">{address}</p>
-                    )}
-                    {minNights > 1 && (
-                      <p className="text-[11px] text-gray-500">
-                        Minimum stay: {minNights} nights
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Price & CTA */}
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                    <div className="text-sm text-gray-800">
-                      <div className="font-semibold">
-                        {money(nightlyRoomsOnly)}{" "}
-                        <span className="text-xs font-normal text-gray-500">
-                          {currency} / night (room only)
-                        </span>
-                      </div>
-                      {petFee > 0 && (
-                        <div className="text-xs text-gray-500">
-                          + {money(petFee)} pet fee per stay
-                        </div>
-                      )}
-                      <div className="text-xs text-gray-500">
-                        Est. total:{" "}
-                        <span className="font-semibold">
-                          {money(grandTotal)} {currency}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1">
-                      <button
-                        type="button"
-                        onClick={() => router.push(link)}
-                        className="inline-flex items-center justify-center rounded-full bg-[#15153E] text-white px-5 py-2.5 text-sm font-semibold hover:brightness-110"
-                      >
-                        View rates
-                      </button>
-                      <div className="text-[11px] text-gray-500">
-                        Fully managed by Dream Trip Club
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      )}
-
       <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
     </div>
   );
 }
+
