@@ -716,6 +716,20 @@ export default function HotelInfoPage() {
     roomTypeId ? String(roomTypeId) : null
   );
   const [roomTypeOptions, setRoomTypeOptions] = useState<RoomTypeOption[]>([]);
+  const selectedRoomTypeLabel = useMemo(() => {
+    const fromMeta = String(meta?.name || meta?.hotelName || '').trim();
+    if (fromMeta) return fromMeta;
+
+    const fromOptions = roomTypeOptions.find(
+      (rt) => normalizeId(rt.roomTypeId) === normalizeId(selectedRoomTypeId || roomTypeId)
+    )?.roomTypeName;
+    if (fromOptions) return String(fromOptions).trim();
+
+    const fromQuery = String(roomTypeNameQP || '').trim();
+    if (fromQuery) return fromQuery;
+
+    return 'Selected room';
+  }, [meta, roomTypeOptions, selectedRoomTypeId, roomTypeId, roomTypeNameQP]);
 
   useEffect(() => {
     setSelectedRoomTypeId(roomTypeId ? String(roomTypeId) : null);
@@ -1276,25 +1290,12 @@ function onMemberLogin() {
             </button>
           </div>
 
-          {roomTypeOptions.length > 0 && (
-            <div className="mb-3">
-              <label className="text-xs text-gray-500">ROOM TYPE</label>
-              <select
-                value={selectedRoomTypeId || ''}
-                onChange={(e) => {
-                  setSelectedRoomTypeId(e.target.value || null);
-                }}
-                className="border rounded-lg px-3 py-2 w-full bg-white"
-              >
-                <option value="">All room types</option>
-                {roomTypeOptions.map((rt) => (
-                  <option key={rt.roomTypeId} value={rt.roomTypeId}>
-                    {rt.roomTypeName}
-                  </option>
-                ))}
-              </select>
+          <div className="mb-3">
+            <label className="text-xs text-gray-500">ROOM TYPE SELECTED</label>
+            <div className="border rounded-lg px-3 py-2 w-full bg-gray-50 text-sm text-gray-900">
+              {selectedRoomTypeLabel}
             </div>
-          )}
+          </div>
 
           {activeMinStay && (
             <p className="mb-2 text-sm font-medium text-slate-700">

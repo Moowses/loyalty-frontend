@@ -62,6 +62,7 @@ export default function BookingPage() {
   const params = useSearchParams();
 
   const hotelIdParam = params.get('hotelId') || params.get('roomTypeId') || '';
+  const roomTypeIdParam = params.get('roomTypeId') || '';
   const hotelNoParam = params.get('hotelNo') || '';
   const startTime = params.get('startTime') || params.get('startDate') || '';
   const endTime = params.get('endTime') || params.get('endDate') || '';
@@ -237,14 +238,17 @@ export default function BookingPage() {
       try {
         setLoading(true);
         setErr('');
+        const isCalabogieFlow =
+          String(hotelNoParam || '').toUpperCase() === 'CBE' ||
+          String(hotelIdParam || '').toUpperCase() === 'CBE';
 
-        if (!hotelIdParam || !startTime || !endTime) {
+        if ((!hotelIdParam && !roomTypeIdParam) || !startTime || !endTime) {
           setErr('Missing booking details. Please return to results.');
           setAvailable(false);
           setQuote(null);
           return;
         }
-        if (!/^\d+$/.test(hotelIdParam)) {
+        if (!isCalabogieFlow && !/^\d+$/.test(hotelIdParam)) {
           setErr('Invalid hotelId. Please return to results.');
           setAvailable(false);
           setQuote(null);
@@ -252,6 +256,79 @@ export default function BookingPage() {
         }
 
         const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+
+        if (isCalabogieFlow) {
+          const calabogieRoomTypeId = String(roomTypeIdParam || hotelIdParam || '').trim();
+          if (!calabogieRoomTypeId) {
+            setErr('Missing room type. Please return to results.');
+            setAvailable(false);
+            setQuote(null);
+            return;
+          }
+
+          const qs = new URLSearchParams({
+            startDate: startTime,
+            endDate: endTime,
+            roomTypeId: calabogieRoomTypeId,
+            adult: String(adults),
+            child: String(children),
+            infant: String(infants),
+            pet: petYN,
+            currency,
+          });
+
+          const res = await fetch(`${base}/api/calabogie/quote?${qs.toString()}`, {
+            credentials: 'include',
+          });
+          if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+
+          const j = await res.json();
+          const row = j?.data;
+          if (!j?.success || !row) {
+            setAvailable(false);
+            setQuote(null);
+            return;
+          }
+
+          const details: Quote['details'] = Object.entries(row?.dailyPrices || {}).map(([date, price]) => ({
+            date,
+            price: toNum(price),
+          }));
+          const grossAmount = toNum(row?.roomSubtotal ?? row?.grossAmountUpstream);
+          const petFeeAmount = petYN === 'yes' ? toNum(row?.petFeeAmount ?? 0) : 0;
+          const cleaningFeeAmount = toNum(row?.cleaningFeeAmount ?? 0);
+          const vatAmount = toNum(row?.vatAmount ?? 0);
+          const computedGrandTotal =
+            toNum(row?.grandTotal) || grossAmount + petFeeAmount + cleaningFeeAmount + vatAmount;
+
+          const q: Quote = {
+            quoteId: `q_${Date.now()}_${Math.random().toString(36).slice(2)}`,
+            hotelId: String(row?.hotelId || 'CBE'),
+            roomTypeId: String(row?.roomTypeId || calabogieRoomTypeId),
+            rateId: '',
+            currency: String(row?.currencyCode || currency || 'CAD').toUpperCase(),
+            grossAmount,
+            petFeeAmount,
+            cleaningFeeAmount,
+            vatAmount,
+            grandTotal: computedGrandTotal,
+            nights: details.length || nights,
+            details,
+            roomTypeName: String(row?.roomTypeName || ''),
+            capacity: '',
+            startTime,
+            endTime,
+            adults,
+            children,
+            infants,
+            pets: petYN,
+          };
+
+          setAvailable(grossAmount > 0);
+          setQuote(q);
+          return;
+        }
+
         const qs = new URLSearchParams({
           hotelId: hotelIdParam,
           hotelNo: hotelNoParam,

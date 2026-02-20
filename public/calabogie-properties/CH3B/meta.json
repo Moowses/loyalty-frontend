@@ -1,42 +1,40 @@
 {
   "hotelId": "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
   "hotelNo": "CBE",
-  "name": "Standard Cabin",
-  "brandName": "Garden View Apartments",
+  "name": "3 Bed Chalet",
+  "brandName": "3 Bed Chalet",
   "tagline": "Apartment • 4 guests • 2 bedrooms • 1 bath",
   "descriptionShort": "Relax by the fireplace in our cozy Chalets.",
   "roomTypeId":"82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
   "descriptionLong": [
     "Relax by the fireplace in our cozy Chalets. Look down from the loft area and chat with friends and family."
    ],
-  "Address": "1515 Dufferin St, Whitby, ON L1N 1B3, Canada",
-  "hotelName": "Standard Cabin",
+  "Address": "5253 Calabogie Road, Calabogie, Ontario K0J 1H0, Canada",
+  "hotelName": "3 Bed Chalet",
   "slug": "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
   "bedrooms": 3,
   "bathrooms": 1,
   "capacity": 9,
   "type": "Cabin",
   "rating": 4.6,
-  "shortDescription": "Spacious 2-bedroom apartment in Whitby with backyard and modern amenities...",
+  "shortDescription": "Spacious 3-bedroom Lakeside House in Calabogie with backyard and modern amenities...",
   "longDescription": "Full detailed copy for the modal…",
   "amenities": {
     "general": [
-      "Loft with a queen and a single",
+      "3 bedrooms — with a queen bed in each bedroom",
       "Air conditioning",
       "Complimentary wireless Internet",
-      "2 piece bath/separate shower house",
-      "32 inch flat screen TV/satellite",
+      "1 and 1/2 baths",
+      "42 inch flat screen TV/satellite",
       "Living/dining area with fireplace ",
       "Screened in porch",
       "Bonfire pit — wood supplied"
     ],
     "kitchenDining": [
-      "Kitchen",
       "Fully-equipped kitchen",
-      "Full-size fridge",
-      "2 burner cooktop",
+      "Full-size fridge and stove",
       "Cookware/dishes/utensils",
-      "Coffee maker/toaster",
+      "Coffee maker/toaster/microwave",
       "Dining area",
       "Kitchen linens/dish soap",
       "Barbecue"
@@ -68,6 +66,6 @@
   ],
   "gallery": [
     "hero.png",
-    "1.png","2.png","3.png","4.png","5.png"
+    "1.png","2.png","3.png","4.png","5.png","6.png","7.png"
   ]
 }

@@ -1,23 +1,23 @@
 {
   "hotelId": "ae50e6a8-29dd-447d-840c-b3f40144635d",
   "hotelNo": "CBE",
-  "name": "Lakeside House",
-  "brandName": "Garden View Apartments",
-  "tagline": " 9 guests • 2 bedrooms • 1 bath",
+  "name": "Standard Cabin",
+  "brandName": "Standard Cabin",
+  "tagline": " 4 guests • 2 bedrooms • 1 bath",
   "descriptionShort": "Relax by the fireplace in our cozy Chalets.",
   "roomTypeId":"ae50e6a8-29dd-447d-840c-b3f40144635d",
   "descriptionLong": [
     "Relax by the fireplace in our cozy Chalets. Look down from the loft area and chat with friends and family."
    ],
-  "Address": "1515 Dufferin St, Whitby, ON L1N 1B3, Canada",
-  "hotelName": "Lakeside House",
+  "Address": "5253 Calabogie Road, Calabogie, Ontario K0J 1H0, Canada",
+  "hotelName": "Standard Cabin",
   "slug": "ae50e6a8-29dd-447d-840c-b3f40144635d",
   "bedrooms": 3,
   "bathrooms": 1,
   "capacity": 9,
   "type": "Chalet",
   "rating": 4.6,
-  "shortDescription": "Spacious 2-bedroom apartment in Whitby with backyard and modern amenities...",
+  "shortDescription": "Spacious 2-bedroom Lakeside House in Calabogie with backyard and modern amenities...",
   "longDescription": "Full detailed copy for the modal…",
   "amenities": {
     "general": [
@@ -31,7 +31,6 @@
       "Bonfire pit — wood supplied"
     ],
     "kitchenDining": [
-      "Kitchen",
       "Fully-equipped kitchen",
       "Full-size fridge",
       "2 burner cooktop",
@@ -68,6 +67,6 @@
   ],
   "gallery": [
     "hero.png",
-    "1.png","2.png","3.png","4.png","5.png"
+    "1.png","2.png","3.png","4.png","5.png","6.png","7.png"
   ]
 }

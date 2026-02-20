@@ -37,6 +37,11 @@ const CalIcon = (p: React.SVGProps<SVGSVGElement>) => (
     <path d="M16 3v4M8 3v4M3 11h18" strokeWidth="2" />
   </svg>
 );
+const FilterIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
+    <path d="M4 6h16M7 12h10M10 18h4" strokeWidth="2" strokeLinecap="round" />
+  </svg>
+);
 
 function dashedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -231,6 +236,8 @@ export default function CalabogieResultPage() {
   const [lightboxImages, setLightboxImages] = useState<string[]>([]);
   const [lightboxTitle, setLightboxTitle] = useState("");
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showMobileFilterModal, setShowMobileFilterModal] = useState(false);
+  const [showMobileDateModal, setShowMobileDateModal] = useState(false);
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -460,8 +467,18 @@ export default function CalabogieResultPage() {
       ? Math.max(1, differenceInCalendarDays(checkOut, checkIn))
       : 0;
 
-  const getLayoutName = (room: any) =>
-    String(room?.roomTypeName || room?.roomType || room?.RoomType || room?.hotelName || "Cottage Layout");
+  const getLayoutName = (room: any) => {
+    const calabogieMeta = getCalabogieMeta(room);
+    return String(
+      calabogieMeta?.name ||
+        calabogieMeta?.hotelName ||
+        room?.roomTypeName ||
+        room?.roomType ||
+        room?.RoomType ||
+        room?.hotelName ||
+        "Cottage Layout"
+    );
+  };
 
   const layoutOptions = useMemo(() => {
     return Array.from(new Set(visibleRooms.map((room: any) => getLayoutName(room)).filter(Boolean))).sort();
@@ -512,7 +529,7 @@ export default function CalabogieResultPage() {
   return (
     <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
       <div className="grid grid-cols-1 lg:grid-cols-[210px_minmax(0,1fr)_300px] gap-6 items-start">
-        <aside className="order-1 lg:order-1 lg:sticky lg:top-6">
+        <aside className="order-1 lg:order-1 lg:sticky lg:top-6 hidden lg:block">
           <div className="rounded-2xl border border-gray-200 bg-white p-4 md:p-5 shadow-sm">
             <h2 className="text-base font-semibold text-gray-900">Sort & Filter</h2>
 
@@ -573,6 +590,27 @@ export default function CalabogieResultPage() {
         </aside>
 
         <div className="order-2 lg:order-2">
+          {isMobile && (
+            <div className="mb-4 grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setShowMobileFilterModal(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-800"
+              >
+                <FilterIcon className="w-4 h-4" />
+                Filter & Sort
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowMobileDateModal(true)}
+                className="inline-flex items-center justify-center gap-2 rounded-xl border border-gray-300 bg-white px-4 py-3 text-sm font-semibold text-gray-800"
+              >
+                <CalIcon className="w-4 h-4" />
+                Dates & Guests
+              </button>
+            </div>
+          )}
+
           <div className="mb-5">
             <h1 className="text-2xl md:text-3xl font-semibold text-gray-900">
               Search Results
@@ -753,7 +791,7 @@ export default function CalabogieResultPage() {
           )}
         </div>
 
-        <aside className="order-3 lg:order-3 lg:sticky lg:top-6">
+        <aside className="order-3 lg:order-3 lg:sticky lg:top-6 hidden lg:block">
           <div className="w-full bg-white/35 backdrop-blur rounded-[1.25rem] md:rounded-[20px] shadow-xl border border-white/40 px-4 py-3 md:px-6 md:py-5">
             <div className="hidden lg:flex items-center gap-2 mb-4 text-[#05728f] uppercase tracking-wide text-[10px] font-semibold">
               <CalIcon className="w-3.5 h-3.5" />
@@ -1258,6 +1296,156 @@ export default function CalabogieResultPage() {
           >
             {">"}
           </button>
+        </div>
+      )}
+
+      {mounted && isMobile && showMobileFilterModal && (
+        <div className="fixed inset-0 z-[10020] bg-black/45 flex items-end">
+          <div className="w-full bg-white rounded-t-2xl p-4 max-h-[85vh] overflow-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Filter & Sort</h3>
+              <button
+                type="button"
+                onClick={() => setShowMobileFilterModal(false)}
+                className="text-sm px-3 py-1 border rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+            <div className="mb-4">
+              <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-2">
+                Sort by
+              </label>
+              <select
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "recommended" | "price-low" | "price-high")}
+                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-sm text-gray-900"
+              >
+                <option value="recommended">Recommended</option>
+                <option value="price-low">Price: Low to High</option>
+                <option value="price-high">Price: High to Low</option>
+              </select>
+            </div>
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-xs font-semibold uppercase tracking-wide text-gray-600">
+                  Cottage Type
+                </label>
+                <button
+                  type="button"
+                  className="text-xs text-[#05728f] hover:underline"
+                  onClick={() => setSelectedLayouts([])}
+                >
+                  Clear
+                </button>
+              </div>
+              <div className="space-y-2 max-h-64 overflow-auto pr-1">
+                {layoutOptions.length === 0 && (
+                  <p className="text-xs text-gray-500">No layout options yet.</p>
+                )}
+                {layoutOptions.map((layout) => {
+                  const checked = selectedLayouts.includes(layout);
+                  return (
+                    <label key={layout} className="flex items-start gap-2 text-sm text-gray-700">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedLayouts((prev) =>
+                            prev.includes(layout) ? prev.filter((x) => x !== layout) : [...prev, layout]
+                          );
+                        }}
+                        className="mt-0.5"
+                      />
+                      <span>{layout}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {mounted && isMobile && showMobileDateModal && (
+        <div className="fixed inset-0 z-[10020] bg-black/45 flex items-end">
+          <div className="w-full bg-white rounded-t-2xl p-4 max-h-[85vh] overflow-auto">
+            <div className="flex items-center justify-between mb-3">
+              <h3 className="text-base font-semibold text-gray-900">Dates & Guests</h3>
+              <button
+                type="button"
+                onClick={() => setShowMobileDateModal(false)}
+                className="text-sm px-3 py-1 border rounded-lg"
+              >
+                Close
+              </button>
+            </div>
+            <div className="space-y-3">
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Check-in Date
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCal(true)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900"
+                >
+                  {checkIn ? fmtShort(checkIn) : "Add check-in date"}
+                </button>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Check-out Date
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowCal(true)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900"
+                >
+                  {checkOut ? fmtShort(checkOut) : "Add check-out date"}
+                </button>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Adults
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowGuests(true)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900"
+                >
+                  {adults}
+                </button>
+              </div>
+              <div>
+                <label className="block text-xs font-semibold uppercase tracking-wide text-gray-600 mb-1">
+                  Children
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setShowGuests(true)}
+                  className="w-full rounded-xl border border-gray-300 bg-white px-4 py-3 text-left text-sm font-medium text-gray-900"
+                >
+                  {children}
+                </button>
+              </div>
+              <button
+                onClick={() => {
+                  applySearch();
+                  setShowMobileDateModal(false);
+                }}
+                disabled={!startDate || !endDate}
+                className={`mt-4 w-full font-semibold px-6 py-3 rounded-full inline-flex items-center justify-center gap-2 transition ${
+                  startDate && endDate
+                    ? "bg-[#05728f] hover:brightness-95 text-white"
+                    : "bg-[#05728f] text-white cursor-not-allowed"
+                }`}
+                type="button"
+              >
+                SEARCH
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

@@ -145,6 +145,64 @@ function normalizeDailyPrices(raw: any, selectedRoomTypeId?: string | null): Rec
   return {};
 }
 
+function buildRoomTypeOptionsFromData(data: any): RoomTypeOption[] {
+  const fromList = (Array.isArray(data?.roomTypes) ? data.roomTypes : [])
+    .map((rt: any) => ({
+      roomTypeId: String(rt?.roomTypeId ?? ''),
+      roomTypeName: String(rt?.roomTypeName ?? rt?.name ?? rt?.roomTypeId ?? ''),
+    }))
+    .filter((rt: RoomTypeOption) => !!rt.roomTypeId);
+  if (fromList.length > 0) return fromList;
+
+  const byRt = data?.byRoomType;
+  if (!byRt || typeof byRt !== 'object') return [];
+  return Object.values(byRt)
+    .map((rt: any) => ({
+      roomTypeId: String(rt?.roomTypeId ?? ''),
+      roomTypeName: String(rt?.roomTypeName ?? rt?.name ?? rt?.roomTypeId ?? ''),
+    }))
+    .filter((rt: RoomTypeOption) => !!rt.roomTypeId);
+}
+
+function pickCalendarSection(data: any, selectedRoomTypeId?: string | null) {
+  const hasMapData = (obj: any) =>
+    !!obj &&
+    typeof obj === 'object' &&
+    !Array.isArray(obj) &&
+    (Object.keys(pickDateNumberMap(obj?.availability)).length > 0 ||
+      Object.keys(pickDateNumberMap(obj?.dailyPrices)).length > 0 ||
+      Object.keys(pickDateNumberMap(obj?.minStay)).length > 0 ||
+      Object.keys(pickDateNumberMap(obj?.maxStay)).length > 0 ||
+      Object.keys(pickFromDaysMap(obj?.days, 'available')).length > 0 ||
+      Object.keys(pickFromDaysMap(obj?.days, 'price')).length > 0);
+
+  const byRoomType = data?.byRoomType;
+  const selectedKey = String(selectedRoomTypeId || '').trim();
+  const selectedSection =
+    selectedKey && byRoomType && typeof byRoomType === 'object'
+      ? (byRoomType[selectedKey] ?? null)
+      : null;
+  if (hasMapData(selectedSection)) {
+    return { section: selectedSection, mode: 'selected' as const };
+  }
+
+  if (hasMapData(data)) {
+    return { section: data, mode: 'top' as const };
+  }
+
+  if (hasMapData(data?.aggregated)) {
+    return { section: data.aggregated, mode: 'aggregated' as const };
+  }
+
+  if (byRoomType && typeof byRoomType === 'object') {
+    for (const v of Object.values(byRoomType)) {
+      if (hasMapData(v)) return { section: v, mode: 'byRoomTypeFirst' as const };
+    }
+  }
+
+  return { section: data ?? {}, mode: 'none' as const };
+}
+
 function diffInDays(start: string, end: string) {
   const [sy, sm, sd] = start.split('-').map(Number);
   const [ey, em, ed] = end.split('-').map(Number);
@@ -929,35 +987,47 @@ export default function HotelInfoPage() {
       const j = await res.json();
       const data = j?.data ?? {};
 
+      const picked = pickCalendarSection(data, selectedRoomTypeId);
+      const section = picked.section;
+      const roomTypeOptionsNormalized = buildRoomTypeOptionsFromData(data);
+
+      const selectedRequested = String(selectedRoomTypeId || '').trim();
+      const hasSelectedInOptions =
+        !!selectedRequested &&
+        roomTypeOptionsNormalized.some((rt) => normalizeId(rt.roomTypeId) === normalizeId(selectedRequested));
+      const selectedMatchedByTopLevel =
+        !!selectedRequested &&
+        data?.roomTypeId != null &&
+        normalizeId(data?.roomTypeId) === normalizeId(selectedRequested);
+      const selectedMatchedBySection =
+        !!selectedRequested &&
+        section?.roomTypeId != null &&
+        normalizeId(section?.roomTypeId) === normalizeId(selectedRequested);
       const fallbackMode =
-        !!selectedRoomTypeId &&
-        (data?.roomTypeId == null ||
-          normalizeId(data?.roomTypeId) !== normalizeId(selectedRoomTypeId));
+        !!selectedRequested &&
+        !selectedMatchedByTopLevel &&
+        !selectedMatchedBySection &&
+        !hasSelectedInOptions;
       setCalendarFallbackMode(fallbackMode);
       setCalendarResponseRoomTypeId(data?.roomTypeId == null ? null : String(data.roomTypeId));
 
-      const roomTypes = (Array.isArray(data.roomTypes) ? data.roomTypes : [])
-        .map((rt: any) => ({
-          roomTypeId: String(rt?.roomTypeId ?? ''),
-          roomTypeName: String(rt?.roomTypeName ?? rt?.name ?? rt?.roomTypeId ?? ''),
-        }))
-        .filter((rt: RoomTypeOption) => !!rt.roomTypeId);
+      const roomTypes = roomTypeOptionsNormalized;
 
       const availability = preferNonEmptyMap(
-        pickDateNumberMap(data.availability),
-        pickFromDaysMap(data.days, 'available')
+        pickDateNumberMap(section?.availability),
+        pickFromDaysMap(section?.days, 'available')
       );
       const prices = preferNonEmptyMap(
-        normalizeDailyPrices(data.dailyPrices, selectedRoomTypeId),
-        pickFromDaysMap(data.days, 'price')
+        normalizeDailyPrices(section?.dailyPrices, selectedRoomTypeId),
+        pickFromDaysMap(section?.days, 'price')
       );
       const minStay = preferNonEmptyMap(
-        pickDateNumberMap(data.minStay),
-        pickFromDaysMap(data.days, 'minStay')
+        pickDateNumberMap(section?.minStay),
+        pickFromDaysMap(section?.days, 'minStay')
       );
       const maxStay = preferNonEmptyMap(
-        pickDateNumberMap(data.maxStay),
-        pickFromDaysMap(data.days, 'maxStay')
+        pickDateNumberMap(section?.maxStay),
+        pickFromDaysMap(section?.days, 'maxStay')
       );
 
       // 1 = clickable, 0 = not clickable
@@ -970,9 +1040,9 @@ export default function HotelInfoPage() {
       // per-day rules + defaults from backend
       setMinStayMap(minStay);
       setMaxStayMap(maxStay);
-      const normalizedDefaultMin = normalizeMinNights(data.defaults?.minNights ?? 1);
+      const normalizedDefaultMin = normalizeMinNights(section?.defaults?.minNights ?? data?.defaults?.minNights ?? 1);
       const normalizedDefaultMax = normalizeMaxNights(
-        data.defaults?.maxNights ?? 365,
+        section?.defaults?.maxNights ?? data?.defaults?.maxNights ?? 365,
         normalizedDefaultMin
       );
       setDefaultMinStay(normalizedDefaultMin);
