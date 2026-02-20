@@ -22,11 +22,6 @@ import {
   startOfWeek,
 } from "date-fns";
 import Image from "next/image";
-import dynamic from "next/dynamic";
-
-const ImageCarousel = dynamic(() => import("@/components/ImageCarousel"), {
-  ssr: false,
-});
 
 
 //icons
@@ -883,10 +878,6 @@ export default function CalabogieResultPage() {
             </div>
           </div>
         </aside>
-      </div>
-
-      <div className="mt-52 mx-auto max-w-4xl">
-        <ImageCarousel compact />
       </div>
 
       {/* Guests popover (desktop) */}

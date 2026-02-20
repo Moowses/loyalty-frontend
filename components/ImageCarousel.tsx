@@ -40,16 +40,22 @@ export default function ImageCarousel({ compact = false }: { compact?: boolean }
             prevEl: ".custom-prev",
           }}
           autoplay={{ 
-            delay: 3500, 
-            disableOnInteraction: false 
+            delay: 2200,
+            disableOnInteraction: false,
+            pauseOnMouseEnter: false,
+            waitForTransition: false,
           }}
           loop={true}
+          loopedSlides={slides.length}
+          watchOverflow={false}
           centeredSlides={false}
-          spaceBetween={24}
-          slidesPerView={1.1}
-          speed={500}
+          spaceBetween={10}
+          slidesPerView={2}
+          speed={700}
           breakpoints={{
-            640: { slidesPerView: 1.3, spaceBetween: 24 },
+            0: { slidesPerView: 2, spaceBetween: 10 },
+            480: { slidesPerView: 3, spaceBetween: 12 },
+            640: { slidesPerView: 3, spaceBetween: 16 },
             768: { slidesPerView: 2.2, spaceBetween: 24 },
             1024: { slidesPerView: 2.8, spaceBetween: 30 },
             1280: { slidesPerView: 3.2, spaceBetween: 30 },
