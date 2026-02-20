@@ -40,6 +40,11 @@ type Meta = {
   gallery?: string[];
 };
 
+type RoomTypeOption = {
+  roomTypeId: string;
+  roomTypeName: string;
+};
+
 // ===== Helpers =====
 const toNum = (v: any) => Number(String(v ?? 0).replace(/[^0-9.-]/g, '')) || 0;
 const money = (n: number, ccy = 'CAD') =>
@@ -67,6 +72,79 @@ const addMonths = (date: Date, m: number) => {
   return d;
 };
 
+const addDays = (date: Date, days: number) => {
+  const d = new Date(date);
+  d.setDate(d.getDate() + days);
+  return d;
+};
+
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const normalizeId = (v: unknown) => String(v ?? '').trim().toLowerCase();
+
+function pickDateNumberMap(raw: unknown): Record<string, number> {
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+  return Object.entries(raw as Record<string, unknown>).reduce<Record<string, number>>((acc, [k, v]) => {
+    if (!ISO_DATE_RE.test(k)) return acc;
+    acc[k] = toNum(v);
+    return acc;
+  }, {});
+}
+
+function pickFromDaysMap(rawDays: unknown, field: 'price' | 'available' | 'minStay' | 'maxStay') {
+  if (!rawDays || typeof rawDays !== 'object' || Array.isArray(rawDays)) return {} as Record<string, number>;
+  return Object.entries(rawDays as Record<string, any>).reduce<Record<string, number>>((acc, [key, day]) => {
+    const iso = ISO_DATE_RE.test(key) ? key : String(day?.date ?? '');
+    if (!ISO_DATE_RE.test(iso)) return acc;
+
+    if (field === 'available') {
+      const v = day?.available;
+      acc[iso] = v === true || String(v) === '1' ? 1 : 0;
+      return acc;
+    }
+
+    acc[iso] = toNum(day?.[field]);
+    return acc;
+  }, {});
+}
+
+function preferNonEmptyMap(primary: Record<string, number>, fallback: Record<string, number>) {
+  return Object.keys(primary).length > 0 ? primary : fallback;
+}
+
+function isAvailableValue(v: unknown) {
+  if (v === true) return true;
+  if (v === 1) return true;
+  const s = String(v ?? '').trim().toLowerCase();
+  return s === '1' || s === 'true' || s === 'yes';
+}
+
+function normalizeDailyPrices(raw: any, selectedRoomTypeId?: string | null): Record<string, number> {
+  const pickDatePriceMap = (candidate: any): Record<string, number> => {
+    const normalized = pickDateNumberMap(candidate);
+    return Object.entries(normalized).reduce<Record<string, number>>((acc, [k, v]) => {
+      if (v > 0) acc[k] = v;
+      return acc;
+    }, {});
+  };
+
+  const direct = pickDatePriceMap(raw);
+  if (Object.keys(direct).length > 0) return direct;
+
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return {};
+
+  if (selectedRoomTypeId && raw[selectedRoomTypeId]) {
+    const targeted = pickDatePriceMap(raw[selectedRoomTypeId]);
+    if (Object.keys(targeted).length > 0) return targeted;
+  }
+
+  for (const value of Object.values(raw)) {
+    const nested = pickDatePriceMap(value);
+    if (Object.keys(nested).length > 0) return nested;
+  }
+
+  return {};
+}
+
 function diffInDays(start: string, end: string) {
   const [sy, sm, sd] = start.split('-').map(Number);
   const [ey, em, ed] = end.split('-').map(Number);
@@ -74,6 +152,29 @@ function diffInDays(start: string, end: string) {
   const eDate = new Date(ey, (em || 1) - 1, ed || 1);
   const ms = eDate.getTime() - sDate.getTime();
   return Math.round(ms / (1000 * 60 * 60 * 24));
+}
+
+const normalizeMinNights = (v: unknown) => {
+  const n = Math.floor(toNum(v));
+  return n > 0 ? n : 1;
+};
+
+const normalizeMaxNights = (v: unknown, min: number) => {
+  const n = Math.floor(toNum(v));
+  if (n <= 0) return Math.max(365, min);
+  return Math.max(n, min);
+};
+
+function getStayBoundsForDate(
+  dateIso: string,
+  minStayMap: Record<string, number>,
+  maxStayMap: Record<string, number>,
+  defaultMinStay: number | null,
+  defaultMaxStay: number | null
+) {
+  const min = normalizeMinNights(minStayMap[dateIso] ?? defaultMinStay ?? 1);
+  const max = normalizeMaxNights(maxStayMap[dateIso] ?? defaultMaxStay ?? 365, min);
+  return { min, max };
 }
 
 // Hard disable only if unavailable (PMS availability)
@@ -105,8 +206,13 @@ function isCheckoutBlockedFactory(
 
     const nights = diffInDays(tmpStart, iso);
 
-    const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
-    const max = maxStayMap[tmpStart] ?? (defaultMaxStay ?? 365);
+    const { min, max } = getStayBoundsForDate(
+      tmpStart,
+      minStayMap,
+      maxStayMap,
+      defaultMinStay,
+      defaultMaxStay
+    );
 
     if (nights < min) return true;
     if (nights > max) return true;
@@ -314,15 +420,15 @@ function DateRangePicker({
             const active = isStart || isEnd;
             const isSingle = !!start && !end && iso === start;
 
-            const rawPrice = iso ? prices?.[iso] : undefined;
-            const showPrice = iso && typeof rawPrice === 'number' && rawPrice > 0;
+            const rawPrice = iso ? toNum(prices?.[iso]) : 0;
+            const showPrice = !!iso && rawPrice > 0;
 
             const priceLabel = showPrice
               ? new Intl.NumberFormat('en-CA', {
                   style: 'currency',
                   currency: (currencyCode || 'CAD').toUpperCase(),
                   maximumFractionDigits: 0,
-                }).format(rawPrice!)
+                }).format(rawPrice)
               : '';
 
             const canClick = !!iso && !isDisabled && !blockedEnd;
@@ -551,12 +657,22 @@ export default function HotelInfoPage() {
   const [grossAmount, setGrossAmount] = useState(0);
   const [resolvedHotelId, setResolvedHotelId] = useState<string>('');
   const [noRooms, setNoRooms] = useState(false);
+  const [selectedRoomTypeId, setSelectedRoomTypeId] = useState<string | null>(
+    roomTypeId ? String(roomTypeId) : null
+  );
+  const [roomTypeOptions, setRoomTypeOptions] = useState<RoomTypeOption[]>([]);
+
+  useEffect(() => {
+    setSelectedRoomTypeId(roomTypeId ? String(roomTypeId) : null);
+  }, [roomTypeId]);
 
   // Calendar availability state
   const [calPrices, setCalPrices] = useState<Record<string, number>>({});
   const [availableDates, setAvailableDates] = useState<Set<string>>(new Set());
   const [isCalLoading, setIsCalLoading] = useState<boolean>(false);
   const [calRange, setCalRange] = useState<{ start: string; end: string } | null>(null);
+  const [calendarFallbackMode, setCalendarFallbackMode] = useState<boolean>(false);
+  const [calendarResponseRoomTypeId, setCalendarResponseRoomTypeId] = useState<string | null>(null);
 
   const nightsCalc = useMemo(() => {
     if (!checkIn || !checkOut) return 0;
@@ -635,9 +751,10 @@ export default function HotelInfoPage() {
     setLoading(true);
     try {
       const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+      let preferredBookingId = selectedRoomTypeId || String(hotelId);
 
       const qs1 = new URLSearchParams({
-        hotelId: String(hotelId),
+        hotelId: preferredBookingId,
         hotelNo: String(hotelNo || ''),
         startDate: checkIn,
         endDate: checkOut,
@@ -649,6 +766,7 @@ export default function HotelInfoPage() {
         pet: pet === 'yes' ? 'yes' : 'no',
         currency: currency || 'CAD',
       });
+      if (selectedRoomTypeId) qs1.set('roomTypeId', selectedRoomTypeId);
 
       let ok = false;
       let subtotal = 0;
@@ -669,7 +787,14 @@ export default function HotelInfoPage() {
         if (payload === 'No available rooms') {
           noRoomsFlag = true;
         } else if (Array.isArray(payload)) {
-          row = payload[0];
+          row =
+            (selectedRoomTypeId
+              ? payload.find(
+                  (x: any) =>
+                    String(x?.roomTypeId ?? x?.RoomTypeId ?? x?.RoomTypeID ?? '') ===
+                    String(selectedRoomTypeId)
+                )
+              : null) || payload[0];
         } else if (payload && typeof payload === 'object') {
           row = payload;
         }
@@ -686,9 +811,10 @@ export default function HotelInfoPage() {
           gross = Number(row.grossAmountUpstream ?? 0);
 
           ok = subtotal > 0;
+          preferredBookingId = String(
+            selectedRoomTypeId || row.roomTypeId || row.RoomTypeId || row.RoomTypeID || row.hotelId || hotelId
+          );
         }
-
-        setResolvedHotelId(String((row && (row.roomTypeId || row.hotelId)) || hotelId));
       }
 
       // Nearby fallback
@@ -710,6 +836,14 @@ export default function HotelInfoPage() {
           const list: any[] = Array.isArray(j2?.data?.data) ? j2.data.data : [];
 
           const item =
+            (selectedRoomTypeId
+              ? list.find(
+                  (x) =>
+                    String(x.roomTypeId ?? x.RoomTypeId ?? x.RoomTypeID ?? '') ===
+                      String(selectedRoomTypeId) &&
+                    (String(x.hotelId) === String(hotelId) || String(x.hotelNo) === String(hotelNo))
+                )
+              : null) ||
             list.find((x) => String(x.hotelId) === String(hotelId)) ||
             list.find((x) => String(x.hotelNo) === String(hotelNo));
 
@@ -737,9 +871,14 @@ export default function HotelInfoPage() {
             gross = 0;
 
             ok = subtotal > 0;
+            preferredBookingId = String(
+              selectedRoomTypeId || item.roomTypeId || item.RoomTypeId || item.RoomTypeID || item.hotelId || hotelId
+            );
           }
         }
       }
+
+      setResolvedHotelId(preferredBookingId);
 
       setAvailable(!!ok);
       setRoomSubtotal(ok ? subtotal : 0);
@@ -764,56 +903,85 @@ export default function HotelInfoPage() {
   useEffect(() => {
     const t = setTimeout(fetchQuote, 250);
     return () => clearTimeout(t);
-  }, [checkIn, checkOut, adult, child, infant, pet, lat, lng, hotelNo, currency]);
+  }, [checkIn, checkOut, adult, child, infant, pet, lat, lng, hotelNo, currency, selectedRoomTypeId]);
 
   // Calendar availability fetcher
   async function loadCalendarAvailability() {
     const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
 
     const start = ymd(new Date());
-    const end = ymd(addMonths(new Date(), 12)); // 1 year window
+    const end = ymd(addMonths(new Date(), 6));
+    const endExclusive = ymd(addDays(addMonths(new Date(), 6), 1));
     setCalRange({ start, end });
 
     setIsCalLoading(true);
     try {
-      const url =
-        `${base}/api/calendar/availability?` +
-        new URLSearchParams({
-          hotelId: String(hotelId || ''),
-          hotelNo: String(hotelNo || ''),
-          startDate: start,
-          endDate: end,
-          adult: String(adult),
-          children: String(child),
-          infant: String(infant),
-          pet,
-          currency: String(currency || 'CAD').toUpperCase(),
-        });
+      const params = new URLSearchParams({
+        hotelId: String(hotelId || ''),
+        hotelNo: String(hotelNo || hotelId || ''),
+        startDate: start,
+        endDate: endExclusive,
+        currency: String(currency || 'CAD').toUpperCase(),
+      });
+      if (selectedRoomTypeId) params.set('roomTypeId', selectedRoomTypeId);
 
-      const res = await fetch(url, { credentials: 'include' });
+      const res = await fetch(`${base}/api/calendar/availability?${params}`, { credentials: 'include' });
       const j = await res.json();
-
       const data = j?.data ?? {};
 
-      const availability = (data.availability ?? {}) as Record<string, number>;
-      const prices = (data.dailyPrices ?? {}) as Record<string, number>;
-      const minStay = (data.minStay ?? {}) as Record<string, number>;
-      const maxStay = (data.maxStay ?? {}) as Record<string, number>;
+      const fallbackMode =
+        !!selectedRoomTypeId &&
+        (data?.roomTypeId == null ||
+          normalizeId(data?.roomTypeId) !== normalizeId(selectedRoomTypeId));
+      setCalendarFallbackMode(fallbackMode);
+      setCalendarResponseRoomTypeId(data?.roomTypeId == null ? null : String(data.roomTypeId));
+
+      const roomTypes = (Array.isArray(data.roomTypes) ? data.roomTypes : [])
+        .map((rt: any) => ({
+          roomTypeId: String(rt?.roomTypeId ?? ''),
+          roomTypeName: String(rt?.roomTypeName ?? rt?.name ?? rt?.roomTypeId ?? ''),
+        }))
+        .filter((rt: RoomTypeOption) => !!rt.roomTypeId);
+
+      const availability = preferNonEmptyMap(
+        pickDateNumberMap(data.availability),
+        pickFromDaysMap(data.days, 'available')
+      );
+      const prices = preferNonEmptyMap(
+        normalizeDailyPrices(data.dailyPrices, selectedRoomTypeId),
+        pickFromDaysMap(data.days, 'price')
+      );
+      const minStay = preferNonEmptyMap(
+        pickDateNumberMap(data.minStay),
+        pickFromDaysMap(data.days, 'minStay')
+      );
+      const maxStay = preferNonEmptyMap(
+        pickDateNumberMap(data.maxStay),
+        pickFromDaysMap(data.days, 'maxStay')
+      );
 
       // 1 = clickable, 0 = not clickable
-      const enabled = Object.keys(availability).filter((d) => Number(availability[d]) === 1);
+      const enabled = Object.keys(availability).filter((d) => isAvailableValue(availability[d]));
 
       setAvailableDates(new Set(enabled));
       setCalPrices(prices);
+      setRoomTypeOptions(roomTypes);
 
       // per-day rules + defaults from backend
       setMinStayMap(minStay);
       setMaxStayMap(maxStay);
-      setDefaultMinStay(data.defaults?.minNights ?? null);
-      setDefaultMaxStay(data.defaults?.maxNights ?? null);
+      const normalizedDefaultMin = normalizeMinNights(data.defaults?.minNights ?? 1);
+      const normalizedDefaultMax = normalizeMaxNights(
+        data.defaults?.maxNights ?? 365,
+        normalizedDefaultMin
+      );
+      setDefaultMinStay(normalizedDefaultMin);
+      setDefaultMaxStay(normalizedDefaultMax);
     } catch (err) {
       console.error('Calendar availability failed', err);
+      setCalendarFallbackMode(false);
       setAvailableDates(new Set());
+      setRoomTypeOptions([]);
       setMinStayMap({});
       setMaxStayMap({});
       setDefaultMinStay(null);
@@ -822,6 +990,27 @@ export default function HotelInfoPage() {
       setIsCalLoading(false);
     }
   }
+
+  useEffect(() => {
+    if (!calendarFallbackMode || !selectedRoomTypeId) return;
+    const telemetryKey = [
+      'dtc_cal_fallback',
+      String(hotelNo || hotelId || ''),
+      String(selectedRoomTypeId || ''),
+      String(calendarResponseRoomTypeId ?? 'null'),
+    ].join(':');
+    if (sessionStorage.getItem(telemetryKey) === '1') return;
+    sessionStorage.setItem(telemetryKey, '1');
+
+    const detail = {
+      hotelNo: String(hotelNo || hotelId || ''),
+      requestedRoomTypeId: String(selectedRoomTypeId),
+      responseRoomTypeId: calendarResponseRoomTypeId,
+      at: new Date().toISOString(),
+    };
+    window.dispatchEvent(new CustomEvent('dtc:calendar-fallback', { detail }));
+    console.info('[calendar-fallback]', detail);
+  }, [calendarFallbackMode, calendarResponseRoomTypeId, hotelId, hotelNo, selectedRoomTypeId]);
 
   // guards for incoming search dates
   const [incomingRangeInvalid, setIncomingRangeInvalid] = useState(false);
@@ -848,9 +1037,13 @@ export default function HotelInfoPage() {
   }, [availableDates, isCalLoading, checkIn, checkOut, initialGuardChecked]);
 
   useEffect(() => {
+    setInitialGuardChecked(false);
+  }, [selectedRoomTypeId]);
+
+  useEffect(() => {
     loadCalendarAvailability();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hotelId, hotelNo, adult, child, infant, pet, currency]);
+  }, [hotelId, hotelNo, currency, selectedRoomTypeId]);
 
   // Modals
   const [showAmenities, setShowAmenities] = useState(false);
@@ -866,9 +1059,11 @@ export default function HotelInfoPage() {
 
   // Build payment (booking) URL
   function buildBookingUrl(isGuest: boolean) {
+    const bookingTargetId = selectedRoomTypeId || resolvedHotelId || String(hotelId);
     const params = new URLSearchParams({
-      hotelId: resolvedHotelId || String(hotelId),
+      hotelId: bookingTargetId,
       hotelNo: String(hotelNo || ''),
+      roomTypeId: bookingTargetId,
       startTime: checkIn,
       endTime: checkOut,
       adults: String(adult),
@@ -891,11 +1086,13 @@ export default function HotelInfoPage() {
   }
 
   function persistBookingContext(nextUrl: string) {
+    const bookingTargetId = selectedRoomTypeId || resolvedHotelId || String(hotelId);
     sessionStorage.setItem(
       'dtc_pending_payment',
       JSON.stringify({
         nextUrl,
-        hotelId: resolvedHotelId || String(hotelId),
+        hotelId: bookingTargetId,
+        roomTypeId: bookingTargetId,
         hotelNo: String(hotelNo || ''),
         checkIn,
         checkOut,
@@ -1098,6 +1295,11 @@ function onMemberLogin() {
               Some dates in your selected range are no longer available. Please choose new dates.
             </div>
           )}
+          {calendarFallbackMode && (
+            <div className="mb-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
+              Selected room type is unavailable right now. Showing hotel-level availability.
+            </div>
+          )}
 
           <div className="mb-3">
             <label className="text-xs text-gray-500">DATES</label>
@@ -1113,6 +1315,26 @@ function onMemberLogin() {
               {checkIn && checkOut ? `${fmtHuman(checkIn)} → ${fmtHuman(checkOut)}` : 'Add dates'}
             </button>
           </div>
+
+          {roomTypeOptions.length > 0 && (
+            <div className="mb-3">
+              <label className="text-xs text-gray-500">ROOM TYPE</label>
+              <select
+                value={selectedRoomTypeId || ''}
+                onChange={(e) => {
+                  setSelectedRoomTypeId(e.target.value || null);
+                }}
+                className="border rounded-lg px-3 py-2 w-full bg-white"
+              >
+                <option value="">All room types</option>
+                {roomTypeOptions.map((rt) => (
+                  <option key={rt.roomTypeId} value={rt.roomTypeId}>
+                    {rt.roomTypeName}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
           {activeMinStay && (
             <p className="mb-2 text-sm font-medium text-slate-700">
@@ -1130,8 +1352,13 @@ function onMemberLogin() {
                 setTmpEnd(end);
 
                 if (start) {
-                  const min = minStayMap[start] ?? (defaultMinStay ?? 1);
-                  const max = maxStayMap[start] ?? (defaultMaxStay ?? 365);
+                  const { min, max } = getStayBoundsForDate(
+                    start,
+                    minStayMap,
+                    maxStayMap,
+                    defaultMinStay,
+                    defaultMaxStay
+                  );
                   setActiveMinStay(min);
                   setActiveMaxStay(max);
                 } else {
@@ -1151,8 +1378,13 @@ function onMemberLogin() {
 
                   const nights = diffInDays(tmpStart, tmpEnd);
 
-                  const min = minStayMap[tmpStart] ?? (defaultMinStay ?? 1);
-                  const max = maxStayMap[tmpStart] ?? (defaultMaxStay ?? 365);
+                  const { min, max } = getStayBoundsForDate(
+                    tmpStart,
+                    minStayMap,
+                    maxStayMap,
+                    defaultMinStay,
+                    defaultMaxStay
+                  );
 
                   if (nights < min) {
                     alert(`Minimum stay for this start date is ${min} night${min > 1 ? 's' : ''}.`);

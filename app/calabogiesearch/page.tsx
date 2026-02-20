@@ -218,11 +218,6 @@ function CalabogieSearchBar() {
     infants > 0 ? ` • ${infants} Infant${infants > 1 ? "s" : ""}` : ""
   }${pet ? " • Pet" : ""}`;
 
-  // Fixed Calabogie coords (for future use / query string)
-  const place = "Calabogie Highlands";
-  const lat = 45.294288;
-  const lng = -76.7453235;
-
   const handleSearch = () => {
     if (!checkIn || !checkOut) return;
 
@@ -234,9 +229,6 @@ function CalabogieSearchBar() {
       infant: String(infants),
       pet: pet ? "yes" : "no",
       rooms: String(rooms),
-      place,
-      lat: String(lat),
-      lng: String(lng),
     };
 
     const qs = new URLSearchParams(params).toString();
@@ -399,7 +391,15 @@ function CalabogieSearchBar() {
         createPortal(
           <div className="fixed inset-0 z-[100001] flex items-center justify-center bg-black/40 px-4">
             <div className="w-full max-w-xl rounded-2xl bg-[#f7f6fc] p-6 md:p-7 shadow-2xl text-center">
-              <div className="mb-4 rounded-xl bg-gray-50 p-2 md:p-3">
+              <p className="text-base md:text-lg font-semibold text-[#2f2b3a] leading-relaxed">
+                You are being redirected to our booking partner, Dream Trip Club, where you will begin
+                your guest journey to complete your booking.
+              </p>
+              <p className="mt-4 text-sm md:text-base text-[#5a5568]">
+                Redirecting in {redirectCountdown} second{redirectCountdown === 1 ? "" : "s"}...
+              </p>
+              <div className="mt-5 h-px w-full bg-gradient-to-r from-transparent via-[#d8cfeb] to-transparent" />
+              <div className="mx-auto mt-4 max-w-[280px] rounded-xl bg-gray-50 p-2">
                 <Image
                   src="/calabogie-dtc.png"
                   alt="Calabogie to Dream Trip Club"
@@ -409,14 +409,6 @@ function CalabogieSearchBar() {
                   priority
                 />
               </div>
-              <div className="mb-4 h-px w-full bg-gradient-to-r from-transparent via-[#d8cfeb] to-transparent" />
-              <p className="text-base md:text-lg font-semibold text-[#2f2b3a] leading-relaxed">
-                You are being redirected to our booking partner, Dream Trip Club, where you will begin
-                your guest journey to complete your booking.
-              </p>
-              <p className="mt-4 text-sm md:text-base text-[#5a5568]">
-                Redirecting in {redirectCountdown} second{redirectCountdown === 1 ? "" : "s"}...
-              </p>
             </div>
           </div>,
           document.body

@@ -28,9 +28,6 @@ const ImageCarousel = dynamic(() => import("@/components/ImageCarousel"), {
   ssr: false,
 });
 
-// Hard-coded center – same as working main /results link
-const CALABOGIE_LAT = 45.0707532;
-const CALABOGIE_LNG = -78.0267908;
 
 //icons
 
@@ -44,6 +41,9 @@ const CalIcon = (p: React.SVGProps<SVGSVGElement>) => (
 function dashedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
 }
+function compactSlug(s: string) {
+  return s.replace(/[^a-z0-9]/gi, "").toUpperCase();
+}
 // exact folder names in /public/properties
 const slugMap: Record<string, string> = {
   "Your Dream Getaway": "your-dream-getaway",
@@ -56,11 +56,59 @@ const slugMap: Record<string, string> = {
   "Gull River Escape: Nordic Spa": "gull-river-escape-nordic-spa",
 };
 
-function getHotelImage(name?: string) {
+const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
+  "ae50e6a8-29dd-447d-840c-b3f40144635d": "CA1B",
+  "3b427e83-f01e-4cf8-83cc-b3f4014439f6": "CH2B",
+  "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b": "CH3B",
+  "8767d68e-188d-42ff-811e-b31b011b278b": "1 Bedroom Loft",
+};
+
+function getCalabogieRoomFolder(room: any): string {
+  const rid = String(room?.roomTypeId ?? room?.RoomTypeId ?? room?.RoomTypeID ?? "").trim();
+  const fromId = CALABOGIE_ROOM_FOLDER_BY_ID[rid];
+  if (fromId) return fromId;
+  const fromName = String(room?.roomTypeName ?? room?.RoomType ?? "").trim();
+  if (fromName) {
+    const compact = compactSlug(fromName);
+    if (compact === "1BEDROOMLOFT") return "1 Bedroom Loft";
+    return compact;
+  }
+  return "";
+}
+
+function getCalabogieMeta(room: any): any {
+  const folder = getCalabogieRoomFolder(room);
+  try {
+    if (folder === "CA1B") return require("@/public/calabogie-properties/CA1B/meta.json");
+    if (folder === "CH2B") return require("@/public/calabogie-properties/CH2B/meta.json");
+    if (folder === "CH3B") return require("@/public/calabogie-properties/CH3B/meta.json");
+    if (folder === "1 Bedroom Loft")
+      return require("@/public/calabogie-properties/1 Bedroom Loft/meta.json");
+  } catch {
+    return null;
+  }
+  return null;
+}
+
+function getHotelImage(name?: string, room?: any) {
+  const calabogieFolder = getCalabogieRoomFolder(room);
+  if (calabogieFolder) return `/calabogie-properties/${calabogieFolder}/hero.png`;
   if (!name) return "";
   const exact = slugMap[name];
   if (exact) return `/properties/${exact}/hero.png`;
   return `/properties/${dashedSlug(name)}/hero.png`;
+}
+
+function getCalabogieGalleryImages(room: any, meta: any, fallbackImage: string): string[] {
+  const folder = getCalabogieRoomFolder(room);
+  const galleryFromMeta = Array.isArray(meta?.gallery) ? meta.gallery : [];
+  const gallery = galleryFromMeta
+    .map((f: any) => String(f || "").trim())
+    .filter(Boolean)
+    .map((f: string) => `/calabogie-properties/${folder}/${f}`);
+
+  const base = gallery.length > 0 ? gallery : fallbackImage ? [fallbackImage] : [];
+  return Array.from(new Set(base));
 }
 
 function money(n: number) {
@@ -80,15 +128,26 @@ function toNum(v: any) {
   return Number.isFinite(n) ? n : 0;
 }
 
+function sumDailyPricesMap(v: any): number {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return 0;
+  return Object.values(v).reduce((acc, cur) => acc + toNum(cur), 0);
+}
+
+function roomTotalValue(room: any): number {
+  const direct = toNum(room?.totalPrice ?? room?.roomSubtotal ?? room?.grossAmountUpstream ?? 0);
+  if (direct > 0) return direct;
+  const summed = sumDailyPricesMap(room?.dailyPrices);
+  return summed > 0 ? summed : 0;
+}
+
 function safeArrayData(j: any): any[] | null {
   if (!j) return null;
 
+  const rows = j?.data?.rows;
+  if (Array.isArray(rows)) return rows;
+
   let root: any = j;
-
-
-  if (root && typeof root === "object" && "data" in root) {
-    root = root.data;
-  }
+  if (root && typeof root === "object" && "data" in root) root = root.data;
   if (typeof root === "string") {
     return null;
   }
@@ -104,15 +163,17 @@ function safeArrayData(j: any): any[] | null {
 }
 
 function isPlaceholderRoom(room: any) {
-  const id = String(room?.roomTypeId ?? room?.RoomTypeId ?? "").trim();
+  const id = String(room?.roomTypeId ?? room?.RoomTypeId ?? room?.RoomTypeID ?? "").trim();
   if (!id) return true;
-  const total = Number(room?.totalPrice ?? room?.dailyPrices ?? 0);
+  const total = roomTotalValue(room);
   if (!Number.isFinite(total) || total <= 0) return true;
   return false;
 }
 
 
 function isCalabogieListing(room: any) {
+  const hid = String(room?.hotelId ?? room?.hotelNo ?? "").trim().toUpperCase();
+  if (hid === "CBE") return true;
   const name = String(room?.hotelName ?? room?.hotelNameEN ?? room?.RoomType ?? "").trim();
   const lower = name.toLowerCase();
   return lower.startsWith("calabogie escapes") || lower.includes("calabogie");
@@ -143,8 +204,8 @@ export default function CalabogieResultPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
-  const qpStart = searchParams.get("startDate") || "";
-  const qpEnd = searchParams.get("endDate") || "";
+  const qpStart = searchParams.get("startDate") || searchParams.get("checkIn") || "";
+  const qpEnd = searchParams.get("endDate") || searchParams.get("checkOut") || "";
   const qpAdult = Number(searchParams.get("adult") || "1");
   const qpChild = Number(searchParams.get("child") || "0");
   const qpInfant = Number(searchParams.get("infant") || "0");
@@ -166,6 +227,10 @@ export default function CalabogieResultPage() {
   const [availableRooms, setAvailableRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetchError, setFetchError] = useState<string>("");
+  const [lightboxOpen, setLightboxOpen] = useState(false);
+  const [lightboxImages, setLightboxImages] = useState<string[]>([]);
+  const [lightboxTitle, setLightboxTitle] = useState("");
+  const [lightboxIndex, setLightboxIndex] = useState(0);
 
   const [mounted, setMounted] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
@@ -292,6 +357,25 @@ export default function CalabogieResultPage() {
     };
   }, [showGuests, isMobile]);
 
+  useEffect(() => {
+    if (!lightboxOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setLightboxOpen(false);
+      if (e.key === "ArrowRight") {
+        setLightboxIndex((prev) =>
+          lightboxImages.length ? (prev + 1) % lightboxImages.length : 0
+        );
+      }
+      if (e.key === "ArrowLeft") {
+        setLightboxIndex((prev) =>
+          lightboxImages.length ? (prev - 1 + lightboxImages.length) % lightboxImages.length : 0
+        );
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightboxOpen, lightboxImages.length]);
+
   const step = (
     setter: (n: number) => void,
     cur: number,
@@ -323,14 +407,12 @@ export default function CalabogieResultPage() {
         child: String(children),
         infant: String(infants),
         pet: pet ? "yes" : "no",
-        // IMPORTANT: always use hard-coded lat/lng
-        lat: String(CALABOGIE_LAT),
-        lng: String(CALABOGIE_LNG),
+        currency: "CAD",
       });
 
       try {
         const res = await fetch(
-          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`
+          `${process.env.NEXT_PUBLIC_API_BASE_URL}/api/calabogie/results?${qs.toString()}`
         );
         const j = await res.json();
         const arr = safeArrayData(j);
@@ -345,7 +427,7 @@ export default function CalabogieResultPage() {
           if (!filtered.length) {
             setAvailableRooms([]);
             setFetchError(
-              "No available rooms for these dates nearby. Try changing your dates."
+              "No available rooms for these dates. Try changing your dates."
             );
           } else {
             setAvailableRooms(filtered);
@@ -421,8 +503,6 @@ export default function CalabogieResultPage() {
       infant: String(infants),
       pet: pet ? "yes" : "no",
       rooms: String(rooms),
-      lat: String(CALABOGIE_LAT),
-      lng: String(CALABOGIE_LNG),
     });
     router.push(`/calabogieresult?${query.toString()}`);
   };
@@ -528,8 +608,8 @@ export default function CalabogieResultPage() {
                 if (
                   isPlaceholderRoom(room) ||
                   !isCalabogieListing(room) ||
-                  Number(room?.totalPrice ?? 0) <= 0 ||
-                  !String(room?.roomTypeId ?? "").trim()
+                  roomTotalValue(room) <= 0 ||
+                  !String(room?.roomTypeId ?? room?.RoomTypeId ?? room?.RoomTypeID ?? "").trim()
                 ) {
                   return null;
                 }
@@ -537,8 +617,9 @@ export default function CalabogieResultPage() {
                 const hotelName =
                   room.hotelName || room.hotelNameEN || room.RoomType || "Property";
                 const layoutName = getLayoutName(room);
-                const imgSrc = getHotelImage(hotelName);
+                const imgSrc = getHotelImage(hotelName, room);
                 const slug = slugMap[hotelName] || dashedSlug(hotelName);
+                const calabogieMeta = getCalabogieMeta(room);
 
                 let meta: any = {};
                 try {
@@ -548,36 +629,52 @@ export default function CalabogieResultPage() {
                   meta = {};
                 }
 
+                const cardTitle = String(
+                  calabogieMeta?.name ||
+                    calabogieMeta?.hotelName ||
+                    meta?.name ||
+                    meta?.hotelName ||
+                    layoutName
+                ).trim();
+
                 const shortDescription =
                   String(
+                    calabogieMeta?.descriptionShort ??
+                      calabogieMeta?.shortDescription ??
+                      calabogieMeta?.description ??
                     meta?.ShortDescription ??
                       meta?.shortDescription ??
                       meta?.Description ??
                       meta?.description ??
                       "Private cottage stay with premium amenities and resort access."
                   ).trim() || "Private cottage stay with premium amenities and resort access.";
+                const galleryImages = getCalabogieGalleryImages(room, calabogieMeta, imgSrc);
 
-                const roomTotal = toNum(room.totalPrice);
+                const roomTotal = roomTotalValue(room);
                 const petFee = toNum(room.petFeeAmount);
                 const grandTotal = roomTotal + petFee;
                 const nightlyRoomsOnly =
                   nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
                 const currency = room.currencyCode || "CAD";
                 const minNights = Number(room?.minNights ?? 1);
+                const isAvailableForRange = Object.values(room?.availability ?? {}).every(
+                  (v) => Number(v) === 1
+                );
 
-                const hotelId =
-                  room.hotelId || room.RoomTypeId || room.RoomTypeID || room.roomTypeId;
-                const hotelNo = room.hotelNo || room.hotelCode || "";
+                const hotelId = "CBE";
+                const hotelNo = "CBE";
 
-                const link = `/hotel/${hotelId}?hotelId=${encodeURIComponent(
+                const link = `/calabogie/hotel?hotelId=${encodeURIComponent(
                   hotelId
                 )}&hotelNo=${encodeURIComponent(
                   hotelNo
                 )}&roomTypeId=${encodeURIComponent(
-                  room.roomTypeId || ""
+                  room.roomTypeId || room.RoomTypeId || room.RoomTypeID || ""
+                )}&roomTypeName=${encodeURIComponent(
+                  room.roomTypeName || room.RoomType || layoutName
                 )}&checkIn=${startDate}&checkOut=${endDate}&adult=${adults}&child=${children}&infant=${infants}&pet=${
                   pet ? "yes" : "no"
-                }&total=${grandTotal}&petFee=${petFee}&currency=${currency}&lat=${CALABOGIE_LAT}&lng=${CALABOGIE_LNG}&name=${encodeURIComponent(
+                }&rooms=${rooms}&total=${grandTotal}&petFee=${petFee}&currency=${currency}&name=${encodeURIComponent(
                   hotelName
                 )}`;
 
@@ -587,22 +684,36 @@ export default function CalabogieResultPage() {
                     className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm"
                   >
                     <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      <div className="w-full md:w-[210px] h-40 md:h-[150px] relative rounded-xl overflow-hidden bg-gray-100">
+                      <button
+                        type="button"
+                        className="w-full md:w-[210px] h-40 md:h-[150px] relative rounded-xl overflow-hidden bg-gray-100 group"
+                        onClick={() => {
+                          if (!galleryImages.length) return;
+                          setLightboxImages(galleryImages);
+                          setLightboxTitle(cardTitle);
+                          setLightboxIndex(0);
+                          setLightboxOpen(true);
+                        }}
+                        aria-label={`Open ${cardTitle} photos`}
+                      >
                         {imgSrc ? (
                           <Image
                             src={imgSrc}
-                            alt={layoutName}
+                            alt={cardTitle}
                             fill
-                            className="object-cover"
+                            className="object-cover transition duration-200 group-hover:scale-105"
                           />
                         ) : (
                           <div className="w-full h-full bg-gray-200" />
                         )}
-                      </div>
+                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2 text-left">
+                          <span className="text-xs font-medium text-white">
+                            View photos{galleryImages.length > 1 ? ` (${galleryImages.length})` : ""}
+                          </span>
+                        </div>
+                      </button>
                       <div className="min-w-0 flex-1">
-                        <h2 className="text-lg md:text-xl font-semibold text-gray-900">
-                          {layoutName}
-                        </h2>
+                          <h2 className="text-lg md:text-xl font-semibold text-gray-900">{cardTitle}</h2>
                         <p className="mt-2 text-sm text-gray-600 leading-relaxed">
                           {shortDescription}
                         </p>
@@ -621,10 +732,17 @@ export default function CalabogieResultPage() {
                         <div className="text-xs text-gray-500">{currency} / night (room only)</div>
                         <button
                           type="button"
-                          onClick={() => router.push(link)}
-                          className="mt-4 inline-flex items-center justify-center rounded-full bg-[#15153E] text-white px-5 py-2.5 text-sm font-semibold hover:brightness-110"
+                          onClick={() => {
+                            if (isAvailableForRange) router.push(link);
+                          }}
+                          disabled={!isAvailableForRange}
+                          className={`mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold ${
+                            isAvailableForRange
+                              ? "bg-[#15153E] text-white hover:brightness-110"
+                              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+                          }`}
                         >
-                          Reserve
+                          {isAvailableForRange ? "Reserve" : "Unavailable"}
                         </button>
                       </div>
                     </div>
@@ -729,8 +847,8 @@ export default function CalabogieResultPage() {
         </aside>
       </div>
 
-      <div className="mt-24">
-        <ImageCarousel />
+      <div className="mt-52 mx-auto max-w-4xl">
+        <ImageCarousel compact />
       </div>
 
       {/* Guests popover (desktop) */}
@@ -1078,8 +1196,74 @@ export default function CalabogieResultPage() {
         </div>
       )}
 
+      {lightboxOpen && lightboxImages.length > 0 && (
+        <div className="fixed inset-0 z-[10050] bg-black/90 flex items-center justify-center p-4">
+          <button
+            type="button"
+            className="absolute top-4 right-4 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+            onClick={() => setLightboxOpen(false)}
+            aria-label="Close photos"
+          >
+            x
+          </button>
+          <button
+            type="button"
+            className="absolute left-4 md:left-6 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+            onClick={() =>
+              setLightboxIndex((prev) => (prev - 1 + lightboxImages.length) % lightboxImages.length)
+            }
+            aria-label="Previous photo"
+          >
+            {"<"}
+          </button>
+          <div className="w-full max-w-5xl">
+            <div className="relative w-full h-[60vh] md:h-[70vh] bg-black rounded-2xl overflow-hidden">
+              <Image
+                src={lightboxImages[lightboxIndex]}
+                alt={`${lightboxTitle} photo ${lightboxIndex + 1}`}
+                fill
+                className="object-contain"
+              />
+            </div>
+            <div className="mt-3 flex items-center justify-between text-white">
+              <div className="text-sm md:text-base font-medium">{lightboxTitle}</div>
+              <div className="text-xs md:text-sm text-white/80">
+                {lightboxIndex + 1} / {lightboxImages.length}
+              </div>
+            </div>
+            {lightboxImages.length > 1 && (
+              <div className="mt-3 flex gap-2 overflow-x-auto pb-1">
+                {lightboxImages.map((src, idx) => (
+                  <button
+                    key={`${src}-${idx}`}
+                    type="button"
+                    onClick={() => setLightboxIndex(idx)}
+                    className={`relative h-16 w-24 rounded-lg overflow-hidden border ${
+                      idx === lightboxIndex ? "border-white" : "border-white/30"
+                    }`}
+                  >
+                    <Image src={src} alt={`${lightboxTitle} thumbnail ${idx + 1}`} fill className="object-cover" />
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="absolute right-4 md:right-6 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+            onClick={() =>
+              setLightboxIndex((prev) => (prev + 1) % lightboxImages.length)
+            }
+            aria-label="Next photo"
+          >
+            {">"}
+          </button>
+        </div>
+      )}
+
       <style>{`@keyframes slideup{from{transform:translateY(12px);opacity:.95}to{transform:translateY(0);opacity:1}}`}</style>
     </div>
   );
 }
+
 

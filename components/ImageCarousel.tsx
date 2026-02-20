@@ -6,7 +6,7 @@ import { Autoplay, Navigation } from "swiper/modules";
 import "swiper/css";
 import "swiper/css/navigation";
 
-export default function ImageCarousel() {
+export default function ImageCarousel({ compact = false }: { compact?: boolean }) {
   const slides = [
     {
       src: "/Tiny-Home-Experience-2.png",
@@ -25,6 +25,10 @@ export default function ImageCarousel() {
       href: "https://dreamtripclub.com/hotel/276303?hotelId=276303&hotelNo=EFL&roomTypeId=276303&&name=escape+from+life",
     },
   ];
+
+  const heightClass = compact
+    ? "h-[96px] sm:h-[120px] md:h-[140px] lg:h-[160px]"
+    : "h-[240px] sm:h-[300px] md:h-[340px] lg:h-[400px]";
 
   return (
     <section className="mt-8">
@@ -60,7 +64,7 @@ export default function ImageCarousel() {
                 rel="noopener noreferrer"
                 className="block rounded-2xl overflow-hidden bg-transparent"
               >
-                <div className="relative w-full h-[240px] sm:h-[300px] md:h-[340px] lg:h-[400px]">
+                <div className={`relative w-full ${heightClass}`}>
                   <Image
                     src={s.src}
                     alt=""

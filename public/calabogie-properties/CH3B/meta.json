@@ -1,0 +1,73 @@
+{
+  "hotelId": "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
+  "hotelNo": "CBE",
+  "name": "Standard Cabin",
+  "brandName": "Garden View Apartments",
+  "tagline": "Apartment • 4 guests • 2 bedrooms • 1 bath",
+  "descriptionShort": "Relax by the fireplace in our cozy Chalets.",
+  "roomTypeId":"82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
+  "descriptionLong": [
+    "Relax by the fireplace in our cozy Chalets. Look down from the loft area and chat with friends and family."
+   ],
+  "Address": "1515 Dufferin St, Whitby, ON L1N 1B3, Canada",
+  "hotelName": "Standard Cabin",
+  "slug": "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b",
+  "bedrooms": 3,
+  "bathrooms": 1,
+  "capacity": 9,
+  "type": "Cabin",
+  "rating": 4.6,
+  "shortDescription": "Spacious 2-bedroom apartment in Whitby with backyard and modern amenities...",
+  "longDescription": "Full detailed copy for the modal…",
+  "amenities": {
+    "general": [
+      "Loft with a queen and a single",
+      "Air conditioning",
+      "Complimentary wireless Internet",
+      "2 piece bath/separate shower house",
+      "32 inch flat screen TV/satellite",
+      "Living/dining area with fireplace ",
+      "Screened in porch",
+      "Bonfire pit — wood supplied"
+    ],
+    "kitchenDining": [
+      "Kitchen",
+      "Fully-equipped kitchen",
+      "Full-size fridge",
+      "2 burner cooktop",
+      "Cookware/dishes/utensils",
+      "Coffee maker/toaster",
+      "Dining area",
+      "Kitchen linens/dish soap",
+      "Barbecue"
+    ],
+    "policy": [
+      "Pets allowed",
+      "Suitable for children",
+      "Suitable for infants",
+      "Long term stays allowed"
+    ],
+    "safety": [
+      "Smoke detector",
+      "Carbon Monoxide Detector",
+      "First aid kit",
+      "Fire Extinguisher"
+    ],
+    "parking": [
+      "Free parking"
+    ]
+  },
+  "houseRules": [
+    "Check-in: 3 pm",
+    "Check-out: 10 am",
+    "Children: allowed",
+    "Infants: allowed",
+    "Pets: allowed",
+    "Parties and events: not allowed",
+    "Smoking inside: not allowed"
+  ],
+  "gallery": [
+    "hero.png",
+    "1.png","2.png","3.png","4.png","5.png"
+  ]
+}
