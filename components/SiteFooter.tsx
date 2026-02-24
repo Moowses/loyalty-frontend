@@ -119,7 +119,7 @@ export default function SiteFooter() {
         <div className="mt-4 flex flex-col items-center justify-between gap-3 px-1 text-sm text-black/80 md:flex-row">
           {/* Left */}
           <div className="w-full text-center md:w-1/3 md:text-left">
-            © 2025 Cottage Dream Vacations. All rights reserved.
+            © 2026 Cottage Dream Vacations. All rights reserved.
           </div>
 
           {/* Center 
