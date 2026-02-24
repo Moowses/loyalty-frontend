@@ -1169,6 +1169,7 @@ type RoomPickerContext = {
   const [roomPickerStartDate, setRoomPickerStartDate] = useState('');
   const [roomPickerEndDate, setRoomPickerEndDate] = useState('');
   const [roomPickerShowCal, setRoomPickerShowCal] = useState(false);
+  const [roomPickerShowGuests, setRoomPickerShowGuests] = useState(false);
   const [roomPickerLightboxImages, setRoomPickerLightboxImages] = useState<string[]>([]);
   const [roomPickerLightboxIndex, setRoomPickerLightboxIndex] = useState(0);
   const [roomPickerLightboxTitle, setRoomPickerLightboxTitle] = useState('');
@@ -1971,7 +1972,7 @@ type RoomPickerContext = {
                 </div>
 
                 {roomPickerShowCal && (
-                  <div className="absolute inset-0 z-[5] bg-black/20 backdrop-blur-[1px] p-3 md:p-5">
+                  <div className="absolute inset-0 z-[5] bg-black/10 backdrop-blur-[0.5px] p-3 md:p-5">
                     <div className="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white shadow-2xl p-4 md:p-5">
                       <div className="flex items-center justify-between mb-3">
                         <div className="text-base md:text-lg font-semibold text-gray-900">Select dates</div>
@@ -2078,6 +2079,75 @@ type RoomPickerContext = {
                           disabled={!checkIn || !checkOut}
                         >
                           Apply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {roomPickerShowGuests && (
+                  <div className="absolute inset-0 z-[6] bg-black/10 backdrop-blur-[0.5px] p-0 md:p-0">
+                    <div className="ml-auto h-full w-full max-w-md border-l border-gray-200 bg-white shadow-2xl p-4 md:p-5 overflow-y-auto">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-base md:text-lg font-semibold text-gray-900">Rooms & Guests</div>
+                        <button
+                          type="button"
+                          onClick={() => setRoomPickerShowGuests(false)}
+                          className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      {[
+                        { label: 'Rooms', value: roomsCount, setter: setRoomsCount, min: 1, max: 8 },
+                        { label: 'Adults (13+)', value: adults, setter: setAdults, min: 1, max: 10 },
+                        { label: 'Children (3-12)', value: children, setter: setChildren, min: 0, max: 10 },
+                        { label: 'Infants (0-2)', value: infants, setter: setInfants, min: 0, max: 10 },
+                      ].map((row) => (
+                        <div key={row.label} className="flex items-center justify-between py-3 border-b last:border-b-0">
+                          <div className="text-[15px] font-medium text-gray-900">{row.label}</div>
+                          <div className="flex items-center gap-3">
+                            <button
+                              type="button"
+                              className="w-8 h-8 rounded-full border text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                              onClick={() => step(row.setter as any, row.value as number, -1, (row as any).min, (row as any).max)}
+                              disabled={(row.value as number) <= (row as any).min}
+                            >
+                              -
+                            </button>
+                            <div className="w-5 text-center">{row.value}</div>
+                            <button
+                              type="button"
+                              className="w-8 h-8 rounded-full border text-gray-700 hover:bg-gray-50 disabled:opacity-40"
+                              onClick={() => step(row.setter as any, row.value as number, +1, (row as any).min, (row as any).max)}
+                              disabled={(row.value as number) >= (row as any).max}
+                            >
+                              +
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+
+                      <div className="flex items-center justify-between py-3 border-b">
+                        <div className="text-[15px] font-medium text-gray-900">Bringing a pet?</div>
+                        <select
+                          value={pet ? 'yes' : 'no'}
+                          onChange={(e) => setPet(e.target.value === 'yes')}
+                          className="border rounded-lg px-2 py-1 text-sm"
+                        >
+                          <option value="no">No</option>
+                          <option value="yes">Yes</option>
+                        </select>
+                      </div>
+
+                      <div className="flex justify-end gap-2 pt-3">
+                        <button
+                          type="button"
+                          className="px-4 py-2 rounded-lg border text-gray-800 hover:bg-gray-50"
+                          onClick={() => setRoomPickerShowGuests(false)}
+                        >
+                          Done
                         </button>
                       </div>
                     </div>
@@ -2245,7 +2315,17 @@ type RoomPickerContext = {
                       </div>
                       <div>
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Guests</div>
-                        <div className="font-medium text-gray-900">{adults + children + infants}</div>
+                        <div className="mt-1 flex items-center justify-between gap-2">
+                          <div className="font-medium text-gray-900">{adults + children + infants}</div>
+                          <button
+                            type="button"
+                            onClick={() => setRoomPickerShowGuests(true)}
+                            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            <UsersIcon className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        </div>
                       </div>
                       <div>
                         <div className="text-[11px] uppercase tracking-wide text-gray-500">Nights</div>
@@ -2322,6 +2402,14 @@ type RoomPickerContext = {
                           <UsersIcon className="w-3.5 h-3.5" />
                           {adults + children + infants}
                         </span>
+                        <button
+                          type="button"
+                          onClick={() => setRoomPickerShowGuests(true)}
+                          className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white w-7 h-7 text-gray-700 hover:bg-gray-50"
+                          aria-label="Edit guests"
+                        >
+                          <UsersIcon className="w-3.5 h-3.5" />
+                        </button>
                         <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1">
                           <CalIcon className="w-3.5 h-3.5" />
                           {nights > 0 ? nights : 1}N

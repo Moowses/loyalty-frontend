@@ -45,7 +45,7 @@ export default function MemberBenefitsSection({
   }, []);
 
   return (
-    <section className="w-full bg-[#211F45] py-12">
+    <section className="w-full bg-[#211F45] pt-0 pb-12">
       <div className="mx-auto max-w-6xl px-4">
         {/* Title */}
         <h2
@@ -170,7 +170,7 @@ export default function MemberBenefitsSection({
               <div className="rounded-2xl overflow-hidden shadow-xl">
                 <div className="relative w-full h-[150px]">
                   <Image
-                    src="/group1rideside.png"
+                    src="/beamember3.png"
                     alt="Right bottom right"
                     fill
                     className="object-cover"

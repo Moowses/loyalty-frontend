@@ -3,10 +3,10 @@
 import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import Link from 'next/link';
+import OfferTripStartCarouselPanel from '@/components/OfferTripStartCarouselPanel';
 
 
 // start the components
-const ImageCarousel1 = dynamic(() => import('@/components/ImageCarousel1'), { ssr: false });
 const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsSection'), { ssr: false });
 const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {ssr: false,loading: () => null,});
 // end of components
@@ -46,8 +46,8 @@ export default function OffersPage() {
                   className="text-white font-[900] tracking-[-0.02em]"
                   style={{
                     fontFamily: 'Avenir, Avenir Black, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-                    fontSize: 'clamp(48px, 6vw, 100px)',
-                    lineHeight: 'clamp(56px, 6.5vw, 110px)',
+                    fontSize: 'clamp(44px, 4.5vw, 72px)',
+                    lineHeight: 'clamp(54px, 6vw, 96px)',
                   }}
                 >
                   Adventure awaits and so do your rewards.
@@ -80,7 +80,7 @@ export default function OffersPage() {
       <section className="w-full bg-white py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
           {/* start the components */}
-          <ImageCarousel1 />
+          <OfferTripStartCarouselPanel />
           {/* end of components */}
         </div>
       </section>

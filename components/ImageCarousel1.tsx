@@ -27,7 +27,7 @@ export default function ImageCarousel1() {
   ];
 
   return (
-    <section className="mt-2">
+    <section className="mt-1">
       <div className="relative">
        <Swiper
                modules={[Autoplay, Navigation]}
@@ -60,7 +60,7 @@ export default function ImageCarousel1() {
                      rel="noopener noreferrer"
                      className="block rounded-2xl overflow-hidden bg-transparent"
                    >
-                     <div className="relative w-full h-[240px] sm:h-[300px] md:h-[340px] lg:h-[400px]">
+                     <div className="relative w-full h-[190px] sm:h-[240px] md:h-[270px] lg:h-[320px]">
                        <Image
                          src={s.src}
                          alt=""
@@ -77,7 +77,7 @@ export default function ImageCarousel1() {
 
         {/* Arrows */}
         <button
-          className="custom-prev absolute left-0 top-1/2 z-10 -translate-x-4 -translate-y-1/2 rounded-full bg-white/80 text-gray-800 shadow-lg transition-all duration-300 hover:scale-110 hover:bg-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center"
+          className="custom-prev absolute left-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#92AEB8] text-white shadow-lg transition-all duration-300 hover:scale-110 hover:bg-[#7f9ea8] md:left-3 md:h-12 md:w-12"
           aria-label="Previous slide"
         >
           <svg className="h-5 w-5 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -86,7 +86,7 @@ export default function ImageCarousel1() {
         </button>
 
         <button
-          className="custom-next absolute right-0 top-1/2 z-10 translate-x-4 -translate-y-1/2 rounded-full bg-white/80 text-gray-800 shadow-lg transition-all duration-300 hover:scale-110 hover:bg-white w-10 h-10 md:w-12 md:h-12 flex items-center justify-center"
+          className="custom-next absolute right-2 top-1/2 z-10 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-[#92AEB8] text-white shadow-lg transition-all duration-300 hover:scale-110 hover:bg-[#7f9ea8] md:right-3 md:h-12 md:w-12"
           aria-label="Next slide"
         >
           <svg className="h-5 w-5 md:h-6 md:w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
