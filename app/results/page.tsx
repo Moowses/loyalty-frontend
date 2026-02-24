@@ -1034,6 +1034,373 @@ function getHotelImage(name?: string) {
   
 } 
 
+function isCalabogieListing(room: any) {
+  const hid = String(room?.hotelId ?? room?.hotelNo ?? '').trim().toUpperCase();
+  if (hid === 'CBE') return true;
+  const name = String(room?.hotelName ?? room?.hotelNameEN ?? room?.RoomType ?? '').trim().toLowerCase();
+  return name.startsWith('calabogie escapes') || name.includes('calabogie');
+}
+
+function roomValueNum(v: any) {
+  if (v == null) return 0;
+  const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+
+function sumDailyPricesMap(v: any): number {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return 0;
+  return Object.values(v).reduce((acc, cur) => acc + roomValueNum(cur), 0);
+}
+
+function roomTotalValue(room: any): number {
+  const direct = roomValueNum(room?.totalPrice ?? room?.roomSubtotal ?? room?.grossAmountUpstream ?? 0);
+  if (direct > 0) return direct;
+  const summed = sumDailyPricesMap(room?.dailyPrices);
+  return summed > 0 ? summed : 0;
+}
+
+function safeArrayDataLoose(j: any): any[] | null {
+  if (!j) return null;
+  const rows = j?.data?.rows;
+  if (Array.isArray(rows)) return rows;
+  let root: any = j;
+  if (root && typeof root === 'object' && 'data' in root) root = root.data;
+  if (typeof root === 'string') return null;
+  if (Array.isArray(root)) return root;
+  if (root && typeof root === 'object' && Array.isArray(root.data)) return root.data;
+  return null;
+}
+
+function propertyMetaFromName(name?: string): { meta: any; folder: string } {
+  if (!name) return { meta: null, folder: '' };
+  const candidates = Array.from(new Set([slugMap[name], dashedSlug(name), condensedSlug(name)].filter(Boolean)));
+  for (const folder of candidates) {
+    try {
+      const meta = require(`@/public/properties/${folder}/meta.json`);
+      return { meta, folder: String(folder) };
+    } catch {}
+  }
+  return { meta: null, folder: String(candidates[0] || '') };
+}
+
+const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
+  'ae50e6a8-29dd-447d-840c-b3f40144635d': 'CA1B',
+  '3b427e83-f01e-4cf8-83cc-b3f4014439f6': 'CH2B',
+  '82c0ab4c-8a5c-4d77-aaae-b3f40143f53b': 'CH3B',
+  '8767d68e-188d-42ff-811e-b31b011b278b': '1 Bedroom Loft',
+};
+
+function compactSlug(s: string) {
+  return s.replace(/[^a-z0-9]/gi, '').toUpperCase();
+}
+
+function getCalabogieRoomFolder(room: any): string {
+  const rid = String(room?.roomTypeId ?? room?.RoomTypeId ?? room?.RoomTypeID ?? '').trim();
+  const fromId = CALABOGIE_ROOM_FOLDER_BY_ID[rid];
+  if (fromId) return fromId;
+  const fromName = String(room?.roomTypeName ?? room?.RoomType ?? '').trim();
+  if (!fromName) return '';
+  const compact = compactSlug(fromName);
+  if (compact === '1BEDROOMLOFT') return '1 Bedroom Loft';
+  return compact;
+}
+
+function getCalabogieMeta(room: any): any {
+  const folder = getCalabogieRoomFolder(room);
+  try {
+    if (folder === 'CA1B') return require('@/public/calabogie-properties/CA1B/meta.json');
+    if (folder === 'CH2B') return require('@/public/calabogie-properties/CH2B/meta.json');
+    if (folder === 'CH3B') return require('@/public/calabogie-properties/CH3B/meta.json');
+    if (folder === '1 Bedroom Loft') return require('@/public/calabogie-properties/1 Bedroom Loft/meta.json');
+  } catch {}
+  return null;
+}
+
+function getRoomModalVisual(room: any) {
+  if (isCalabogieListing(room)) {
+    const folder = getCalabogieRoomFolder(room);
+    const meta = getCalabogieMeta(room);
+    const hero = folder ? `/calabogie-properties/${folder}/hero.png` : '';
+    const galleryFromMeta = Array.isArray(meta?.gallery)
+      ? meta.gallery
+          .map((f: any) => String(f || '').trim())
+          .filter(Boolean)
+          .map((f: string) => `/calabogie-properties/${folder}/${f}`)
+      : [];
+    return {
+      hero,
+      gallery: Array.from(new Set(galleryFromMeta.length ? galleryFromMeta : hero ? [hero] : [])),
+      meta,
+    };
+  }
+
+  const name = String(room?.hotelName || room?.hotelNameEN || room?.RoomType || '');
+  const hero = getHotelImage(name);
+  const { meta, folder } = propertyMetaFromName(name);
+  const galleryFromMeta = Array.isArray(meta?.gallery)
+    ? meta.gallery
+        .map((f: any) => String(f || '').trim())
+        .filter(Boolean)
+        .map((f: string) => `/properties/${folder}/${f}`)
+    : [];
+  return {
+    hero,
+    gallery: Array.from(new Set(galleryFromMeta.length ? galleryFromMeta : hero ? [hero] : [])),
+    meta,
+  };
+}
+
+type RoomPickerContext = {
+  hotelId: string;
+  hotelNo: string;
+  hotelName: string;
+  lat: string;
+  lng: string;
+  seedRoomTypeId: string;
+  isCalabogie: boolean;
+};
+
+  const [roomPickerOpen, setRoomPickerOpen] = useState(false);
+  const [roomPickerLoading, setRoomPickerLoading] = useState(false);
+  const [roomPickerError, setRoomPickerError] = useState('');
+  const [roomPickerRooms, setRoomPickerRooms] = useState<any[]>([]);
+  const [roomPickerSelectedId, setRoomPickerSelectedId] = useState('');
+  const [roomPickerCtx, setRoomPickerCtx] = useState<RoomPickerContext | null>(null);
+  const [roomPickerStartDate, setRoomPickerStartDate] = useState('');
+  const [roomPickerEndDate, setRoomPickerEndDate] = useState('');
+  const [roomPickerShowCal, setRoomPickerShowCal] = useState(false);
+  const [roomPickerLightboxImages, setRoomPickerLightboxImages] = useState<string[]>([]);
+  const [roomPickerLightboxIndex, setRoomPickerLightboxIndex] = useState(0);
+  const [roomPickerLightboxTitle, setRoomPickerLightboxTitle] = useState('');
+
+  const loadRoomPickerRooms = async (ctx: RoomPickerContext, dateStart = startDate, dateEnd = endDate) => {
+    setRoomPickerLoading(true);
+    setRoomPickerError('');
+    setRoomPickerRooms([]);
+    try {
+      let arr: any[] | null = null;
+      if (ctx.isCalabogie) {
+        const qs = new URLSearchParams({
+          startDate: dateStart,
+          endDate: dateEnd,
+          adult: String(adults),
+          child: String(children),
+          infant: String(infants),
+          pet: pet ? 'yes' : 'no',
+          currency: 'CAD',
+        });
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/calabogie/results?${qs.toString()}`);
+        const j = await res.json();
+        const rows = safeArrayDataLoose(j);
+        arr = Array.isArray(rows) ? rows.filter((x: any) => isCalabogieListing(x) && !isPlaceholderRoom(x)) : null;
+      } else {
+        const qs = new URLSearchParams({
+          startDate: dateStart,
+          endDate: dateEnd,
+          adult: String(adults),
+          child: String(children),
+          infant: String(infants),
+          pet: pet ? 'yes' : 'no',
+          lat: ctx.lat || lat,
+          lng: ctx.lng || lng,
+        } as any);
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/api/booking/availability?${qs.toString()}`);
+        const j = await res.json();
+        const rows = safeArrayData(j);
+        arr =
+          rows === null
+            ? null
+            : rows.filter((x: any) => {
+                const sameId = ctx.hotelId && String(x?.hotelId || '').trim() === ctx.hotelId;
+                const sameNo = ctx.hotelNo && String(x?.hotelNo || '').trim() === ctx.hotelNo;
+                const sameName =
+                  ctx.hotelName &&
+                  String(x?.hotelName || '').trim().toLowerCase() === ctx.hotelName.toLowerCase();
+                return !isPlaceholderRoom(x) && (sameId || sameNo || sameName);
+              });
+      }
+
+      if (!Array.isArray(arr)) {
+        setRoomPickerRooms([]);
+        setRoomPickerError('No room types available for the selected dates.');
+        return;
+      }
+
+      const deduped = arr.filter(
+        (row: any, idx: number, list: any[]) =>
+          list.findIndex((x) => String(x?.roomTypeId || x?.RoomTypeId || x?.RoomTypeID || '') === String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || '')) === idx
+      );
+
+      deduped.sort((a: any, b: any) => {
+        const aId = String(a?.roomTypeId || a?.RoomTypeId || a?.RoomTypeID || '');
+        const bId = String(b?.roomTypeId || b?.RoomTypeId || b?.RoomTypeID || '');
+        if (aId === ctx.seedRoomTypeId && bId !== ctx.seedRoomTypeId) return -1;
+        if (bId === ctx.seedRoomTypeId && aId !== ctx.seedRoomTypeId) return 1;
+        return roomTotalValue(a) - roomTotalValue(b);
+      });
+
+      setRoomPickerRooms(deduped);
+      setRoomPickerSelectedId((prev) => prev || String(deduped[0]?.roomTypeId || deduped[0]?.RoomTypeId || deduped[0]?.RoomTypeID || ''));
+      if (!deduped.length) setRoomPickerError('No room types available for the selected dates.');
+    } catch (e) {
+      console.error('room picker fetch error', e);
+      setRoomPickerRooms([]);
+      setRoomPickerError('Something went wrong while loading room types.');
+    } finally {
+      setRoomPickerLoading(false);
+    }
+  };
+
+  const openRoomPicker = async (seedRoom: any) => {
+    const ctx: RoomPickerContext = {
+      hotelId: String(seedRoom?.hotelId || '').trim(),
+      hotelNo: String(seedRoom?.hotelNo || '').trim(),
+      hotelName: String(seedRoom?.hotelName || seedRoom?.RoomType || '').trim(),
+      lat: String(seedRoom?.lat ?? ''),
+      lng: String(seedRoom?.lng ?? ''),
+      seedRoomTypeId: String(seedRoom?.roomTypeId || '').trim(),
+      isCalabogie: isCalabogieListing(seedRoom),
+    };
+
+    setRoomPickerCtx(ctx);
+    setRoomPickerSelectedId(ctx.seedRoomTypeId);
+    setRoomPickerOpen(true);
+    setRoomPickerStartDate(startDate);
+    setRoomPickerEndDate(endDate);
+    await loadRoomPickerRooms(ctx, startDate, endDate);
+  };
+
+  useEffect(() => {
+    if (!roomPickerOpen || !roomPickerCtx) return;
+    if (!startDate || !endDate) return;
+    if (roomPickerStartDate === startDate && roomPickerEndDate === endDate) return;
+    setRoomPickerStartDate(startDate);
+    setRoomPickerEndDate(endDate);
+    void loadRoomPickerRooms(roomPickerCtx, startDate, endDate);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roomPickerOpen, roomPickerCtx, startDate, endDate]);
+
+  const roomPickerSelectedRoom = useMemo(
+    () =>
+      roomPickerRooms.find((r: any) => String(r?.roomTypeId || r?.RoomTypeId || r?.RoomTypeID || '') === roomPickerSelectedId) ||
+      roomPickerRooms[0] ||
+      null,
+    [roomPickerRooms, roomPickerSelectedId]
+  );
+
+  const continueRoomPicker = () => {
+    const room = roomPickerSelectedRoom;
+    const ctx = roomPickerCtx;
+    if (!room || !ctx) return;
+
+    const hotelId = String(room?.hotelId || room?.hotelNo || ctx.hotelId || ctx.hotelNo || '');
+    const hotelNo = String(room?.hotelNo || room?.hotelId || ctx.hotelNo || ctx.hotelId || '');
+    const roomTypeId = String(room?.roomTypeId || room?.RoomTypeId || room?.RoomTypeID || '');
+    const visualMeta = getRoomModalVisual(room);
+    const roomTypeName = String(
+      visualMeta?.meta?.name ||
+      visualMeta?.meta?.hotelName ||
+      room?.roomTypeName ||
+      room?.RoomType ||
+      room?.roomType ||
+      'Room Type'
+    );
+    const roomTotal = roomTotalValue(room);
+    const petFeeAmount = roomValueNum(room?.petFeeAmount);
+    const currency = String(room?.currencyCode || 'CAD');
+
+    if (ctx.isCalabogie) {
+      const query = new URLSearchParams({
+        hotelId: 'CBE',
+        hotelNo: 'CBE',
+        roomTypeId,
+        roomTypeName,
+        checkIn: roomPickerStartDate || startDate,
+        checkOut: roomPickerEndDate || endDate,
+        adult: String(adults),
+        child: String(children),
+        infant: String(infants),
+        pet: pet ? 'yes' : 'no',
+        rooms: String(roomsCount),
+        total: String(roomTotal + petFeeAmount),
+        petFee: String(petFeeAmount),
+        currency,
+        name: String(room?.hotelName || 'Calabogie Escapes'),
+      });
+      router.push(`/calabogie/hotel?${query.toString()}`);
+      return;
+    }
+
+    const query = new URLSearchParams({
+      hotelId,
+      hotelNo,
+      roomTypeId,
+      roomTypeName,
+      checkIn: roomPickerStartDate || startDate,
+      checkOut: roomPickerEndDate || endDate,
+      adult: String(adults),
+      child: String(children),
+      infant: String(infants),
+      pet: pet ? 'yes' : 'no',
+      rooms: String(roomsCount),
+      total: String(roomTotal),
+      petFee: String(petFeeAmount),
+      currency,
+      lat: String(room?.lat ?? ctx.lat ?? lat),
+      lng: String(room?.lng ?? ctx.lng ?? lng),
+      name: String(room?.hotelName || ctx.hotelName),
+    });
+    router.push(`/hotel/${hotelId}?${query.toString()}`);
+  };
+
+  const roomPickerMoney = (n: number) =>
+    new Intl.NumberFormat('en-CA', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(n || 0);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    document.body.setAttribute('data-room-picker-open', roomPickerOpen ? '1' : '0');
+    (window as any).__dtcHideChatAll = roomPickerOpen;
+    window.dispatchEvent(new Event('dtc-chat-visibility-change'));
+
+    const closeBtn = document.getElementById('dtc-chat-launcher-close-btn') as HTMLButtonElement | null;
+    if (closeBtn && roomPickerOpen) closeBtn.style.display = 'none';
+
+    // Fallback: hide small floating launchers (chat widgets often inject outside our control).
+    const hiddenEls: HTMLElement[] = [];
+    if (roomPickerOpen) {
+      const vw = window.innerWidth;
+      const vh = window.innerHeight;
+      const all = Array.from(document.body.querySelectorAll('*')) as HTMLElement[];
+      for (const el of all) {
+        if (el.closest('[data-room-picker-modal-root="1"]')) continue;
+        if (el.id === 'dtc-chat-launcher-close-btn') continue;
+        const tag = el.tagName.toLowerCase();
+        if (!['iframe', 'div', 'button'].includes(tag)) continue;
+        const cs = window.getComputedStyle(el);
+        if (cs.position !== 'fixed') continue;
+        const z = Number(cs.zIndex || '0');
+        if (!Number.isFinite(z) || z < 1000) continue;
+        const r = el.getBoundingClientRect();
+        const small = r.width > 0 && r.height > 0 && r.width <= 180 && r.height <= 180;
+        const nearEdge = r.right >= vw - 40 || r.left <= 40 || r.bottom >= vh - 40;
+        if (!small || !nearEdge) continue;
+        el.dataset.prevDisplay = el.style.display || '';
+        el.style.display = 'none';
+        hiddenEls.push(el);
+      }
+    }
+
+    return () => {
+      document.body.removeAttribute('data-room-picker-open');
+      (window as any).__dtcHideChatAll = false;
+      window.dispatchEvent(new Event('dtc-chat-visibility-change'));
+      for (const el of hiddenEls) {
+        el.style.display = el.dataset.prevDisplay || '';
+        delete el.dataset.prevDisplay;
+      }
+    };
+  }, [roomPickerOpen]);
+
   //Render 
   return (
    
@@ -1234,15 +1601,15 @@ function getHotelImage(name?: string) {
                       checkIn && checkOut ? 'bg-[#111]' : 'bg-gray-300 cursor-not-allowed'
                     }`}
                     onClick={() => setShowCal(false)}
-                  >
-                    Apply
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>,
-          document.body
-        )}
+	                  >
+	                    Apply
+	                  </button>
+	                </div>
+	              </div>
+	            </div>
+	          </>,
+	          document.body
+	        )}
 
       {/* Mobile: Calendar sheet */}
       {isMobile &&
@@ -1407,7 +1774,8 @@ function getHotelImage(name?: string) {
     const nightsCount =
       checkIn && checkOut ? Math.max(1, differenceInCalendarDays(checkOut, checkIn)) : 0;
 
-    const imgSrc = getHotelImage(room.hotelName);
+	    const calabogieVisualForCard = isCalabogieListing(room) ? getRoomModalVisual(room) : null;
+	    const imgSrc = calabogieVisualForCard?.hero || getHotelImage(room.hotelName);
 
     const toNum = (v: any) => {
       if (v == null) return 0;
@@ -1430,8 +1798,18 @@ function getHotelImage(name?: string) {
       meta = {};
     }
 
-    const address = meta?.Address ?? meta?.address ?? null;
-    const minNights = Number(room?.minNights ?? 1);
+	    const address = meta?.Address ?? meta?.address ?? null;
+	    const minNights = Number(room?.minNights ?? 1);
+	    const calabogieMetaForCard = calabogieVisualForCard?.meta || null;
+	    const displayRoomTypeName = isCalabogieListing(room)
+	      ? 'Calabogie Escapes'
+	      : String(
+	          calabogieMetaForCard?.name ||
+	          calabogieMetaForCard?.hotelName ||
+	          room?.roomTypeName ||
+	          room?.RoomType ||
+	          '-'
+	        );
     
 
     const currency = room.currencyCode || 'CAD';
@@ -1483,7 +1861,7 @@ function getHotelImage(name?: string) {
                         <div className="mt-2 text-sm text-gray-700 space-y-1.5">
                           <div>
                             Room Type:{' '}
-                            <span className="font-medium text-gray-900">{room.RoomType || '—'}</span>
+                            <span className="font-medium text-gray-900">{displayRoomTypeName}</span>
                           </div>
                           
                           <div>
@@ -1547,35 +1925,7 @@ function getHotelImage(name?: string) {
                             {/* View rates button (go to Hotel Info) */}
                                  <button
                                     onClick={() => {
-                                      
-                                    const params = new URLSearchParams({
-                                      hotelId: String(room.hotelId || ''),
-                                      hotelNo: String(room.hotelNo || ''),
-                                      roomTypeId: String(room.roomTypeId || ''),
-
-                                      // dates / party
-                                      checkIn: startDate,
-                                      checkOut: endDate,
-                                      adult: String(adults),
-                                      child: String(children),
-                                      infant: String(infants),
-                                      pet: pet ? 'yes' : 'no',
-
-                                      // seed UI
-                                      total: String(room.totalPrice || 0),
-                                      petFee: String(room.petFeeAmount || 0),
-                                      currency: room.currencyCode || 'CAD',
-
-                                      // helps hotel page re-price without another geocode
-                                      lat: String(room.lat ?? ''),
-                                      lng: String(room.lng ?? ''),
-
-                                      // name for meta/images (make safe)
-                                     name: room.hotelName || room.RoomType || '',
-
-                                    });
-                                    router.push(`/hotel/${room.hotelId}?${params.toString()}`);
-
+                                      openRoomPicker(room);
                                     }}
                                      className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
                                   >
@@ -1593,6 +1943,465 @@ function getHotelImage(name?: string) {
           );
         })}
       </div>
+
+      {roomPickerOpen &&
+        createPortal(
+          <div className="fixed inset-0 z-[10040]" data-room-picker-modal-root="1">
+            <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" onClick={() => setRoomPickerOpen(false)} />
+            <div className="absolute inset-0 p-2 md:p-6">
+              <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 flex flex-col">
+                <div className="border-b border-gray-200 px-4 md:px-6 py-4 flex items-start justify-between gap-4">
+                  <div>
+                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Room Selection</div>
+                    <h3 className="mt-1 text-xl md:text-2xl font-semibold text-gray-900">
+                      {roomPickerCtx?.hotelName || 'Choose a room type'}
+                    </h3>
+                    <div className="mt-1 text-sm text-gray-600">
+                      {(roomPickerStartDate || startDate)} to {(roomPickerEndDate || endDate)} • {nights > 0 ? nights : 1} night{nights === 1 ? '' : 's'}
+                    </div>
+                    {roomPickerLoading && <div className="mt-2 text-xs text-gray-500">Updating rooms...</div>}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setRoomPickerOpen(false)}
+                    className="rounded-full border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {roomPickerShowCal && (
+                  <div className="absolute inset-0 z-[5] bg-black/20 backdrop-blur-[1px] p-3 md:p-5">
+                    <div className="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white shadow-2xl p-4 md:p-5">
+                      <div className="flex items-center justify-between mb-3">
+                        <div className="text-base md:text-lg font-semibold text-gray-900">Select dates</div>
+                        <button
+                          type="button"
+                          onClick={() => setRoomPickerShowCal(false)}
+                          className="text-sm px-3 py-1 rounded-lg border hover:bg-gray-50"
+                        >
+                          Close
+                        </button>
+                      </div>
+
+                      <div className="flex items-center justify-between mb-3">
+                        <button
+                          type="button"
+                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                          onClick={() =>
+                            setViewMonth(
+                              new Date(viewMonth.getFullYear(), viewMonth.getMonth() - 1, 1)
+                            )
+                          }
+                        >
+                          Prev
+                        </button>
+                        <div className="flex items-center gap-4 md:gap-8">
+                          <div className="text-sm md:text-base font-semibold text-gray-900">
+                            {format(leftMonth, "MMMM yyyy")}
+                          </div>
+                          {!isMobile && (
+                            <div className="text-sm md:text-base font-semibold text-gray-900">
+                              {format(rightMonth, "MMMM yyyy")}
+                            </div>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          className="px-3 py-1 rounded-lg border hover:bg-gray-50"
+                          onClick={() =>
+                            setViewMonth(
+                              new Date(viewMonth.getFullYear(), viewMonth.getMonth() + 1, 1)
+                            )
+                          }
+                        >
+                          Next
+                        </button>
+                      </div>
+
+                      {!isMobile ? (
+                        <div className="grid grid-cols-2 gap-6">
+                          {[leftDays, rightDays].map((days, idx) => (
+                            <div key={idx}>
+                              <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">
+                                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                                  <div key={d} className="py-1">{d}</div>
+                                ))}
+                              </div>
+                              <div className="grid grid-cols-7 gap-1">
+                                {days.map(({ date, currentMonth }, i) => (
+                                  <div key={i} className="flex items-center justify-center">
+                                    <DayCell d={date} muted={!currentMonth} />
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <>
+                          <div className="grid grid-cols-7 text-center text-xs text-gray-500 mb-1">
+                            {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => (
+                              <div key={d} className="py-1">{d}</div>
+                            ))}
+                          </div>
+                          <div className="grid grid-cols-7 gap-1">
+                            {leftDays.map(({ date, currentMonth }, i) => (
+                              <div key={i} className="flex items-center justify-center">
+                                <DayCell d={date} muted={!currentMonth} />
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+
+                      <div className="flex items-center justify-between mt-4 gap-2">
+                        <button
+                          type="button"
+                          className="text-sm text-gray-700 hover:underline"
+                          onClick={() => {
+                            setCheckIn(null);
+                            setCheckOut(null);
+                          }}
+                        >
+                          Reset
+                        </button>
+                        <div className="text-xs md:text-sm text-gray-600 text-center">
+                          {checkIn && !checkOut && "Select a check-out date"}
+                          {checkIn && checkOut && `${nights} night${nights > 1 ? "s" : ""} selected`}
+                          {!checkIn && !checkOut && "Select a check-in date"}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setRoomPickerShowCal(false)}
+                          className="text-sm px-4 py-2 rounded-full bg-[#1f2345] text-white disabled:bg-gray-300"
+                          disabled={!checkIn || !checkOut}
+                        >
+                          Apply
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="min-h-0 flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+                  <div className="min-h-0 overflow-y-auto bg-[#fafbfc] p-4 md:p-6">
+                    {roomPickerLoading && (
+                      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+                        Loading room types...
+                      </div>
+                    )}
+                    {!roomPickerLoading && roomPickerError && roomPickerRooms.length === 0 && (
+                      <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-700">
+                        {roomPickerError}
+                      </div>
+                    )}
+
+                    <div className="space-y-4">
+                      {roomPickerRooms.map((pickRoom: any, idx: number) => {
+                        const rtId = String(pickRoom?.roomTypeId || pickRoom?.RoomTypeId || pickRoom?.RoomTypeID || '').trim();
+                        const visual = getRoomModalVisual(pickRoom);
+                        const rtName = String(
+                          visual?.meta?.name ||
+                          visual?.meta?.hotelName ||
+                          pickRoom?.roomTypeName ||
+                          pickRoom?.RoomType ||
+                          pickRoom?.roomType ||
+                          'Room Type'
+                        ).trim();
+                        const total = roomTotalValue(pickRoom);
+                        const nightly = nights > 0 ? total / nights : total;
+                        const ccy = String(pickRoom?.currencyCode || 'CAD');
+                        const selected = rtId === roomPickerSelectedId;
+                        const desc = String(
+                          visual?.meta?.descriptionShort ??
+                            visual?.meta?.shortDescription ??
+                            visual?.meta?.description ??
+                            'Private stay with premium amenities and curated comfort.'
+                        ).trim();
+                        const addr = String(visual?.meta?.Address ?? visual?.meta?.address ?? '').trim();
+
+                        return (
+                          <div
+                            key={`${rtId || idx}`}
+                            className={`rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition ${
+                              selected ? 'border-[#1f2345] ring-2 ring-[#1f2345]/10' : 'border-gray-200 hover:border-gray-300'
+                            }`}
+                          >
+                            <div className="flex flex-col md:flex-row gap-4">
+                              <div className="w-full md:w-[230px] shrink-0">
+                                <button
+                                  type="button"
+                                  className="relative h-40 md:h-[160px] w-full rounded-xl overflow-hidden bg-gray-100 group"
+                                  onClick={() => {
+                                    if (!visual.gallery?.length && !visual.hero) return;
+                                    const imgs = visual.gallery?.length ? visual.gallery : visual.hero ? [visual.hero] : [];
+                                    if (!imgs.length) return;
+                                    setRoomPickerLightboxImages(imgs);
+                                    setRoomPickerLightboxIndex(0);
+                                    setRoomPickerLightboxTitle(rtName);
+                                  }}
+                                  aria-label={`View ${rtName} photos`}
+                                >
+                                  {visual.hero ? (
+                                    <Image src={visual.hero} alt={rtName} fill className="object-cover transition duration-200 group-hover:scale-105" />
+                                  ) : (
+                                    <div className="w-full h-full bg-gray-200" />
+                                  )}
+                                  <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 text-left">
+                                    <span className="text-[11px] font-medium text-white">
+                                      View photos{visual.gallery?.length > 1 ? ` (${visual.gallery.length})` : ''}
+                                    </span>
+                                  </div>
+                                </button>
+                                {visual.gallery?.length > 1 && (
+                                  <div className="mt-2 grid grid-cols-4 gap-2">
+                                    {visual.gallery.slice(0, 4).map((src: string, gIdx: number) => (
+                                      <button
+                                        key={`${src}-${gIdx}`}
+                                        type="button"
+                                        className="relative h-11 rounded-md overflow-hidden bg-gray-100"
+                                        onClick={() => {
+                                          setRoomPickerLightboxImages(visual.gallery || []);
+                                          setRoomPickerLightboxIndex(gIdx);
+                                          setRoomPickerLightboxTitle(rtName);
+                                        }}
+                                        aria-label={`View ${rtName} photo ${gIdx + 1}`}
+                                      >
+                                        <Image src={src} alt={`${rtName} ${gIdx + 1}`} fill className="object-cover" />
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <div className="min-w-0 flex-1">
+                                <div className="flex flex-wrap items-center gap-2">
+                                  <h4 className="text-lg font-semibold text-gray-900">{rtName}</h4>
+                                  {selected && (
+                                    <span className="rounded-full bg-[#1f2345] text-white text-[11px] px-2.5 py-1 uppercase tracking-wide font-semibold">
+                                      Selected
+                                    </span>
+                                  )}
+                                  {roomPickerCtx?.seedRoomTypeId === rtId && (
+                                    <span className="rounded-full bg-amber-100 text-amber-900 text-[11px] px-2.5 py-1 uppercase tracking-wide font-semibold">
+                                      Match from search
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+                                  {desc || 'Private stay with premium amenities and curated comfort.'}
+                                </p>
+                                {addr && <p className="mt-2 text-xs text-gray-500">{addr}</p>}
+                              </div>
+
+                              <div className="md:text-right md:min-w-[185px]">
+                                <div className="text-xs uppercase tracking-wide text-gray-500">Room only</div>
+                                <div className="mt-1 text-2xl font-semibold text-gray-900">{roomPickerMoney(nightly)}</div>
+                                <div className="text-xs text-gray-500">{ccy} / night</div>
+                                <div className="mt-1 text-xs text-gray-600">{roomPickerMoney(total)} {ccy} total</div>
+                                <button
+                                  type="button"
+                                  onClick={() => setRoomPickerSelectedId(rtId)}
+                                  className={`mt-3 w-full rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                    selected ? 'bg-[#1f2345] text-white' : 'border border-gray-300 text-gray-800 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  {selected ? 'Selected' : 'Select room'}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <aside className="hidden lg:flex border-t lg:border-t-0 lg:border-l border-gray-200 bg-white p-4 md:p-5 flex-col">
+                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">ROOM TYPE SELECTED</div>
+                    <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
+                      {String(
+                        (roomPickerSelectedRoom ? (getRoomModalVisual(roomPickerSelectedRoom)?.meta?.name || getRoomModalVisual(roomPickerSelectedRoom)?.meta?.hotelName) : '') ||
+                        roomPickerSelectedRoom?.roomTypeName ||
+                        roomPickerSelectedRoom?.RoomType ||
+                        'Choose a room type'
+                      )}
+                    </div>
+
+                    <div className="mt-4 space-y-3 text-sm">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <div className="text-[11px] uppercase tracking-wide text-gray-500">Dates</div>
+                          <button
+                            type="button"
+                            onClick={() => setRoomPickerShowCal(true)}
+                            className="inline-flex items-center gap-1 rounded-full border border-gray-300 bg-white px-2 py-1 text-[11px] font-medium text-gray-700 hover:bg-gray-50"
+                          >
+                            <CalIcon className="w-3.5 h-3.5" />
+                            Edit
+                          </button>
+                        </div>
+                        <div className="font-medium text-gray-900">{roomPickerStartDate || startDate} → {roomPickerEndDate || endDate}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Guests</div>
+                        <div className="font-medium text-gray-900">{adults + children + infants}</div>
+                      </div>
+                      <div>
+                        <div className="text-[11px] uppercase tracking-wide text-gray-500">Nights</div>
+                        <div className="font-medium text-gray-900">{nights > 0 ? nights : 1}</div>
+                      </div>
+                    </div>
+
+                    <div className="my-4 h-px bg-gray-200" />
+
+                    <div>
+                      <div className="text-sm text-gray-600">Price per night</div>
+                      <div className="mt-1 text-3xl leading-none font-semibold text-gray-900">
+                        {roomPickerMoney(roomPickerSelectedRoom ? (nights > 0 ? roomTotalValue(roomPickerSelectedRoom) / nights : roomTotalValue(roomPickerSelectedRoom)) : 0)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {String(roomPickerSelectedRoom?.currencyCode || 'CAD')} / night (room only)
+                      </div>
+                    </div>
+
+                    <div className="mt-5 rounded-2xl border border-[#e6e8f2] bg-[#f6f7fb] p-4">
+                      <div className="text-sm text-gray-600">Booking summary</div>
+                      <div className="mt-1 text-lg font-semibold text-[#1f2345]">{roomPickerCtx?.hotelName || 'Property'}</div>
+                      <p className="mt-2 text-xs text-gray-600">
+                        Rates shown are for your selected dates and party size. Final fees and taxes appear on the next step.
+                      </p>
+                    </div>
+
+                    <div className="mt-auto pt-5">
+                      <button
+                        type="button"
+                        disabled={!roomPickerSelectedRoom || roomPickerLoading}
+                        onClick={continueRoomPicker}
+                        className={`w-full rounded-full px-5 py-3 text-sm font-semibold transition ${
+                          roomPickerSelectedRoom && !roomPickerLoading
+                            ? 'bg-[#1f2345] text-white hover:brightness-110'
+                            : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        }`}
+                      >
+                        Continue to Reserve
+                      </button>
+                    </div>
+                  </aside>
+                </div>
+
+                <div className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gray-500">Room Selected</div>
+                      <div className="truncate text-sm font-semibold text-gray-900">
+                        {String(
+                          (roomPickerSelectedRoom ? (getRoomModalVisual(roomPickerSelectedRoom)?.meta?.name || getRoomModalVisual(roomPickerSelectedRoom)?.meta?.hotelName) : '') ||
+                          roomPickerSelectedRoom?.roomTypeName ||
+                          roomPickerSelectedRoom?.RoomType ||
+                          'Choose a room type'
+                        )}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        {String(roomPickerSelectedRoom?.currencyCode || 'CAD')} {roomPickerMoney(roomPickerSelectedRoom ? (nights > 0 ? roomTotalValue(roomPickerSelectedRoom) / nights : roomTotalValue(roomPickerSelectedRoom)) : 0)} / night
+                      </div>
+                      <div className="mt-2 flex flex-wrap items-center gap-2 text-xs text-gray-600">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1">
+                          <CalIcon className="w-3.5 h-3.5" />
+                          {roomPickerStartDate || startDate} → {roomPickerEndDate || endDate}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setRoomPickerShowCal(true)}
+                          className="inline-flex items-center justify-center rounded-full border border-gray-300 bg-white w-7 h-7 text-gray-700 hover:bg-gray-50"
+                          aria-label="Change dates"
+                        >
+                          <CalIcon className="w-3.5 h-3.5" />
+                        </button>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1">
+                          <UsersIcon className="w-3.5 h-3.5" />
+                          {adults + children + infants}
+                        </span>
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-1">
+                          <CalIcon className="w-3.5 h-3.5" />
+                          {nights > 0 ? nights : 1}N
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      disabled={!roomPickerSelectedRoom || roomPickerLoading}
+                      onClick={continueRoomPicker}
+                      className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                        roomPickerSelectedRoom && !roomPickerLoading
+                          ? 'bg-[#1f2345] text-white'
+                          : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                      }`}
+                    >
+                      Continue
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>,
+          document.body
+        )}
+
+      {roomPickerLightboxImages.length > 0 &&
+        createPortal(
+          <div className="fixed inset-0 z-[10060] bg-black/90 flex items-center justify-center p-3 md:p-5">
+            <button
+              type="button"
+              className="absolute top-3 right-3 md:top-4 md:right-4 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+              onClick={() => setRoomPickerLightboxImages([])}
+              aria-label="Close photos"
+            >
+              x
+            </button>
+            {roomPickerLightboxImages.length > 1 && (
+              <button
+                type="button"
+                className="absolute left-3 md:left-5 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+                onClick={() =>
+                  setRoomPickerLightboxIndex((prev) => (prev - 1 + roomPickerLightboxImages.length) % roomPickerLightboxImages.length)
+                }
+                aria-label="Previous photo"
+              >
+                {'<'}
+              </button>
+            )}
+            <div className="w-full max-w-5xl">
+              <div className="relative w-full h-[52vh] md:h-[70vh] bg-black rounded-2xl overflow-hidden">
+                <Image
+                  src={roomPickerLightboxImages[roomPickerLightboxIndex]}
+                  alt={`${roomPickerLightboxTitle} photo ${roomPickerLightboxIndex + 1}`}
+                  fill
+                  className="object-contain"
+                />
+              </div>
+              <div className="mt-3 flex items-center justify-between text-white">
+                <div className="text-sm md:text-base font-medium">{roomPickerLightboxTitle}</div>
+                <div className="text-xs md:text-sm text-white/80">
+                  {roomPickerLightboxIndex + 1} / {roomPickerLightboxImages.length}
+                </div>
+              </div>
+            </div>
+            {roomPickerLightboxImages.length > 1 && (
+              <button
+                type="button"
+                className="absolute right-3 md:right-5 rounded-full bg-white/15 hover:bg-white/25 text-white w-10 h-10 text-xl"
+                onClick={() =>
+                  setRoomPickerLightboxIndex((prev) => (prev + 1) % roomPickerLightboxImages.length)
+                }
+                aria-label="Next photo"
+              >
+                {'>'}
+              </button>
+            )}
+          </div>,
+          document.body
+        )}
       </div>
     
   );

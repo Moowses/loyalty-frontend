@@ -56,3 +56,11 @@ body {
 /* Utilities used in components */
 .shadow-card { box-shadow: var(--shadow-card); }
 .tnum { font-variant-numeric: tabular-nums; }  /* align numbers like points */
+
+/* Hide chat launcher/widget while the room-picker modal is open on results page */
+body[data-room-picker-open="1"] iframe[src*="chat.dreamtripclub.com"],
+body[data-room-picker-open="1"] iframe[title*="chat" i],
+body[data-room-picker-open="1"] iframe[aria-label*="chat" i],
+body[data-room-picker-open="1"] #dtc-chat-launcher-close-btn {
+  display: none !important;
+}

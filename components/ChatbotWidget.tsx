@@ -21,6 +21,8 @@ type Props = {
 declare global {
   interface Window {
     DT_MEMBER?: any;
+    __dtcChatLauncherHidden?: boolean;
+    __dtcHideChatAll?: boolean;
   }
 }
 
@@ -61,6 +63,90 @@ function postToChatIframes(message: any) {
   }
 
   if (sent) console.log(`[Chatbot] postMessage sent to ${sent} chat iframe(s):`, message);
+}
+
+function resizeChatLauncherForMobile() {
+  if (typeof window === "undefined") return;
+  const isMobile = window.innerWidth < 768;
+  const iframes = Array.from(document.querySelectorAll("iframe")) as HTMLIFrameElement[];
+  const hidden = (window as any).__dtcChatLauncherHidden === true;
+  const hideAll = (window as any).__dtcHideChatAll === true;
+  let launcherRect: DOMRect | null = null;
+  let hasChatIframe = false;
+
+  for (const iframe of iframes) {
+    const src = iframe.getAttribute("src") || "";
+    if (!src.includes("chat.dreamtripclub.com")) continue;
+    hasChatIframe = true;
+
+    if (hideAll) {
+      iframe.style.display = "none";
+      continue;
+    } else {
+      iframe.style.display = "";
+    }
+
+    const rect = iframe.getBoundingClientRect();
+    const looksLikeLauncher = rect.width > 0 && rect.height > 0 && rect.width <= 120 && rect.height <= 120;
+    if (!looksLikeLauncher) continue;
+    launcherRect = rect;
+
+    if (isMobile) {
+      iframe.style.transform = "scale(0.82)";
+      iframe.style.transformOrigin = "bottom right";
+      iframe.style.display = hidden ? "none" : "";
+    } else {
+      iframe.style.transform = "";
+      iframe.style.transformOrigin = "";
+      iframe.style.display = "";
+    }
+  }
+
+  const btnId = "dtc-chat-launcher-close-btn";
+  let btn = document.getElementById(btnId) as HTMLButtonElement | null;
+  if (!btn) {
+    btn = document.createElement("button");
+    btn.id = btnId;
+    btn.type = "button";
+    btn.textContent = "×";
+    btn.setAttribute("aria-label", "Hide chat launcher");
+    Object.assign(btn.style, {
+      position: "fixed",
+      zIndex: "2147483647",
+      width: "20px",
+      height: "20px",
+      borderRadius: "999px",
+      border: "1px solid rgba(0,0,0,.12)",
+      background: "white",
+      color: "#111827",
+      fontSize: "12px",
+      lineHeight: "18px",
+      cursor: "pointer",
+      boxShadow: "0 2px 8px rgba(0,0,0,.12)",
+      display: "none",
+    } as CSSStyleDeclaration);
+    btn.onclick = () => {
+      (window as any).__dtcChatLauncherHidden = true;
+      resizeChatLauncherForMobile();
+    };
+    document.body.appendChild(btn);
+  }
+
+  if (!isMobile || !hasChatIframe || hidden || hideAll) {
+    btn.style.display = "none";
+    return;
+  }
+
+  btn.style.display = "block";
+  if (launcherRect) {
+    btn.style.left = `${Math.max(8, launcherRect.left - 6)}px`;
+    btn.style.top = `${Math.max(8, launcherRect.top - 6)}px`;
+  } else {
+    btn.style.right = "66px";
+    btn.style.bottom = "82px";
+    btn.style.left = "";
+    btn.style.top = "";
+  }
 }
 
 export default function ChatbotWidget({ member = null }: Props) {
@@ -130,6 +216,29 @@ export default function ChatbotWidget({ member = null }: Props) {
 
     lastIdentityKeyRef.current = identityKey;
   }, [dtMember, identityKey]);
+
+  useEffect(() => {
+    ensureLoaderScript();
+
+    const run = () => resizeChatLauncherForMobile();
+    run();
+
+    const observer = new MutationObserver(() => run());
+    observer.observe(document.body, { childList: true, subtree: true, attributes: true });
+    window.addEventListener("resize", run);
+    window.addEventListener("dtc-chat-visibility-change", run as EventListener);
+
+    const t1 = window.setTimeout(run, 800);
+    const t2 = window.setTimeout(run, 2000);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("resize", run);
+      window.removeEventListener("dtc-chat-visibility-change", run as EventListener);
+      window.clearTimeout(t1);
+      window.clearTimeout(t2);
+    };
+  }, []);
 
   return null;
 }
