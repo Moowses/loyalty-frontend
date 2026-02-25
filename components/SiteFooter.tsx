@@ -149,14 +149,18 @@ export default function SiteFooter() {
           {/* Center */}
           <div className="flex w-full items-center justify-center gap-3 md:w-1/3">
             <Link
-              href="#"
+              href="https://www.facebook.com/CDVdreamtripclub/"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Facebook"
               className="text-black/80 transition hover:text-black"
             >
               <Image src="/fb.png" alt="Facebook" width={20} height={20} className="h-5 w-5 object-contain" />
             </Link>
             <Link
-              href="#"
+              href="https://www.instagram.com/dreamtripclubrewards/"
+              target="_blank"
+              rel="noopener noreferrer"
               aria-label="Instagram"
               className="text-black/80 transition hover:text-black"
             >

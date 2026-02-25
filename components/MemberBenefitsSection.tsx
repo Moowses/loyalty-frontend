@@ -21,8 +21,8 @@ const benefits = [
 
 export default function MemberBenefitsSection({
   title = "It's better to be a member.",
-  joinHref = 'https://dreamtripclub.com',
-  signInHref = '/login',
+  joinHref = '/member?mode=signup',
+  signInHref = '/member?mode=signup',
 }: Props) {
   const [showLoginModal, setShowLoginModal] = useState(false);
 
@@ -97,10 +97,9 @@ export default function MemberBenefitsSection({
 
             {/* Buttons */}
             <div className="mt-8 flex gap-4">
-              {/* JOIN now opens the right-docked login drawer (same as SiteHeader) */}
-              <button
-                type="button"
-                onClick={() => setShowLoginModal(true)}
+              {/* JOIN redirects to create account */}
+              <a
+                href={joinHref}
                 className="flex items-center justify-center"
                 style={{
                   width: 112,
@@ -114,11 +113,12 @@ export default function MemberBenefitsSection({
                 }}
               >
                 JOIN
-              </button>
+              </a>
 
-              {/* Keep SIGN IN link as-is */}
-              <a
-                href={signInHref}
+              {/* SIGN IN opens the right-docked login drawer */}
+              <button
+                type="button"
+                onClick={() => setShowLoginModal(true)}
                 className="flex items-center justify-center border"
                 style={{
                   width: 112,
@@ -133,9 +133,8 @@ export default function MemberBenefitsSection({
                 }}
               >
                 SIGN IN
-              </a>
+              </button>
 
-           
               <span className="hidden" data-join-href={joinHref} />
             </div>
           </div>
