@@ -8,7 +8,7 @@ import {
   type FormEvent,
 } from 'react';
 import Image from 'next/image';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 // Option A phone input (CSS already in globals.css)
 import { PhoneInput } from 'react-international-phone';
@@ -43,7 +43,6 @@ const countryToIso2 = (country: string) =>
 
 export default function LandingPage() {
   const router = useRouter();
-  const searchParams = useSearchParams();
 
   const [isSignup, setIsSignup] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -71,14 +70,15 @@ export default function LandingPage() {
   });
 
   useEffect(() => {
-    const mode = searchParams.get('mode');
+    if (typeof window === 'undefined') return;
+    const mode = new URLSearchParams(window.location.search).get('mode');
     if (mode === 'signup') {
       setIsSignup(true);
       setIsReset(false);
     } else if (mode === 'signin' || mode === 'login') {
       setIsSignup(false);
     }
-  }, [searchParams]);
+  }, []);
 
   // Remember Me (same keys as LoginClient)
   const [rememberMe, setRememberMe] = useState(true);
