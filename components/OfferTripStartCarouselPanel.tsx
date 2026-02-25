@@ -89,14 +89,15 @@ export default function OfferTripStartCarouselPanel() {
                 loop={true}
                 watchOverflow={false}
                 centeredSlides={false}
+                grabCursor={true}
                 spaceBetween={24}
                 slidesPerView={1.1}
                 speed={500}
                 breakpoints={{
                   640: { slidesPerView: 1.3, spaceBetween: 24 },
                   768: { slidesPerView: 2.2, spaceBetween: 24 },
-                  1024: { slidesPerView: 4, spaceBetween: 20 },
-                  1280: { slidesPerView: 4, spaceBetween: 24 },
+                  1024: { slidesPerView: 3.2, spaceBetween: 20 },
+                  1280: { slidesPerView: 3.5, spaceBetween: 24 },
                 }}
                 className="rounded-2xl"
               >
