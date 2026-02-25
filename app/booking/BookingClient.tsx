@@ -57,13 +57,34 @@ function isValidE164(v: string) {
   return /^\+\d{8,15}$/.test(s);
 }
 
+function parseLocalDateOnly(raw?: string) {
+  if (!raw) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(raw).trim());
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+function formatLocalDateOnly(raw?: string) {
+  const d = parseLocalDateOnly(raw);
+  return d ? d.toLocaleDateString() : '—';
+}
+
+function diffNights(startRaw?: string, endRaw?: string) {
+  const a = parseLocalDateOnly(startRaw);
+  const b = parseLocalDateOnly(endRaw);
+  if (!a || !b) return 0;
+  const d = Math.round((b.getTime() - a.getTime()) / 86400000);
+  return Number.isFinite(d) && d > 0 ? d : 0;
+}
+
 export default function BookingPage() {
   const router = useRouter();
   const params = useSearchParams();
 
-  const hotelIdParam = params.get('hotelId') || params.get('roomTypeId') || '';
+  const hotelIdParam = params.get('hotelId') || '';
   const roomTypeIdParam = params.get('roomTypeId') || '';
   const hotelNoParam = params.get('hotelNo') || '';
+  const hotelNameParam = params.get('hotelName') || '';
   const startTime = params.get('startTime') || params.get('startDate') || '';
   const endTime = params.get('endTime') || params.get('endDate') || '';
   const adults = Number(params.get('adults') || params.get('adult') || '1');
@@ -75,13 +96,7 @@ export default function BookingPage() {
   const petYN: 'yes' | 'no' =
     String(petParam).toLowerCase() === 'yes' || String(petParam) === '1' ? 'yes' : 'no';
 
-  const nights = useMemo(() => {
-    if (!startTime || !endTime) return 0;
-    const a = new Date(startTime).getTime();
-    const b = new Date(endTime).getTime();
-    const d = Math.round((b - a) / 86400000);
-    return isFinite(d) && d > 0 ? d : 0;
-  }, [startTime, endTime]);
+  const nights = useMemo(() => diffNights(startTime, endTime), [startTime, endTime]);
 
   const [quote, setQuote] = useState<Quote | null>(null);
   const [loading, setLoading] = useState(true);
@@ -614,15 +629,29 @@ export default function BookingPage() {
       setPayStage('approved');
       setPayMessage('Payment approved! Finalizing your reservation…');
 
+      const normalizedReservationNumber =
+        j?.reservation?.reservationNumber ||
+        j?.reservation?.confirmationNumber ||
+        j?.reservationNumber ||
+        j?.confirmationNumber ||
+        j?.reservation?.number ||
+        '';
+
+      console.log('[booking-page] confirm response summary', {
+        transactionId: j?.payment?.transactionId || null,
+        reservationNumber: normalizedReservationNumber || null,
+        warning: j?.warning || null,
+        startTime,
+        endTime,
+        hotelId: quote.hotelId,
+        roomTypeId: quote.roomTypeId,
+      });
+
       const payload = {
-        reservationNumber:
-          j?.reservation?.reservationNumber ||
-          j?.reservation?.confirmationNumber ||
-          j?.reservationNumber ||
-          j?.confirmationNumber ||
-          j?.reservation?.number ||
-          '',
-        hotelName: hotelNoParam || quote.hotelId || 'Your Hotel',
+        reservationNumber: normalizedReservationNumber,
+        confirmationNumber: j?.reservation?.confirmationNumber || j?.confirmationNumber || '',
+        warning: j?.warning || '',
+        hotelName: hotelNameParam || hotelNoParam || quote.hotelId || 'Your Hotel',
         roomTypeName: quote.roomTypeName || '',
         arrivalDate: startTime,
         departureDate: endTime,
@@ -672,9 +701,7 @@ export default function BookingPage() {
               </div>
               <div className="mt-0.5 font-semibold text-sm text-black">
                 {quote?.startTime && quote?.endTime
-                  ? `${new Date(quote.startTime).toLocaleDateString()} – ${new Date(
-                      quote.endTime
-                    ).toLocaleDateString()}`
+                  ? `${formatLocalDateOnly(quote.startTime)} – ${formatLocalDateOnly(quote.endTime)}`
                   : '—'}
               </div>
             </div>
