@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 type ConfirmPayload = {
   reservationNumber?: string;
+  confirmationNumber?: string;
   hotelName?: string;
   roomTypeName?: string;
   arrivalDate?: string;   // ISO string
@@ -49,6 +50,14 @@ function money(v?: number, ccy = 'CAD') {
   }
 }
 
+function parseDisplayDate(raw?: string) {
+  if (!raw) return undefined;
+  const m = /^(\\d{4})-(\\d{2})-(\\d{2})$/.exec(raw.trim());
+  if (m) return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  const dt = new Date(raw);
+  return Number.isNaN(dt.getTime()) ? undefined : dt;
+}
+
 const BRAND = '#211F45';
 
 export default function ConfirmClient() {
@@ -71,9 +80,14 @@ export default function ConfirmClient() {
 
   const hotelName = data?.hotelName || 'Your Hotel';
   const roomType = data?.roomTypeName || 'Selected Room';
+  const normalizedReservationNumber =
+    (data as any)?.reservationNumber ||
+    (data as any)?.confirmationNumber ||
+    reservationNumOnly ||
+    '—';
 
-  const arrival = data?.arrivalDate ? new Date(data.arrivalDate) : undefined;
-  const departure = data?.departureDate ? new Date(data.departureDate) : undefined;
+  const arrival = parseDisplayDate(data?.arrivalDate);
+  const departure = parseDisplayDate(data?.departureDate);
 
   const guests = data?.guests || {};
   const charges = data?.charges;
@@ -157,7 +171,7 @@ export default function ConfirmClient() {
       <div className="flex flex-wrap items-center justify-between gap-3 mb-5">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight" style={{ color: BRAND }}>
-            Reservation #{reservationNumber}
+            Reservation #{normalizedReservationNumber}
           </h1>
           <p className="text-sm text-gray-600">Thank you for booking with Dream Trip Club.</p>
         </div>

@@ -615,8 +615,15 @@ export default function BookingPage() {
       setPayMessage('Payment approved! Finalizing your reservation…');
 
       const payload = {
-        reservationNumber: j?.reservation?.reservationNumber || '',
-        hotelName: quote.roomTypeName || 'Your Dream Getaway',
+        reservationNumber:
+          j?.reservation?.reservationNumber ||
+          j?.reservation?.confirmationNumber ||
+          j?.reservationNumber ||
+          j?.confirmationNumber ||
+          j?.reservation?.number ||
+          '',
+        hotelName: hotelNoParam || quote.hotelId || 'Your Hotel',
+        roomTypeName: quote.roomTypeName || '',
         arrivalDate: startTime,
         departureDate: endTime,
         guests: { adult: adults, child: children, infant: infants, pet: petYN },
