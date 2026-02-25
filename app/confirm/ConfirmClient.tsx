@@ -3,6 +3,11 @@
 import Image from "next/image";
 import { useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import metaCA1B from "@/public/calabogie-properties/CA1B/meta.json";
+import metaCH2B from "@/public/calabogie-properties/CH2B/meta.json";
+import metaCH3B from "@/public/calabogie-properties/CH3B/meta.json";
+import metaLF2B from "@/public/calabogie-properties/LF2B/meta.json";
+import metaLoft from "@/public/calabogie-properties/1 Bedroom Loft/meta.json";
 
 type ConfirmPayload = {
   reservationNumber?: string;
@@ -58,6 +63,20 @@ function parseDisplayDate(raw?: string) {
 }
 
 const BRAND = "#211F45";
+const CALABOGIE_ROOM_META: Record<string, any> = {
+  CA1B: metaCA1B,
+  CH2B: metaCH2B,
+  CH3B: metaCH3B,
+  LF2B: metaLF2B,
+  "1BEDROOMLOFT": metaLoft,
+};
+
+function normalizeCode(v?: string) {
+  return String(v || "")
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, "");
+}
 
 export default function ConfirmClient() {
   const router = useRouter();
@@ -73,8 +92,24 @@ export default function ConfirmClient() {
   const accountMembershipNo = data?.account?.membershipNo || params.get("membershipNo") || "";
   const accountTempPassword = data?.account?.tempPassword || params.get("tempPassword") || "";
 
-  const hotelName = data?.hotelName || "Your Hotel";
-  const roomType = data?.roomTypeName || "Selected Room";
+  const rawHotelName = data?.hotelName || "";
+  const rawRoomType = data?.roomTypeName || "";
+  const calabogieCode =
+    normalizeCode(rawRoomType) || normalizeCode(rawHotelName) || "";
+  const calabogieMeta = CALABOGIE_ROOM_META[calabogieCode];
+  const hotelName =
+    calabogieMeta || calabogieCode === "CBE"
+      ? "Calabogie Escapes"
+      : rawHotelName || "Your Hotel";
+  const rawRoomTypeCode = normalizeCode(rawRoomType);
+  const roomType =
+    (calabogieMeta && rawRoomTypeCode && CALABOGIE_ROOM_META[rawRoomTypeCode]
+      ? calabogieMeta?.name || calabogieMeta?.hotelName
+      : rawRoomType) ||
+    calabogieMeta?.name ||
+    calabogieMeta?.hotelName ||
+    (calabogieCode && calabogieCode !== "CBE" ? calabogieCode : "") ||
+    "Selected Room";
   const normalizedReservationNumber =
     data?.reservationNumber || data?.confirmationNumber || reservationNumOnly || "—";
   const warningMessage = data?.warning || "";
