@@ -631,7 +631,7 @@ export default function BookingPage() {
       };
 
       const b64 = btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
-      router.push(`/booking/confirm?payload=${encodeURIComponent(b64)}`);
+      router.push(`/confirm?payload=${encodeURIComponent(b64)}`);
     } catch (e: any) {
       console.error('Booking error:', e);
       setErr(e?.message || 'Checkout failed. Please try again.');
