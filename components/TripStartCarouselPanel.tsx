@@ -91,6 +91,7 @@ export default function TripStartCarouselPanel({ variant }: TripStartCarouselPan
                   disableOnInteraction: false,
                 }}
                 loop={true}
+                watchOverflow={false}
                 centeredSlides={false}
                 spaceBetween={24}
                 slidesPerView={1.1}

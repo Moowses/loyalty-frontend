@@ -87,6 +87,7 @@ export default function OfferTripStartCarouselPanel() {
                   disableOnInteraction: false,
                 }}
                 loop={true}
+                watchOverflow={false}
                 centeredSlides={false}
                 spaceBetween={24}
                 slidesPerView={1.1}

@@ -88,10 +88,6 @@ export default function OffersPage() {
       {/* MEMBER BENEFITS  */}
       <section className="w-full bg-[#1E1C49] py-12 md:py-16">
         <div className="mx-auto w-full max-w-6xl px-4">
-          <h2 className="text-center text-2xl font-extrabold text-white md:text-3xl">
-            It&apos;s better to be a member.
-          </h2>
-
           <div className="mt-8">
             {/* start the components */}
             <MemberBenefitsSection />
