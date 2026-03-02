@@ -3,6 +3,8 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import RewardsMemberBenefitsSection from '@/components/rewards/MemberBenefitsSection';
+import EarningPointsSection from '@/components/rewards/EarningPointsSection';
 
 // start the components
 const MemberBenefitsSection = dynamic(() => import('@/components/MemberBenefitsSection'), { ssr: false });
@@ -72,103 +74,11 @@ export default function RewardsPage() {
           </div>
         </div>
       </section>
-
       {/*SECTION 2: MEMBER BENEFITS (light) */}
-      <section className="w-full bg-white py-12 md:py-16">
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <h2
-            className="text-center font-[900]"
-            style={{
-              fontFamily: 'Avenir, Avenir Black, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-              fontSize: '51px',
-              lineHeight: '56px',
-              color: '#211F45',
-            }}
-          >
-            Member Benefits
-          </h2>
+      <RewardsMemberBenefitsSection />
 
-          <p
-            className="mx-auto mt-4 max-w-4xl text-center"
-            style={{
-              fontFamily: 'Avenir, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-              color: '#211F45',
-              fontWeight: 400,
-              fontSize: '16px',
-            }}
-          >
-            Join the Dream Trip Club and unlock exclusive offers and bonus rewards.
-            Dream Trip Club Rewards is designed to enhance your experience at our resorts and thank you for your continued
-            loyalty. As you stay with us, you&apos;ll earn points, unlock special privileges, and enjoy exclusive benefits that
-            make each visit even more memorable
-          </p>
-
-          {/* checklist (2 columns) */}
-          <div className="mx-auto mt-8 grid max-w-4xl grid-cols-1 gap-x-10 gap-y-6 md:grid-cols-2">
-            {[
-              'Earn points for every dollar spent at our resorts or cottages',
-              'Enjoy member-exclusive rates on all bookings',
-              'Advance through tiers to unlock additional benefits',
-              'Redeem points for free nights, room upgrades, and resort experiences',
-            ].map((t) => (
-              <div key={t} className="flex items-start gap-3">
-                {/* plain check like Figma */}
-                <span className="mt-[2px] text-black text-lg leading-none">✓</span>
-                <p
-                  style={{
-                    fontFamily: 'Avenir, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-                    color: '#211F45',
-                    fontWeight: 400,
-                    fontSize: '15px',
-                    lineHeight: '22px',
-                  }}
-                >
-                  {t}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* SECTION 3: EARNING POINTS
-           */}
-      <section className="w-full py-12 md:py-16" style={{ backgroundColor: '#93AFB9' }}>
-        <div className="mx-auto w-full max-w-6xl px-4">
-          <h2
-            className="text-center font-[900] text-white"
-            style={{
-              fontFamily: 'Avenir, Avenir Black, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-              fontSize: '52px',
-              lineHeight: '58px',
-            }}
-          >
-            Earning Points
-          </h2>
-
-          <p
-            className="mt-3 text-center text-white"
-            style={{
-              fontFamily: 'Avenir, Avenir Black, system-ui, -apple-system, Segoe UI, Roboto, Arial',
-              fontWeight: 900,
-              fontSize: '22px',
-              lineHeight: '28px',
-            }}
-          >
-            Our point system is simple and rewarding:
-          </p>
-
-          <div className="mt-8 overflow-hidden rounded-2xl bg-white/20 p-4 ring-1 ring-white/30 backdrop-blur">
-            <Image
-              src="/memberpointchart.png"
-              alt="Member point chart"
-              width={1600}
-              height={700}
-              className="h-auto w-full object-contain"
-            />
-          </div>
-        </div>
-      </section>
+      {/* SECTION 3: EARNING POINTS */}
+      <EarningPointsSection />
 
       {/* SECTION 3: SPECIAL MEMBER EXPERIENCES*/}
       <section className="w-full bg-white py-12 md:py-16">
@@ -301,3 +211,4 @@ function ExperienceCard({
     </div>
   );
 }
+

@@ -133,7 +133,7 @@ export default function SiteFooter() {
               </div>
 
               <div className="relative h-[62px] w-[62px] md:h-[72px] md:w-[72px]">
-                <Image src="/qrcode.png" alt="QR code" fill className="object-contain" />
+                <Image src="/qrcode1.png" alt="QR code" fill className="object-contain" />
               </div>
             </div>
           </div>

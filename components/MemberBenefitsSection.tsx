@@ -75,7 +75,7 @@ export default function MemberBenefitsSection({
           </div>
 
           {/* CENTER ICONS */}
-          <div className="flex flex-col items-center justify-center text-white">
+          <div className="flex flex-col items-center justify-center text-white md:pt-10">
             <ul className="space-y-4">
               {benefits.map((b) => (
                 <li key={b.label} className="flex items-center gap-3">

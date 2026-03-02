@@ -77,7 +77,7 @@ export default function HomePage() {
                     href="/rewards"
                     className="inline-flex rounded-full bg-orange-500 px-7 py-2.5 text-sm font-semibold text-white shadow hover:bg-orange-600"
                   >
-                    Learn More
+                    BOOK NOW
                   </Link>
 
                   <Link
@@ -89,7 +89,7 @@ export default function HomePage() {
                 </div>
 
                 {/*  MOBILE */}
-                <div className="h-14 md:hidden" />
+                <div className="h-[200px] md:hidden" />
               </div>
 
               {/* CAROUSEL (MOBILE) */}
@@ -97,74 +97,36 @@ export default function HomePage() {
                 <TripStartCarouselPanel variant="mobile" />
               </div>
 
+              {/* CAROUSEL (DESKTOP) */}
+              <div className="mt-[200px] hidden md:block">
+                <TripStartCarouselPanel variant="desktop" />
+              </div>
+
               {/* Spacer on mobile */}
               <div className="h-10 md:hidden" />
             </div>
           </div>
-
-          {/* Desktop overlay carousel */}
-          <div className="absolute inset-x-0 bottom-14 z-10 hidden md:block">
-            <div className="mx-auto w-full max-w-6xl px-4">
-              <TripStartCarouselPanel variant="desktop" />
-            </div>
-          </div>
-
-          {/* breathing room under desktop overlay */}
-          <div className="hidden md:block h-40" />
         </div>
       </section>
 
       {/* Rewards image section */}
       <section className="mx-auto w-full max-w-6xl px-4 py-10 md:py-14">
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3 md:gap-6">
-          <Link
-            href="/rewards"
-            className="block overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
-            aria-label="Go to Rewards"
-          >
-            <div className="relative h-[210px] w-full md:h-[240px]">
-              <Image
-                src="/rewardyourself.png"
-                alt="Reward Yourself"
-                fill
-                className="object-cover"
-                priority={false}
-              />
-            </div>
-          </Link>
-
-          <Link
-            href="/rewards"
-            className="block overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
-            aria-label="Go to Rewards"
-          >
-            <div className="relative h-[210px] w-full md:h-[240px]">
-              <Image
-                src="/rewardyourself2.png"
-                alt="Reward Yourself 2"
-                fill
-                className="object-cover"
-                priority={false}
-              />
-            </div>
-          </Link>
-
-          <Link
-            href="/rewards"
-            className="block overflow-hidden rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
-            aria-label="Go to Rewards"
-          >
-            <div className="relative h-[210px] w-full md:h-[240px]">
-              <Image
-                src="/rewardyourself3.png"
-                alt="Reward Yourself 3"
-                fill
-                className="object-cover"
-                priority={false}
-              />
-            </div>
-          </Link>
-        </div>
+        <Link
+          href="/rewards"
+          className="block rounded-2xl bg-white shadow-xl ring-1 ring-black/5"
+          aria-label="Go to Rewards"
+        >
+          <div className="relative w-full overflow-hidden rounded-2xl bg-[#f6f6f6]">
+            <Image
+              src="/rewardyourself.png"
+              alt="Reward Yourself, Over and Over and Over"
+              width={1600}
+              height={420}
+              className="h-auto w-full object-contain"
+              priority={false}
+            />
+          </div>
+        </Link>
       </section>
 
       {/* Member benefits section */}
