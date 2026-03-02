@@ -720,7 +720,9 @@ export default function BookingPage() {
       <div className="flex items-center justify-center gap-3 border-t border-gray-200 bg-white px-6 py-2.5">
         <Image src="/missingpoints.png" alt="" width={18} height={18} />
         <p className="text-[14px] font-semibold text-black">
-          Get exclusive member rates and rewards. Sign in or create an account with the Dream Trip Club Rewards program.
+          {isAuthed === true
+            ? "You're getting rewards for this stay!"
+            : 'Get exclusive member rates and rewards. Sign in or create an account with the Dream Trip Club Rewards program.'}
         </p>
       </div>
 
@@ -902,7 +904,7 @@ export default function BookingPage() {
                 id="bookNowBtn"
                 type="submit"
                 disabled={paying || !available || nights <= 0}
-                className="mt-2 inline-flex items-center justify-center rounded-full bg-[#F59E0B] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
+                className="mt-2 inline-flex items-center justify-center rounded-full bg-[#EB6923] px-6 py-3 font-semibold text-white hover:opacity-95 disabled:opacity-50"
               >
                 {paying ? 'Processing…' : available ? 'BOOK NOW' : 'Not available'}
               </button>

@@ -1241,7 +1241,13 @@ type RoomPickerContext = {
       });
 
       setRoomPickerRooms(deduped);
-      setRoomPickerSelectedId((prev) => prev || String(deduped[0]?.roomTypeId || deduped[0]?.RoomTypeId || deduped[0]?.RoomTypeID || ''));
+      setRoomPickerSelectedId((prev) => {
+        if (!prev) return '';
+        const stillExists = deduped.some(
+          (row: any) => String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || '') === prev
+        );
+        return stillExists ? prev : '';
+      });
       if (!deduped.length) setRoomPickerError('No room types available for the selected dates.');
     } catch (e) {
       console.error('room picker fetch error', e);
@@ -1264,7 +1270,7 @@ type RoomPickerContext = {
     };
 
     setRoomPickerCtx(ctx);
-    setRoomPickerSelectedId(ctx.seedRoomTypeId);
+    setRoomPickerSelectedId('');
     setRoomPickerOpen(true);
     setRoomPickerStartDate(startDate);
     setRoomPickerEndDate(endDate);
@@ -1284,7 +1290,6 @@ type RoomPickerContext = {
   const roomPickerSelectedRoom = useMemo(
     () =>
       roomPickerRooms.find((r: any) => String(r?.roomTypeId || r?.RoomTypeId || r?.RoomTypeID || '') === roomPickerSelectedId) ||
-      roomPickerRooms[0] ||
       null,
     [roomPickerRooms, roomPickerSelectedId]
   );
@@ -1923,14 +1928,14 @@ type RoomPickerContext = {
                             </div>
                           
 
-                            {/* View rates button (go to Hotel Info) */}
+                            {/* View Details button (go to Hotel Info) */}
                                  <button
                                     onClick={() => {
                                       openRoomPicker(room);
                                     }}
                                      className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
                                   >
-                                    View rates
+                                    View Details
                                   </button>
                           </div>
                         </div>
@@ -1953,9 +1958,9 @@ type RoomPickerContext = {
               <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 flex flex-col">
                 <div className="border-b border-gray-200 px-4 md:px-6 py-4 flex items-start justify-between gap-4">
                   <div>
-                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Room Selection</div>
+                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Cottage Selections</div>
                     <h3 className="mt-1 text-xl md:text-2xl font-semibold text-gray-900">
-                      {roomPickerCtx?.hotelName || 'Choose a room type'}
+                      {roomPickerCtx?.hotelName || 'Choose a cottage'}
                     </h3>
                     <div className="mt-1 text-sm text-gray-600">
                       {(roomPickerStartDate || startDate)} to {(roomPickerEndDate || endDate)} • {nights > 0 ? nights : 1} night{nights === 1 ? '' : 's'}
@@ -2277,7 +2282,7 @@ type RoomPickerContext = {
                                     selected ? 'bg-[#1f2345] text-white' : 'border border-gray-300 text-gray-800 hover:bg-gray-50'
                                   }`}
                                 >
-                                  {selected ? 'Selected' : 'Select room'}
+                                  {selected ? 'Selected' : 'Select Cottage'}
                                 </button>
                               </div>
                             </div>
@@ -2288,13 +2293,13 @@ type RoomPickerContext = {
                   </div>
 
                   <aside className="hidden lg:flex border-t lg:border-t-0 lg:border-l border-gray-200 bg-white p-4 md:p-5 flex-col">
-                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">ROOM TYPE SELECTED</div>
+                    <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Cottage Selected</div>
                     <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
                       {String(
                         (roomPickerSelectedRoom ? (getRoomModalVisual(roomPickerSelectedRoom)?.meta?.name || getRoomModalVisual(roomPickerSelectedRoom)?.meta?.hotelName) : '') ||
                         roomPickerSelectedRoom?.roomTypeName ||
                         roomPickerSelectedRoom?.RoomType ||
-                        'Choose a room type'
+                        'Choose a cottage'
                       )}
                     </div>
 
@@ -2346,7 +2351,7 @@ type RoomPickerContext = {
                     </div>
 
                     <div className="mt-5 rounded-2xl border border-[#e6e8f2] bg-[#f6f7fb] p-4">
-                      <div className="text-sm text-gray-600">Booking summary</div>
+                      <div className="text-sm text-gray-600">BOOKING SUMMARY</div>
                       <div className="mt-1 text-lg font-semibold text-[#1f2345]">{roomPickerCtx?.hotelName || 'Property'}</div>
                       <p className="mt-2 text-xs text-gray-600">
                         Rates shown are for your selected dates and party size. Final fees and taxes appear on the next step.
@@ -2379,7 +2384,7 @@ type RoomPickerContext = {
                           (roomPickerSelectedRoom ? (getRoomModalVisual(roomPickerSelectedRoom)?.meta?.name || getRoomModalVisual(roomPickerSelectedRoom)?.meta?.hotelName) : '') ||
                           roomPickerSelectedRoom?.roomTypeName ||
                           roomPickerSelectedRoom?.RoomType ||
-                          'Choose a room type'
+                          'Choose a cottage'
                         )}
                       </div>
                       <div className="text-xs text-gray-500">

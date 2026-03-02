@@ -1575,7 +1575,7 @@ function onMemberLogin() {
               canReserve ? 'bg-[#211F45] text-white' : 'bg-gray-300 text-gray-600 cursor-not-allowed'
             }`}
           >
-            Reserve
+            RESERVE
           </button>
 
           {loading && <div className="text-xs text-gray-500 mt-2">Updating rates…</div>}

@@ -1036,7 +1036,7 @@ function SearchBar() {
            {mounted && showCal && createPortal(
   <div className="fixed inset-0 z-[99999] pointer-events-none">
     <div
-      className="absolute inset-0 bg-black/40 pointer-events-auto"
+      className="absolute inset-0 bg-transparent pointer-events-auto"
       onClick={() => setShowCal(false)}
     />
 

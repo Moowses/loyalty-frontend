@@ -1503,7 +1503,7 @@ function getHotelImage(name?: string) {
                             </div>
                           
 
-                            {/* View rates button (go to Hotel Info) */}
+                            {/* View Details button (go to Hotel Info) */}
                                  <button
                                     onClick={() => {
                                       
@@ -1538,7 +1538,7 @@ function getHotelImage(name?: string) {
                                     }}
                                      className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
                                   >
-                                    View rates
+                                    View Details
                                   </button>
 
 

@@ -675,7 +675,7 @@ export default function DashboardPage() {
                 style={{
                   fontFamily: 'Avenir, sans-serif',
                   fontWeight: 500,
-                  fontSize: '30px',
+                  fontSize: '8px',
                   lineHeight: '102.5%',
                   letterSpacing: '-0.02em',
                   color: '#3b4555',
@@ -985,6 +985,10 @@ export default function DashboardPage() {
             </span>
           </a>
         </div>
+
+        <h2 className="mt-6 mb-3 text-center text-[22px] md:text-[28px] font-semibold text-[#1F2042]">
+          Featured offers for you
+        </h2>
 
         {/* Image-only carousel */}
         <ImageCarousel />
