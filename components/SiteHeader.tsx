@@ -251,9 +251,26 @@ async function logout() {
 
         {/* Desktop Nav (lg and up) */}
         <nav className="hidden lg:flex items-end justify-center gap-2">
+          {/* Home */}
+          <Link
+            href="/"
+            className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
+          >
+            <Image
+              src="/Navhome.png"
+              alt="Home"
+              width={24}
+              height={24}
+              className="transition-transform duration-200 group-hover:-translate-y-1"
+            />
+            <span className="text-[9px] font-bold tracking-[0.01em] uppercase text-[#211F45] group-hover:text-[#EB6923]">
+              Home
+            </span>
+          </Link>
+
           {/* Reserve */}
           <Link
-            href="//"
+            href="/properties"
             className="group flex flex-col items-center gap-2 rounded-lg px-3 py-2 transition-colors"
           >
             <Image
@@ -433,9 +450,19 @@ async function logout() {
           id="mobile-nav"
           className="absolute top-[65px] left-0 w-full bg-white shadow-lg z-50 flex flex-col"
         >
+          {/* Home */}
+          <Link
+            href="/"
+            onClick={() => setOpen(false)}
+            className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
+          >
+            <Image src="/Navhome.png" alt="Home" width={15} height={15} />
+            <span className="font-semibold">Home</span>
+          </Link>
+
           {/* Active item (Reserve) */}
           <Link
-            href="https://dreamtripclub.com"
+            href="/properties"
             onClick={() => setOpen(false)}
             className="flex items-center justify-center gap-3 px-6 py-4 w-full text-[#211F45] hover:bg-gray-700 hover:text-white transition-colors"
           >
