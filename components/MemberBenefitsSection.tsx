@@ -62,7 +62,7 @@ export default function MemberBenefitsSection({
         {/* Main layout */}
         <div className="grid grid-cols-1 gap-8 md:grid-cols-[1.3fr_0.9fr_1.3fr] items-center">
           {/* LEFT IMAGE */}
-          <div className="rounded-2xl overflow-hidden shadow-xl">
+          <div className="order-1 md:order-1 rounded-2xl overflow-hidden shadow-xl">
             <div className="relative w-full h-[300px]">
               <Image
                 src="/leftboat.png"
@@ -75,8 +75,8 @@ export default function MemberBenefitsSection({
           </div>
 
           {/* CENTER ICONS */}
-          <div className="flex flex-col items-center justify-center text-white md:pt-10">
-            <ul className="space-y-4">
+          <div className="order-3 md:order-2 flex flex-col items-center justify-center text-white md:pt-10">
+            <ul className="space-y-3 pt-[50px]">
               {benefits.map((b) => (
                 <li key={b.label} className="flex items-center gap-3">
                   <div className="w-6 h-6 flex items-center justify-center">
@@ -140,7 +140,7 @@ export default function MemberBenefitsSection({
           </div>
 
           {/* RIGHT IMAGES */}
-          <div className="space-y-4">
+          <div className="order-2 md:order-3 space-y-4">
             {/* Top */}
             <div className="rounded-2xl overflow-hidden shadow-xl">
               <div className="relative w-full h-[150px]">
