@@ -1,7 +1,8 @@
-"use client";
+﻿"use client";
 
 import React, { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { createPortal } from "react-dom";
 import {
@@ -22,6 +23,7 @@ type PropertyItem = {
   hotelNo?: string;
   propertyName: string;
   address?: string;
+  addpress?: string;
   description?: string;
 };
 
@@ -62,14 +64,108 @@ function dashedSlug(s: string) {
 function condensedSlug(s: string) {
   return s.toLowerCase().trim().replace(/[^a-z0-9]/g, "");
 }
-function getHeroImg(propertyName: string) {
-  return `/properties/${dashedSlug(propertyName)}/hero.png`;
+function compactSlug(s: string) {
+  return s.replace(/[^a-z0-9]/gi, "").toUpperCase();
 }
 function fmtParam(d: Date) {
   return format(d, "yyyy-MM-dd");
 }
 
+const DEFAULT_PROPERTY_HERO = "/properties/your-dream-getaway/hero.png";
+const DEFAULT_CALABOGIE_HERO = "/calabogie-properties/CA1B/hero.png";
+const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
+  "ae50e6a8-29dd-447d-840c-b3f40144635d": "CA1B",
+  "3b427e83-f01e-4cf8-83cc-b3f4014439f6": "CH2B",
+  "82c0ab4c-8a5c-4d77-aaae-b3f40143f53b": "CH3B",
+  "8767d68e-188d-42ff-811e-b31b011b278b": "1 Bedroom Loft",
+};
+const CALABOGIE_ROOM_FOLDER_BY_NAME: Record<string, string> = {
+  CABINWITH1BEDROOM: "CA1B",
+  STANDARDCABIN: "CA1B",
+  BEDCHALET: "CA1B",
+  CHALETWITH2BEDROOM: "CH2B",
+  TWOBEDCHALET: "CH2B",
+  CHALETWITH3BEDROOM: "CH3B",
+  THREEBEDCHALET: "CH3B",
+  BEDROOMLOFT: "1 Bedroom Loft",
+  ONEBEDROOMLOFT: "1 Bedroom Loft",
+  LF2B: "LF2B",
+};
+
+function isCalabogieProperty(p: PropertyItem): boolean {
+  const hid = String(p.hotelId || "").trim().toUpperCase();
+  const hno = String(p.hotelNo || "").trim().toUpperCase();
+  const name = String(p.propertyName || "").toLowerCase();
+  return hid === "CBE" || hno === "CBE" || name.includes("calabogie");
+}
+
+function getCalabogieFolderForProperty(p: PropertyItem): string {
+  const id = String(p.hotelId || "").trim();
+  const fromId = CALABOGIE_ROOM_FOLDER_BY_ID[id];
+  if (fromId) return fromId;
+  const fromName = CALABOGIE_ROOM_FOLDER_BY_NAME[compactSlug(p.propertyName || "")];
+  if (fromName) return fromName;
+  return "CA1B";
+}
+
+function getCalabogieFolderFromRoom(row: any): string {
+  const id = String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || "").trim();
+  const fromId = CALABOGIE_ROOM_FOLDER_BY_ID[id];
+  if (fromId) return fromId;
+  const fromName = CALABOGIE_ROOM_FOLDER_BY_NAME[compactSlug(String(row?.roomTypeName || row?.RoomType || ""))];
+  if (fromName) return fromName;
+  return "CA1B";
+}
+
+function getCalabogieMetaForFolder(folder: string): any {
+  try {
+    if (folder === "CA1B") return require("@/public/calabogie-properties/CA1B/meta.json");
+    if (folder === "CH2B") return require("@/public/calabogie-properties/CH2B/meta.json");
+    if (folder === "CH3B") return require("@/public/calabogie-properties/CH3B/meta.json");
+    if (folder === "LF2B") return require("@/public/calabogie-properties/LF2B/meta.json");
+    if (folder === "1BEDROOMLOFT") return require("@/public/calabogie-properties/1BEDROOMLOFT/meta.json");
+    if (folder === "1 Bedroom Loft") return require("@/public/calabogie-properties/1 Bedroom Loft/meta.json");
+  } catch {}
+  return null;
+}
+
+function getCalabogieVisualForRoom(row: any) {
+  const folder = getCalabogieFolderFromRoom(row);
+  const meta = getCalabogieMetaForFolder(folder);
+  const hero = `/calabogie-properties/${folder}/hero.png`;
+  const gallery = Array.isArray(meta?.gallery)
+    ? meta.gallery
+        .map((f: any) => String(f || "").trim())
+        .filter(Boolean)
+        .map((f: string) => `/calabogie-properties/${folder}/${f}`)
+    : [hero];
+  return {
+    folder,
+    hero,
+    meta,
+    gallery: Array.from(new Set(gallery.length ? gallery : [hero])),
+  };
+}
+
+function getHeroImg(p: PropertyItem) {
+  if (isCalabogieProperty(p)) {
+    const folder = getCalabogieFolderForProperty(p);
+    return `/calabogie-properties/${folder}/hero.png`;
+  }
+  return `/properties/${dashedSlug(p.propertyName)}/hero.png`;
+}
+
+function applyCardImageFallback(el: HTMLImageElement) {
+  const current = String(el.currentSrc || el.src || "");
+  const isCalabogie = current.includes("/calabogie-properties/");
+  const fallback = isCalabogie ? DEFAULT_CALABOGIE_HERO : DEFAULT_PROPERTY_HERO;
+  if (!current.includes(fallback)) {
+    el.src = fallback;
+  }
+}
+
 export default function PropertiesPage() {
+  const router = useRouter();
   const [all, setAll] = useState<PropertyItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
@@ -113,7 +209,14 @@ export default function PropertiesPage() {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const json = await res.json();
-        const list: PropertyItem[] = Array.isArray(json) ? json : json.properties ?? [];
+        const rows: any[] = Array.isArray(json) ? json : Array.isArray(json?.properties) ? json.properties : [];
+        const list: PropertyItem[] = rows.map((row: any) => ({
+          hotelId: String(row?.hotelId || ""),
+          hotelNo: row?.hotelNo ? String(row.hotelNo) : undefined,
+          propertyName: String(row?.propertyName || ""),
+          address: String(row?.address || row?.addpress || "").trim() || undefined,
+          description: row?.description ? String(row.description) : undefined,
+        }));
         setAll(list);
       } catch (e: any) {
         setErr(e?.message || "Failed to load properties");
@@ -270,27 +373,150 @@ export default function PropertiesPage() {
 
   const canSearch = !!checkIn && !!checkOut;
 
+  const [showCalabogiePicker, setShowCalabogiePicker] = useState(false);
+  const [calabogiePickerLoading, setCalabogiePickerLoading] = useState(false);
+  const [calabogiePickerError, setCalabogiePickerError] = useState("");
+  const [calabogiePickerRows, setCalabogiePickerRows] = useState<any[]>([]);
+  const [calabogiePickerProperty, setCalabogiePickerProperty] = useState<PropertyItem | null>(null);
+  const [calabogiePickerSelectedId, setCalabogiePickerSelectedId] = useState("");
+
+  const toNum = (v: any) => {
+    if (v == null) return 0;
+    const n = typeof v === "number" ? v : Number(String(v).replace(/[^0-9.-]/g, ""));
+    return Number.isFinite(n) ? n : 0;
+  };
+
+  const totalForRow = (row: any) => {
+    const total = toNum(row?.totalPrice ?? row?.roomSubtotal ?? row?.grossAmountUpstream ?? 0);
+    if (total > 0) return total;
+    if (row?.dailyPrices && typeof row.dailyPrices === "object" && !Array.isArray(row.dailyPrices)) {
+      return Object.values(row.dailyPrices).reduce((acc, cur) => acc + toNum(cur), 0);
+    }
+    return 0;
+  };
+
+  const normalizeRows = (payload: any): any[] => {
+    const rows =
+      (Array.isArray(payload?.data?.rows) && payload.data.rows) ||
+      (Array.isArray(payload?.data) && payload.data) ||
+      (Array.isArray(payload) && payload) ||
+      [];
+    return rows.filter((row: any) => {
+      const roomTypeId = String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || "").trim();
+      return roomTypeId && totalForRow(row) > 0;
+    });
+  };
+
+  const openCalabogieRoomPicker = async (p: PropertyItem) => {
+    if (!checkIn || !checkOut) return;
+    setCalabogiePickerProperty(p);
+    setCalabogiePickerLoading(true);
+    setCalabogiePickerError("");
+    setCalabogiePickerRows([]);
+    setCalabogiePickerSelectedId("");
+    setShowCalabogiePicker(true);
+
+    const base = process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:5000";
+    const qs = new URLSearchParams({
+      startDate: fmtParam(checkIn),
+      endDate: fmtParam(checkOut),
+      adult: String(adults),
+      child: String(children),
+      infant: String(infants),
+      pet: pet ? "yes" : "no",
+      currency: "CAD",
+    });
+
+    try {
+      const res = await fetch(`${base}/api/calabogie/results?${qs.toString()}`, { cache: "no-store" });
+      const json = await res.json();
+      const rows = normalizeRows(json);
+      if (!rows.length) {
+        setCalabogiePickerError("No available room types for these dates.");
+      }
+      setCalabogiePickerRows(rows);
+      if (rows.length) {
+        const firstId = String(rows[0]?.roomTypeId || rows[0]?.RoomTypeId || rows[0]?.RoomTypeID || "").trim();
+        setCalabogiePickerSelectedId(firstId);
+      }
+    } catch {
+      setCalabogiePickerError("Failed to load room types. Please try again.");
+    } finally {
+      setCalabogiePickerLoading(false);
+    }
+  };
+
+  const reserveCalabogieRoom = (row: any) => {
+    if (!checkIn || !checkOut) return;
+    const roomTypeId = String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || "").trim();
+    if (!roomTypeId) return;
+    const roomTypeName = String(row?.roomTypeName || row?.RoomType || "Room Type");
+    const roomTotal = totalForRow(row);
+    const petFeeAmount = toNum(row?.petFeeAmount);
+    const total = roomTotal + petFeeAmount;
+    const currency = String(row?.currencyCode || "CAD");
+    const params = new URLSearchParams({
+      hotelId: "CBE",
+      hotelNo: "CBE",
+      roomTypeId,
+      roomTypeName,
+      checkIn: fmtParam(checkIn),
+      checkOut: fmtParam(checkOut),
+      adult: String(adults),
+      child: String(children),
+      infant: String(infants),
+      pet: pet ? "yes" : "no",
+      rooms: String(rooms),
+      total: String(total),
+      petFee: String(petFeeAmount),
+      currency,
+      name: String(calabogiePickerProperty?.propertyName || "Calabogie Escapes"),
+    });
+    setShowCalabogiePicker(false);
+    router.push(`/calabogie/hotel?${params.toString()}`);
+  };
+
+  const calabogiePickerSelectedRoom = useMemo(
+    () =>
+      calabogiePickerRows.find(
+        (r: any) => String(r?.roomTypeId || r?.RoomTypeId || r?.RoomTypeID || "").trim() === calabogiePickerSelectedId
+      ) || null,
+    [calabogiePickerRows, calabogiePickerSelectedId]
+  );
+
   // Gallery modal
   const [showPhotos, setShowPhotos] = useState(false);
   const [activeTitle, setActiveTitle] = useState("");
   const [activeSlugDashed, setActiveSlugDashed] = useState("");
   const [activeSlugCondensed, setActiveSlugCondensed] = useState("");
+  const [activeIsCalabogie, setActiveIsCalabogie] = useState(false);
+  const [activeCalabogieFolder, setActiveCalabogieFolder] = useState("CA1B");
   const [activeGallery, setActiveGallery] = useState<string[]>([]);
   const [galleryLoading, setGalleryLoading] = useState(false);
 
-  const openGallery = async (propertyName: string) => {
+  const openGallery = async (property: PropertyItem) => {
+    const propertyName = property.propertyName;
     const sDashed = dashedSlug(propertyName);
     const sCondensed = condensedSlug(propertyName);
+    const calabogie = isCalabogieProperty(property);
+    const calabogieFolder = getCalabogieFolderForProperty(property);
 
     setActiveTitle(propertyName);
     setActiveSlugDashed(sDashed);
     setActiveSlugCondensed(sCondensed);
+    setActiveIsCalabogie(calabogie);
+    setActiveCalabogieFolder(calabogieFolder);
     setGalleryLoading(true);
 
     // fallback if meta.json doesn't exist
     let gallery = ["hero.png", "1.png", "2.png", "3.png", "4.png", "5.png"];
 
-    const candidates = [`/properties/${sDashed}/meta.json`, `/properties/${sCondensed}/meta.json`];
+    const candidates = calabogie
+      ? [
+          `/calabogie-properties/${calabogieFolder}/meta.json`,
+          "/calabogie-properties/CA1B/meta.json",
+        ]
+      : [`/properties/${sDashed}/meta.json`, `/properties/${sCondensed}/meta.json`];
 
     for (const url of candidates) {
       try {
@@ -318,11 +544,13 @@ export default function PropertiesPage() {
   const gallerySrc = (f: string) => {
     if (f.startsWith("/")) return f;
     if (f.startsWith("http")) return f;
+    if (activeIsCalabogie) return `/calabogie-properties/${activeCalabogieFolder}/${f}`;
     return `/properties/${activeSlugDashed}/${f}`;
   };
   const galleryFallbackSrc = (f: string) => {
     if (f.startsWith("/")) return f;
     if (f.startsWith("http")) return f;
+    if (activeIsCalabogie) return `/calabogie-properties/CA1B/${f}`;
     return `/properties/${activeSlugCondensed}/${f}`;
   };
 
@@ -361,7 +589,7 @@ export default function PropertiesPage() {
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search property…"
+                  placeholder="Search property"
                   className="w-full text-left text-lg md:text-[16px] font-semibold text-black bg-transparent outline-none"
                 />
               </div>
@@ -377,7 +605,7 @@ export default function PropertiesPage() {
                   </div>
                   <div className="text-lg md:text-[16px] font-semibold text-black">
                     {checkIn ? fmtShort(checkIn) : "Add dates"}
-                    {checkOut ? ` – ${fmtShort(checkOut)}` : ""}
+                    {checkOut ? ` - ${fmtShort(checkOut)}` : ""}
                   </div>
                 </button>
               </div>
@@ -419,7 +647,7 @@ export default function PropertiesPage() {
                 <input
                   value={q}
                   onChange={(e) => setQ(e.target.value)}
-                  placeholder="Search…"
+                  placeholder="Search..."
                   className="mt-1 w-full text-sm font-medium text-black bg-transparent outline-none truncate"
                 />
               </div>
@@ -436,7 +664,7 @@ export default function PropertiesPage() {
                   <CalIcon className="w-3.5 h-3.5" /> Dates
                 </div>
                 <div className="mt-1 text-sm font-medium text-gray-900 truncate">
-                  {checkIn && checkOut ? `${fmtShort(checkIn)} – ${fmtShort(checkOut)}` : "Add dates"}
+                  {checkIn && checkOut ? `${fmtShort(checkIn)} - ${fmtShort(checkOut)}` : "Add dates"}
                 </div>
               </button>
 
@@ -452,7 +680,7 @@ export default function PropertiesPage() {
                   <UsersIcon className="w-4 h-4" /> Guests
                 </div>
                 <div className="mt-1 text-sm font-medium text-gray-900 truncate">
-                  {adults}A • {children}C
+                  {adults}A | {children}C
                 </div>
               </button>
 
@@ -474,14 +702,14 @@ export default function PropertiesPage() {
 
       {/* Sort + status */}
       <div className="flex items-center justify-between mb-4">
-        <div className="text-sm text-gray-600">{loading ? "Loading…" : `${filtered.length} properties`}</div>
+        <div className="text-sm text-gray-600">{loading ? "Loading..." : `${filtered.length} properties`}</div>
         <select
           value={sort}
           onChange={(e) => setSort(e.target.value as any)}
           className="border rounded-lg px-3 py-2 text-sm bg-white"
         >
-          <option value="name-asc">Sort: Name (A–Z)</option>
-          <option value="name-desc">Sort: Name (Z–A)</option>
+          <option value="name-asc">Sort: Name (A-Z)</option>
+          <option value="name-desc">Sort: Name (Z-A)</option>
         </select>
       </div>
 
@@ -491,7 +719,7 @@ export default function PropertiesPage() {
       <div className="space-y-5">
         {!loading &&
           filtered.map((p) => {
-            const hero = getHeroImg(p.propertyName);
+            const hero = getHeroImg(p);
             const href = canSearch ? buildHotelUrl(p) : "#";
 
             return (
@@ -506,17 +734,17 @@ export default function PropertiesPage() {
                       src={hero}
                       alt={p.propertyName}
                       fill
+                      sizes="(max-width: 768px) 100vw, 320px"
                       className="object-cover"
                       onError={(e: any) => {
-                        const fb = `/properties/${condensedSlug(p.propertyName)}/hero.png`;
-                        if (e?.currentTarget && !e.currentTarget.src.includes(fb)) e.currentTarget.src = fb;
+                        if (e?.currentTarget) applyCardImageFallback(e.currentTarget as HTMLImageElement);
                       }}
                     />
 
                     {/* More photos button */}
                     <button
                       type="button"
-                      onClick={() => openGallery(p.propertyName)}
+                      onClick={() => openGallery(p)}
                       className="absolute bottom-3 right-3 bg-white/95 backdrop-blur text-gray-900 text-xs font-semibold px-3 py-2 rounded-full shadow"
                     >
                       More + photos
@@ -543,31 +771,51 @@ export default function PropertiesPage() {
                         {p.hotelNo ? (
                           <>
                             {" "}
-                            • Code: <span className="font-semibold text-gray-800">{p.hotelNo}</span>
+                            | Code: <span className="font-semibold text-gray-800">{p.hotelNo}</span>
                           </>
                         ) : null}
-                      </div>
+	                      </div>
 
-                      <Link
-                        href={href}
-                        aria-disabled={!canSearch}
-                        className={`shrink-0 inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold ${
-                          canSearch
-                            ? "bg-[#1E1A47] text-white hover:brightness-110"
-                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
-                        }`}
-                        onClick={(e) => {
-                          if (!canSearch) {
-                            e.preventDefault();
-                            alert("Please select check-in and check-out dates first");
-                          }
-                        }}
-                      >
-                        View rates
-                      </Link>
-                    </div>
-                  </div>
-                </div>
+                        {isCalabogieProperty(p) ? (
+                          <button
+                            type="button"
+                            className={`shrink-0 inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold ${
+                              canSearch
+                                ? "bg-[#1E1A47] text-white hover:brightness-110"
+                                : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                            }`}
+                            onClick={() => {
+                              if (!canSearch) {
+                                alert("Please select check-in and check-out dates first");
+                                return;
+                              }
+                              openCalabogieRoomPicker(p);
+                            }}
+                          >
+                            View rates
+                          </button>
+                        ) : (
+	                      <Link
+	                        href={href}
+	                        aria-disabled={!canSearch}
+	                        className={`shrink-0 inline-flex items-center justify-center px-6 py-3 rounded-full text-sm font-semibold ${
+	                          canSearch
+	                            ? "bg-[#1E1A47] text-white hover:brightness-110"
+	                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+	                        }`}
+	                        onClick={(e) => {
+	                          if (!canSearch) {
+	                            e.preventDefault();
+	                            alert("Please select check-in and check-out dates first");
+	                          }
+	                        }}
+	                      >
+	                        View rates
+	                      </Link>
+                        )}
+	                    </div>
+	                  </div>
+	                </div>
               </div>
             );
           })}
@@ -585,8 +833,8 @@ export default function PropertiesPage() {
                 {[
                   { label: "Rooms", value: rooms, setter: setRooms, min: 1, max: 8 },
                   { label: "Adults (13+)", value: adults, setter: setAdults, min: 1, max: 10 },
-                  { label: "Children (3–12)", value: children, setter: setChildren, min: 0, max: 10 },
-                  { label: "Infants (0–2)", value: infants, setter: setInfants, min: 0, max: 10 },
+                  { label: "Children (3-12)", value: children, setter: setChildren, min: 0, max: 10 },
+                  { label: "Infants (0-2)", value: infants, setter: setInfants, min: 0, max: 10 },
                 ].map((row) => (
                   <div key={row.label} className="flex items-center justify-between py-3 border-b last:border-b-0">
                     <div className="text-[15px] font-medium text-gray-900">{row.label}</div>
@@ -596,7 +844,7 @@ export default function PropertiesPage() {
                         onClick={() => step(row.setter as any, row.value as number, -1, row.min, row.max)}
                         disabled={(row.value as number) <= row.min}
                       >
-                        −
+                        -
                       </button>
                       <div className="w-5 text-center">{row.value}</div>
                       <button
@@ -830,13 +1078,13 @@ export default function PropertiesPage() {
         : null}
 
       {/* Photos modal */}
-      {mounted && showPhotos
+	      {mounted && showPhotos
         ? createPortal(
             <div className="fixed inset-0 z-[1000000] bg-black/70 flex items-center justify-center p-4">
               <div className="bg-white rounded-2xl w-full max-w-5xl p-5 max-h-[85vh] overflow-y-auto">
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xl font-semibold">
-                    {activeTitle} — Photos{" "}
+                    {activeTitle} - Photos{" "}
                     {activeGallery.length ? (
                       <span className="text-sm font-medium text-gray-500">({activeGallery.length})</span>
                     ) : null}
@@ -850,27 +1098,280 @@ export default function PropertiesPage() {
                 </div>
 
                 {galleryLoading ? (
-                  <div className="text-sm text-gray-600">Loading photos…</div>
+                  <div className="text-sm text-gray-600">Loading photos...</div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {activeGallery.map((g, idx) => (
-                      <img
-                        key={idx}
-                        src={gallerySrc(g)}
-                        onError={(e) => {
-                          (e.currentTarget as HTMLImageElement).src = galleryFallbackSrc(g);
-                        }}
-                        className="w-full h-[240px] object-cover rounded-lg"
-                        alt={`${activeTitle} photo ${idx + 1}`}
-                      />
-                    ))}
+	                    {activeGallery.map((g, idx) => (
+	                      <img
+	                        key={idx}
+	                        src={gallerySrc(g)}
+	                        onError={(e) => {
+	                          const el = e.currentTarget as HTMLImageElement;
+	                          const fallback = galleryFallbackSrc(g);
+	                          if (!el.src.includes(fallback)) {
+	                            el.src = fallback;
+	                            return;
+	                          }
+	                          el.src = activeIsCalabogie ? DEFAULT_CALABOGIE_HERO : DEFAULT_PROPERTY_HERO;
+	                        }}
+	                        className="w-full h-[240px] object-cover rounded-lg"
+	                        alt={`${activeTitle} photo ${idx + 1}`}
+	                      />
+	                    ))}
                   </div>
                 )}
               </div>
             </div>,
             document.body
           )
+	        : null}
+
+      {/* Calabogie room-type picker */}
+      {mounted && showCalabogiePicker
+        ? createPortal(
+            <div className="fixed inset-0 z-[1000001]">
+              <div className="absolute inset-0 bg-black/55 backdrop-blur-[2px]" onClick={() => setShowCalabogiePicker(false)} />
+              <div className="absolute inset-0 p-2 md:p-6">
+                <div className="relative mx-auto h-full max-w-6xl overflow-hidden rounded-2xl md:rounded-3xl bg-white shadow-2xl ring-1 ring-black/5 flex flex-col">
+                  <div className="border-b border-gray-200 px-4 md:px-6 py-4 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Cottage Selections</div>
+                      <h3 className="mt-1 text-xl md:text-2xl font-semibold text-gray-900">
+                        {calabogiePickerProperty?.propertyName || "Calabogie Escapes"}
+                      </h3>
+                      <div className="mt-1 text-sm text-gray-600">
+                        {checkIn ? fmtParam(checkIn) : ""} to {checkOut ? fmtParam(checkOut) : ""} · {nights > 0 ? nights : 1} night{nights === 1 ? "" : "s"}
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowCalabogiePicker(false)}
+                      className="rounded-full border border-gray-300 px-3 py-1.5 text-sm text-gray-700 hover:bg-gray-50"
+                    >
+                      Close
+                    </button>
+                  </div>
+
+                  <div className="min-h-0 flex-1 grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_320px]">
+                    <div className="min-h-0 overflow-y-auto bg-[#fafbfc] p-4 md:p-6">
+                      {calabogiePickerLoading && (
+                        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-600">
+                          Loading room types...
+                        </div>
+                      )}
+
+                      {!calabogiePickerLoading && calabogiePickerError && (
+                        <div className="rounded-2xl border border-gray-200 bg-white p-6 text-sm text-gray-700">
+                          {calabogiePickerError}
+                        </div>
+                      )}
+
+                      {!calabogiePickerLoading && !calabogiePickerError && (
+                        <div className="space-y-4">
+                          {calabogiePickerRows.map((row: any, idx: number) => {
+                            const roomTypeId = String(row?.roomTypeId || row?.RoomTypeId || row?.RoomTypeID || "").trim();
+                            const visual = getCalabogieVisualForRoom(row);
+                            const roomTypeName = String(
+                              visual?.meta?.name ||
+                                visual?.meta?.hotelName ||
+                                row?.roomTypeName ||
+                                row?.RoomType ||
+                                "Room Type"
+                            );
+                            const shortDescription = String(
+                              visual?.meta?.descriptionShort ||
+                                visual?.meta?.shortDescription ||
+                                visual?.meta?.description ||
+                                "Private cottage stay with premium amenities and resort access."
+                            );
+                            const address = String(visual?.meta?.Address || visual?.meta?.address || "");
+                            const imageSrc = visual?.hero || DEFAULT_CALABOGIE_HERO;
+                            const total = totalForRow(row);
+                            const nightly = nights > 0 ? total / nights : total;
+                            const currency = String(row?.currencyCode || "CAD");
+                            const selected = roomTypeId === calabogiePickerSelectedId;
+                            return (
+                              <div
+                                key={`${roomTypeId || idx}`}
+                                className={`rounded-2xl border bg-white p-4 md:p-5 shadow-sm transition ${
+                                  selected ? "border-[#1f2345] ring-2 ring-[#1f2345]/10" : "border-gray-200 hover:border-gray-300"
+                                }`}
+                              >
+                                <div className="flex flex-col md:flex-row gap-4">
+                                  <div className="w-full md:w-[230px] shrink-0">
+                                    <div className="relative h-40 md:h-[160px] w-full rounded-xl overflow-hidden bg-gray-100">
+                                      <Image
+                                        src={imageSrc}
+                                        alt={roomTypeName}
+                                        fill
+                                        sizes="(max-width: 768px) 100vw, 230px"
+                                        className="object-cover"
+                                        onError={(e) => applyCardImageFallback(e.currentTarget as HTMLImageElement)}
+                                      />
+                                    </div>
+                                  </div>
+
+                                  <div className="min-w-0 flex-1">
+                                    <div className="flex flex-wrap items-center gap-2">
+                                      <h4 className="text-lg font-semibold text-gray-900">{roomTypeName}</h4>
+                                      {selected && (
+                                        <span className="rounded-full bg-[#1f2345] text-white text-[11px] px-2.5 py-1 uppercase tracking-wide font-semibold">
+                                          Selected
+                                        </span>
+                                      )}
+                                    </div>
+                                    <p className="mt-2 text-sm leading-relaxed text-gray-600">{shortDescription}</p>
+                                    {address && <p className="mt-2 text-xs text-gray-500">{address}</p>}
+                                  </div>
+
+                                  <div className="md:text-right md:min-w-[185px]">
+                                    <div className="text-xs uppercase tracking-wide text-gray-500">Room only</div>
+                                    <div className="mt-1 text-2xl font-semibold text-gray-900">
+                                      {nightly.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                    </div>
+                                    <div className="text-xs text-gray-500">{currency} / night</div>
+                                    <div className="mt-1 text-xs text-gray-600">
+                                      {total.toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} {currency} total
+                                    </div>
+                                    <button
+                                      type="button"
+                                      onClick={() => setCalabogiePickerSelectedId(roomTypeId)}
+                                      className={`mt-3 w-full rounded-full px-4 py-2 text-sm font-semibold transition ${
+                                        selected ? "bg-[#1f2345] text-white" : "border border-gray-300 text-gray-800 hover:bg-gray-50"
+                                      }`}
+                                    >
+                                      {selected ? "Selected" : "Select Cottage"}
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <aside className="hidden lg:flex border-t lg:border-t-0 lg:border-l border-gray-200 bg-white p-4 md:p-5 flex-col">
+                      <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Cottage Selected</div>
+                      <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
+                        {String(
+                          (calabogiePickerSelectedRoom
+                            ? (
+                                getCalabogieVisualForRoom(calabogiePickerSelectedRoom)?.meta?.name ||
+                                getCalabogieVisualForRoom(calabogiePickerSelectedRoom)?.meta?.hotelName
+                              )
+                            : "") ||
+                            calabogiePickerSelectedRoom?.roomTypeName ||
+                            calabogiePickerSelectedRoom?.RoomType ||
+                            "Choose a cottage"
+                        )}
+                      </div>
+
+                      <div className="mt-4 space-y-3 text-sm">
+                        <div>
+                          <div className="text-[11px] uppercase tracking-wide text-gray-500">Dates</div>
+                          <div className="font-medium text-gray-900">
+                            {checkIn ? fmtParam(checkIn) : ""}{" -> "}{checkOut ? fmtParam(checkOut) : ""}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] uppercase tracking-wide text-gray-500">Guests</div>
+                          <div className="font-medium text-gray-900">{adults + children + infants}</div>
+                        </div>
+                        <div>
+                          <div className="text-[11px] uppercase tracking-wide text-gray-500">Nights</div>
+                          <div className="font-medium text-gray-900">{nights > 0 ? nights : 1}</div>
+                        </div>
+                      </div>
+
+                      <div className="my-4 h-px bg-gray-200" />
+
+                      <div>
+                        <div className="text-sm text-gray-600">Price per night</div>
+                        <div className="mt-1 text-3xl leading-none font-semibold text-gray-900">
+                          {(calabogiePickerSelectedRoom
+                            ? (nights > 0 ? totalForRow(calabogiePickerSelectedRoom) / nights : totalForRow(calabogiePickerSelectedRoom))
+                            : 0
+                          ).toLocaleString("en-CA", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </div>
+                        <div className="text-xs text-gray-500">
+                          {String(calabogiePickerSelectedRoom?.currencyCode || "CAD")} / night (room only)
+                        </div>
+                      </div>
+
+                      <div className="mt-5 rounded-2xl border border-[#e6e8f2] bg-[#f6f7fb] p-4">
+                        <div className="text-sm text-gray-600">BOOKING SUMMARY</div>
+                        <div className="mt-1 text-lg font-semibold text-[#1f2345]">
+                          {calabogiePickerProperty?.propertyName || "Calabogie Escapes"}
+                        </div>
+                        <p className="mt-2 text-xs text-gray-600">
+                          Rates shown are for your selected dates and party size. Final fees and taxes appear on the next step.
+                        </p>
+                      </div>
+
+                      <div className="mt-auto pt-5">
+                        <button
+                          type="button"
+                          disabled={!calabogiePickerSelectedRoom || calabogiePickerLoading}
+                          onClick={() => {
+                            if (!calabogiePickerSelectedRoom) return;
+                            reserveCalabogieRoom(calabogiePickerSelectedRoom);
+                          }}
+                          className={`w-full rounded-full px-5 py-3 text-sm font-semibold transition ${
+                            calabogiePickerSelectedRoom && !calabogiePickerLoading
+                              ? "bg-[#1f2345] text-white hover:brightness-110"
+                              : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                          }`}
+                        >
+                          Continue to Reserve
+                        </button>
+                      </div>
+                    </aside>
+                  </div>
+
+                  <div className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="min-w-0">
+                        <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gray-500">Room Selected</div>
+                        <div className="truncate text-sm font-semibold text-gray-900">
+                          {String(
+                            (calabogiePickerSelectedRoom
+                              ? (
+                                  getCalabogieVisualForRoom(calabogiePickerSelectedRoom)?.meta?.name ||
+                                  getCalabogieVisualForRoom(calabogiePickerSelectedRoom)?.meta?.hotelName
+                                )
+                              : "") ||
+                              calabogiePickerSelectedRoom?.roomTypeName ||
+                              calabogiePickerSelectedRoom?.RoomType ||
+                              "Choose a cottage"
+                          )}
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        disabled={!calabogiePickerSelectedRoom || calabogiePickerLoading}
+                        onClick={() => {
+                          if (!calabogiePickerSelectedRoom) return;
+                          reserveCalabogieRoom(calabogiePickerSelectedRoom);
+                        }}
+                        className={`shrink-0 rounded-full px-4 py-2.5 text-sm font-semibold transition ${
+                          calabogiePickerSelectedRoom && !calabogiePickerLoading
+                            ? "bg-[#1f2345] text-white"
+                            : "bg-gray-200 text-gray-500 cursor-not-allowed"
+                        }`}
+                      >
+                        Continue
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>,
+            document.body
+          )
         : null}
-    </div>
-  );
+	    </div>
+	  );
 }
+
+

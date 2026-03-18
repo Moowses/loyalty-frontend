@@ -37,6 +37,14 @@ const FilterIcon = (p: React.SVGProps<SVGSVGElement>) => (
     <path d="M4 6h16M7 12h10M10 18h4" strokeWidth="2" strokeLinecap="round" />
   </svg>
 );
+const UsersIcon = (p: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" {...p}>
+    <path d="M16 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" strokeWidth="2" />
+    <circle cx="9" cy="7" r="4" strokeWidth="2" />
+    <path d="M22 21v-2a4 4 0 00-3-3.87" strokeWidth="2" />
+    <path d="M16 3.13a4 4 0 010 7.75" strokeWidth="2" />
+  </svg>
+);
 
 function dashedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
@@ -683,15 +691,16 @@ export default function CalabogieResultPage() {
                   ).trim() || "Private cottage stay with premium amenities and resort access.";
                 const galleryImages = getCalabogieGalleryImages(room, calabogieMeta, imgSrc);
 
-                const roomTotal = roomTotalValue(room);
-                const petFee = toNum(room.petFeeAmount);
-                const grandTotal = roomTotal + petFee;
-                const nightlyRoomsOnly =
-                  nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
-                const currency = room.currencyCode || "CAD";
-                const minNights = Number(room?.minNights ?? 1);
-                const isAvailableForRange = Object.values(room?.availability ?? {}).every(
-                  (v) => Number(v) === 1
+	                const roomTotal = roomTotalValue(room);
+	                const petFee = toNum(room.petFeeAmount);
+	                const grandTotal = roomTotal + petFee;
+	                const nightlyRoomsOnly =
+	                  nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+	                const capacity = toNum(room?.capacity);
+	                const currency = room.currencyCode || "CAD";
+	                const minNights = Number(room?.minNights ?? 1);
+	                const isAvailableForRange = Object.values(room?.availability ?? {}).every(
+	                  (v) => Number(v) === 1
                 );
 
                 const hotelId = "CBE";
@@ -716,70 +725,78 @@ export default function CalabogieResultPage() {
                     key={`${hotelId}-${room.roomTypeId || i}`}
                     className="rounded-2xl border border-gray-200 bg-white p-5 md:p-6 shadow-sm"
                   >
-                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                      <button
-                        type="button"
-                        className="w-full md:w-[210px] h-40 md:h-[150px] relative rounded-xl overflow-hidden bg-gray-100 group"
-                        onClick={() => {
-                          if (!galleryImages.length) return;
-                          setLightboxImages(galleryImages);
-                          setLightboxTitle(cardTitle);
-                          setLightboxIndex(0);
-                          setLightboxOpen(true);
-                        }}
-                        aria-label={`Open ${cardTitle} photos`}
-                      >
-                        {imgSrc ? (
-                          <Image
-                            src={imgSrc}
-                            alt={cardTitle}
-                            fill
-                            className="object-cover transition duration-200 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-gray-200" />
-                        )}
-                        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2 text-left">
-                          <span className="text-xs font-medium text-white">
-                            View photos{galleryImages.length > 1 ? ` (${galleryImages.length})` : ""}
-                          </span>
-                        </div>
-                      </button>
-                      <div className="min-w-0 flex-1">
-                          <h2 className="text-lg md:text-xl font-semibold text-gray-900">{cardTitle}</h2>
-                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
-                          {shortDescription}
-                        </p>
-                        {minNights > 1 && (
-                          <p className="mt-2 text-xs text-gray-500">
-                            Minimum stay: {minNights} nights
-                          </p>
-                        )}
-                      </div>
+	                    <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+	                      <div className="w-full md:w-[210px] shrink-0">
+	                        <button
+	                          type="button"
+	                          className="w-full h-40 md:h-[150px] relative rounded-xl overflow-hidden bg-gray-100 group"
+	                          onClick={() => {
+	                            if (!galleryImages.length) return;
+	                            setLightboxImages(galleryImages);
+	                            setLightboxTitle(cardTitle);
+	                            setLightboxIndex(0);
+	                            setLightboxOpen(true);
+	                          }}
+	                          aria-label={`Open ${cardTitle} photos`}
+	                        >
+	                          {imgSrc ? (
+	                            <Image
+	                              src={imgSrc}
+	                              alt={cardTitle}
+	                              fill
+	                              className="object-cover transition duration-200 group-hover:scale-105"
+	                            />
+	                          ) : (
+	                            <div className="w-full h-full bg-gray-200" />
+	                          )}
+	                          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-3 py-2 text-left">
+	                            <span className="text-xs font-medium text-white">
+	                              View photos{galleryImages.length > 1 ? ` (${galleryImages.length})` : ""}
+	                            </span>
+	                          </div>
+	                        </button>
+	                      </div>
+	                      <div className="min-w-0 flex-1 flex flex-col">
+	                          <h2 className="text-lg md:text-xl font-semibold text-gray-900">{cardTitle}</h2>
+	                        <p className="mt-2 text-sm text-gray-600 leading-relaxed">
+	                          {shortDescription}
+	                        </p>
+	                        {minNights > 1 && (
+	                          <p className="mt-2 text-xs text-gray-500">
+	                            Minimum stay: {minNights} nights
+	                          </p>
+	                        )}
+	                        {capacity > 0 && (
+	                          <div className="mt-3 md:mt-auto pt-2 flex items-center gap-2 text-sm text-gray-600">
+	                            <UsersIcon className="w-4 h-4 text-gray-500" />
+	                            <span>{capacity} Guests</span>
+	                          </div>
+	                        )}
+	                      </div>
 
-                      <div className="md:text-right md:min-w-[220px]">
-                        <div className="text-sm text-gray-700">Price per night</div>
-                        <div className="text-2xl font-semibold text-gray-900">
-                          {money(nightlyRoomsOnly)}
-                        </div>
-                        <div className="text-xs text-gray-500">{currency} / night (room only)</div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (isAvailableForRange) router.push(link);
-                          }}
-                          disabled={!isAvailableForRange}
-                          className={`mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold ${
-                            isAvailableForRange
-                              ? "bg-[#15153E] text-white hover:brightness-110"
-                              : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                          }`}
-                        >
-                          {isAvailableForRange ? "Reserve" : "Unavailable"}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+	                      <div className="md:text-right md:min-w-[220px]">
+	                        <div className="text-sm text-gray-700">Price per night</div>
+	                        <div className="text-2xl font-semibold text-gray-900">
+	                          {money(nightlyRoomsOnly)}
+	                        </div>
+	                        <div className="text-xs text-gray-500">{currency} / night (room only)</div>
+	                        <button
+	                          type="button"
+	                          onClick={() => {
+	                            if (isAvailableForRange) router.push(link);
+	                          }}
+	                          disabled={!isAvailableForRange}
+	                          className={`mt-4 inline-flex items-center justify-center rounded-full px-5 py-2.5 text-sm font-semibold ${
+	                            isAvailableForRange
+	                              ? "bg-[#15153E] text-white hover:brightness-110"
+	                              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+	                          }`}
+	                        >
+	                          {isAvailableForRange ? "Reserve" : "Unavailable"}
+	                        </button>
+	                      </div>
+	                    </div>
+	                  </div>
                 );
               })}
             </div>

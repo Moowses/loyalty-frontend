@@ -1021,18 +1021,36 @@ const slugMap: Record<string, string> = {
   'Gull River Escape: Nordic Spa': 'gull-river-escape-nordic-spa', 
 };
 
-//Return the correct static image path (with fallbacks) */
-function getHotelImage(name?: string) {
+const DEFAULT_PROPERTY_HERO = '/properties/your-dream-getaway/hero.png';
+const DEFAULT_CALABOGIE_HERO = '/calabogie-properties/CA1B/hero.png';
+
+function resolvePropertyFolder(name?: string): string {
   if (!name) return '';
-  const exact = slugMap[name];
-  // 1) prefer explicit mapping
-  if (exact) return `/properties/${exact}/hero.png`;
-  // 2) otherwise try derived slugs used elsewhere in the app
-  const dashed = dashedSlug(name);
-  const condensed = condensedSlug(name);
-  return `/properties/${dashed}/hero.png`; // UI will still render if this 404s
-  
-} 
+  const candidates = Array.from(
+    new Set([slugMap[name], dashedSlug(name), condensedSlug(name)].filter(Boolean))
+  );
+  for (const folder of candidates) {
+    try {
+      require(`@/public/properties/${folder}/meta.json`);
+      return String(folder);
+    } catch {}
+  }
+  return '';
+}
+
+function getHotelImage(name?: string) {
+  const folder = resolvePropertyFolder(name);
+  return folder ? `/properties/${folder}/hero.png` : DEFAULT_PROPERTY_HERO;
+}
+
+function applyImageFallback(el: HTMLImageElement) {
+  const current = String(el.currentSrc || el.src || '');
+  const isCalabogie = current.includes('/calabogie-properties/');
+  const fallback = isCalabogie ? DEFAULT_CALABOGIE_HERO : DEFAULT_PROPERTY_HERO;
+  if (!current.includes(fallback)) {
+    el.src = fallback;
+  }
+}
 
 function isCalabogieListing(room: any) {
   const hid = String(room?.hotelId ?? room?.hotelNo ?? '').trim().toUpperCase();
@@ -1073,7 +1091,14 @@ function safeArrayDataLoose(j: any): any[] | null {
 
 function propertyMetaFromName(name?: string): { meta: any; folder: string } {
   if (!name) return { meta: null, folder: '' };
-  const candidates = Array.from(new Set([slugMap[name], dashedSlug(name), condensedSlug(name)].filter(Boolean)));
+  const resolved = resolvePropertyFolder(name);
+  const candidates = Array.from(
+    new Set(
+      [resolved, slugMap[name], dashedSlug(name), condensedSlug(name)]
+        .filter(Boolean)
+        .map((x) => String(x))
+    )
+  );
   for (const folder of candidates) {
     try {
       const meta = require(`@/public/properties/${folder}/meta.json`);
@@ -1089,6 +1114,19 @@ const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
   '82c0ab4c-8a5c-4d77-aaae-b3f40143f53b': 'CH3B',
   '8767d68e-188d-42ff-811e-b31b011b278b': '1 Bedroom Loft',
 };
+const KNOWN_CALABOGIE_FOLDERS = new Set(['CA1B', 'CH2B', 'CH3B', 'LF2B', '1 Bedroom Loft', '1BEDROOMLOFT']);
+const CALABOGIE_ROOM_FOLDER_BY_NAME: Record<string, string> = {
+  CABINWITH1BEDROOM: 'CA1B',
+  STANDARDCABIN: 'CA1B',
+  BEDCHALET: 'CA1B',
+  CHALETWITH2BEDROOM: 'CH2B',
+  TWOBEDCHALET: 'CH2B',
+  CHALETWITH3BEDROOM: 'CH3B',
+  THREEBEDCHALET: 'CH3B',
+  BEDROOMLOFT: '1 Bedroom Loft',
+  ONEBEDROOMLOFT: '1 Bedroom Loft',
+  LF2B: 'LF2B',
+};
 
 function compactSlug(s: string) {
   return s.replace(/[^a-z0-9]/gi, '').toUpperCase();
@@ -1101,8 +1139,10 @@ function getCalabogieRoomFolder(room: any): string {
   const fromName = String(room?.roomTypeName ?? room?.RoomType ?? '').trim();
   if (!fromName) return '';
   const compact = compactSlug(fromName);
-  if (compact === '1BEDROOMLOFT') return '1 Bedroom Loft';
-  return compact;
+  const mapped = CALABOGIE_ROOM_FOLDER_BY_NAME[compact];
+  if (mapped) return mapped;
+  if (KNOWN_CALABOGIE_FOLDERS.has(compact)) return compact;
+  return '';
 }
 
 function getCalabogieMeta(room: any): any {
@@ -1111,6 +1151,8 @@ function getCalabogieMeta(room: any): any {
     if (folder === 'CA1B') return require('@/public/calabogie-properties/CA1B/meta.json');
     if (folder === 'CH2B') return require('@/public/calabogie-properties/CH2B/meta.json');
     if (folder === 'CH3B') return require('@/public/calabogie-properties/CH3B/meta.json');
+    if (folder === 'LF2B') return require('@/public/calabogie-properties/LF2B/meta.json');
+    if (folder === '1BEDROOMLOFT') return require('@/public/calabogie-properties/1BEDROOMLOFT/meta.json');
     if (folder === '1 Bedroom Loft') return require('@/public/calabogie-properties/1 Bedroom Loft/meta.json');
   } catch {}
   return null;
@@ -1120,7 +1162,7 @@ function getRoomModalVisual(room: any) {
   if (isCalabogieListing(room)) {
     const folder = getCalabogieRoomFolder(room);
     const meta = getCalabogieMeta(room);
-    const hero = folder ? `/calabogie-properties/${folder}/hero.png` : '';
+    const hero = folder ? `/calabogie-properties/${folder}/hero.png` : DEFAULT_CALABOGIE_HERO;
     const galleryFromMeta = Array.isArray(meta?.gallery)
       ? meta.gallery
           .map((f: any) => String(f || '').trim())
@@ -1789,12 +1831,13 @@ type RoomPickerContext = {
       return Number.isFinite(n) ? n : 0;
     };
 
-    const roomTotal = toNum(room.totalPrice); 
-    const petFee = toNum(room.petFeeAmount);  
-    const grandTotal = roomTotal + petFee;    
-    const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
-    const hero = getHotelImage(room.hotelName); 
-    const slug = hero ? hero.replace(/^\/properties\/|\/hero\.png$/g, "") : "";
+	    const roomTotal = toNum(room.totalPrice); 
+	    const petFee = toNum(room.petFeeAmount);  
+	    const grandTotal = roomTotal + petFee;    
+	    const nightlyRoomsOnly = nightsCount > 0 ? roomTotal / nightsCount : roomTotal;
+	    const roomCapacity = toNum(room?.capacity);
+	    const hero = getHotelImage(room.hotelName); 
+	    const slug = hero ? hero.replace(/^\/properties\/|\/hero\.png$/g, "") : "";
 
     // Try load meta.json 
     let meta: any = {};
@@ -1832,31 +1875,28 @@ type RoomPickerContext = {
         className="flex flex-col md:flex-row rounded-xl p-4 bg-white shadow-md ring-1 ring-black/5"
       >
         {/* Image */}
-        <div className="md:w-72 w-full md:mr-6 mb-3 md:mb-0">
-          {imgSrc ? (
-            <div className="relative w-full h-44 md:h-44 rounded-lg overflow-hidden bg-gray-100">
-              <Image
-                src={imgSrc}
-                alt={room.hotelName || 'Hotel'}
-                fill
-                className="object-cover"
-                priority
-                onError={(e) => {
-                  const el = e.currentTarget as HTMLImageElement;
-                  const name = room.hotelName || '';
-                  const c = `/properties/${condensedSlug(name)}/hero.png`;
-                  if (el.src.endsWith('/hero.png') && !el.src.includes('/' + condensedSlug(name) + '/')) {
-                    el.src = c;
-                  }
-                }}
-              />
-            </div>
+	        <div className="md:w-72 w-full md:mr-6 mb-3 md:mb-0">
+	          {imgSrc ? (
+	            <div className="relative w-full h-44 md:h-44 rounded-lg overflow-hidden bg-gray-100">
+	              <Image
+	                src={imgSrc}
+	                alt={room.hotelName || 'Hotel'}
+	                fill
+	                sizes="(max-width: 768px) 100vw, 288px"
+	                className="object-cover"
+	                priority
+	                onError={(e) => {
+	                  const el = e.currentTarget as HTMLImageElement;
+	                  applyImageFallback(el);
+	                }}
+	              />
+	            </div>
           ) : (
-            <div className="w-full h-44 bg-gray-200 flex items-center justify-center rounded-lg">
-              <span className="text-gray-500 text-sm">No Image</span>
-            </div>
-          )}
-        </div>
+	            <div className="w-full h-44 bg-gray-200 flex items-center justify-center rounded-lg">
+	              <span className="text-gray-500 text-sm">No Image</span>
+	            </div>
+	          )}
+		        </div>
 
               {/* Info + CTA */}
               
@@ -1911,13 +1951,22 @@ type RoomPickerContext = {
                           </div>
                         )}
 
-                        {/* Bottom bar */}
-                        <div className="mt-4 pt-3 border-t">
-                          <div className="flex items-center justify-end gap-4">
-                            {/* Grand total (left of button) */}
-                            <div className="text-right">
-                              <div className="flex items-baseline justify-end gap-1 leading-none">
-                                <span className="text-xl md:text-2xl font-bold text-gray-900">
+	                        {/* Bottom bar */}
+		                        <div className="mt-4 pt-3 border-t">
+		                          <div className="flex items-center justify-between gap-4">
+		                            <div className="min-w-[120px]">
+		                              {roomCapacity > 0 && (
+		                                <div className="flex items-center gap-2 text-sm text-gray-600">
+		                                  <UsersIcon className="w-4 h-4 text-gray-500" />
+		                                  <span>{roomCapacity} Guests</span>
+		                                </div>
+		                              )}
+		                            </div>
+		                            <div className="flex items-center gap-4 ml-auto">
+		                            {/* Grand total (left of button) */}
+		                            <div className="text-right">
+	                              <div className="flex items-baseline justify-end gap-1 leading-none">
+	                                <span className="text-xl md:text-2xl font-bold text-gray-900">
                                   {money(nightlyRoomsOnly)}
                                 </span>
                                 <span className="text-sm text-gray-700">CAD</span>
@@ -1933,13 +1982,14 @@ type RoomPickerContext = {
                                     onClick={() => {
                                       openRoomPicker(room);
                                     }}
-                                     className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
-                                  >
-                                    View Details
-                                  </button>
-                          </div>
-                        </div>
-                      </div>
+		                                    className="bg-[#211F45] text-white font-semibold px-8 py-3 rounded-[25px] hover:opacity-90 transition"
+		                                  >
+		                                    View Details
+		                                </button>
+		                            </div>
+		                          </div>
+		                        </div>
+		                      </div>
 
 
                 
@@ -2184,12 +2234,13 @@ type RoomPickerContext = {
                           pickRoom?.roomType ||
                           'Room Type'
                         ).trim();
-                        const total = roomTotalValue(pickRoom);
-                        const nightly = nights > 0 ? total / nights : total;
-                        const ccy = String(pickRoom?.currencyCode || 'CAD');
-                        const selected = rtId === roomPickerSelectedId;
-                        const desc = String(
-                          visual?.meta?.descriptionShort ??
+	                        const total = roomTotalValue(pickRoom);
+	                        const nightly = nights > 0 ? total / nights : total;
+	                        const ccy = String(pickRoom?.currencyCode || 'CAD');
+	                        const capacity = roomValueNum(pickRoom?.capacity);
+	                        const selected = rtId === roomPickerSelectedId;
+	                        const desc = String(
+	                          visual?.meta?.descriptionShort ??
                             visual?.meta?.shortDescription ??
                             visual?.meta?.description ??
                             'Private stay with premium amenities and curated comfort.'
@@ -2218,19 +2269,26 @@ type RoomPickerContext = {
                                   }}
                                   aria-label={`View ${rtName} photos`}
                                 >
-                                  {visual.hero ? (
-                                    <Image src={visual.hero} alt={rtName} fill className="object-cover transition duration-200 group-hover:scale-105" />
-                                  ) : (
-                                    <div className="w-full h-full bg-gray-200" />
-                                  )}
+	                                  {visual.hero ? (
+	                                    <Image
+	                                      src={visual.hero}
+	                                      alt={rtName}
+	                                      fill
+	                                      sizes="(max-width: 768px) 100vw, 230px"
+	                                      className="object-cover transition duration-200 group-hover:scale-105"
+	                                      onError={(e) => applyImageFallback(e.currentTarget as HTMLImageElement)}
+	                                    />
+	                                  ) : (
+	                                    <div className="w-full h-full bg-gray-200" />
+	                                  )}
                                   <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/60 to-transparent px-2 py-1.5 text-left">
                                     <span className="text-[11px] font-medium text-white">
                                       View photos{visual.gallery?.length > 1 ? ` (${visual.gallery.length})` : ''}
                                     </span>
                                   </div>
                                 </button>
-                                {visual.gallery?.length > 1 && (
-                                  <div className="mt-2 grid grid-cols-4 gap-2">
+	                                {visual.gallery?.length > 1 && (
+	                                  <div className="mt-2 grid grid-cols-4 gap-2">
                                     {visual.gallery.slice(0, 4).map((src: string, gIdx: number) => (
                                       <button
                                         key={`${src}-${gIdx}`}
@@ -2243,14 +2301,21 @@ type RoomPickerContext = {
                                         }}
                                         aria-label={`View ${rtName} photo ${gIdx + 1}`}
                                       >
-                                        <Image src={src} alt={`${rtName} ${gIdx + 1}`} fill className="object-cover" />
-                                      </button>
-                                    ))}
-                                  </div>
-                                )}
-                              </div>
+	                                        <Image
+	                                          src={src}
+	                                          alt={`${rtName} ${gIdx + 1}`}
+	                                          fill
+	                                          sizes="88px"
+	                                          className="object-cover"
+	                                          onError={(e) => applyImageFallback(e.currentTarget as HTMLImageElement)}
+	                                        />
+	                                      </button>
+	                                    ))}
+	                                  </div>
+	                                )}
+		                              </div>
 
-                              <div className="min-w-0 flex-1">
+	                              <div className="min-w-0 flex-1 flex flex-col">
                                 <div className="flex flex-wrap items-center gap-2">
                                   <h4 className="text-lg font-semibold text-gray-900">{rtName}</h4>
                                   {selected && (
@@ -2264,29 +2329,35 @@ type RoomPickerContext = {
                                     </span>
                                   )}
                                 </div>
-                                <p className="mt-2 text-sm leading-relaxed text-gray-600">
-                                  {desc || 'Private stay with premium amenities and curated comfort.'}
-                                </p>
-                                {addr && <p className="mt-2 text-xs text-gray-500">{addr}</p>}
-                              </div>
+	                                <p className="mt-2 text-sm leading-relaxed text-gray-600">
+	                                  {desc || 'Private stay with premium amenities and curated comfort.'}
+	                                </p>
+	                                {addr && <p className="mt-2 text-xs text-gray-500">{addr}</p>}
+	                                {capacity > 0 && (
+	                                  <div className="mt-3 md:mt-auto pt-2 flex items-center gap-2 text-sm text-gray-600">
+	                                    <UsersIcon className="w-4 h-4 text-gray-500" />
+	                                    <span>{capacity} Guests</span>
+	                                  </div>
+	                                )}
+	                              </div>
 
                               <div className="md:text-right md:min-w-[185px]">
-                                <div className="text-xs uppercase tracking-wide text-gray-500">Room only</div>
-                                <div className="mt-1 text-2xl font-semibold text-gray-900">{roomPickerMoney(nightly)}</div>
-                                <div className="text-xs text-gray-500">{ccy} / night</div>
-                                <div className="mt-1 text-xs text-gray-600">{roomPickerMoney(total)} {ccy} total</div>
-                                <button
-                                  type="button"
-                                  onClick={() => setRoomPickerSelectedId(rtId)}
-                                  className={`mt-3 w-full rounded-full px-4 py-2 text-sm font-semibold transition ${
-                                    selected ? 'bg-[#1f2345] text-white' : 'border border-gray-300 text-gray-800 hover:bg-gray-50'
-                                  }`}
-                                >
-                                  {selected ? 'Selected' : 'Select Cottage'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
+	                                <div className="text-xs uppercase tracking-wide text-gray-500">Room only</div>
+	                                <div className="mt-1 text-2xl font-semibold text-gray-900">{roomPickerMoney(nightly)}</div>
+	                                <div className="text-xs text-gray-500">{ccy} / night</div>
+	                                <div className="mt-1 text-xs text-gray-600">{roomPickerMoney(total)} {ccy} total</div>
+	                                <button
+	                                  type="button"
+	                                  onClick={() => setRoomPickerSelectedId(rtId)}
+	                                  className={`mt-3 w-full rounded-full px-4 py-2 text-sm font-semibold transition ${
+	                                    selected ? 'bg-[#1f2345] text-white' : 'border border-gray-300 text-gray-800 hover:bg-gray-50'
+	                                  }`}
+	                                >
+	                                  {selected ? 'Selected' : 'Select Cottage'}
+	                                </button>
+	                              </div>
+	                            </div>
+	                          </div>
                         );
                       })}
                     </div>
@@ -2466,12 +2537,14 @@ type RoomPickerContext = {
             )}
             <div className="w-full max-w-5xl">
               <div className="relative w-full h-[52vh] md:h-[70vh] bg-black rounded-2xl overflow-hidden">
-                <Image
-                  src={roomPickerLightboxImages[roomPickerLightboxIndex]}
-                  alt={`${roomPickerLightboxTitle} photo ${roomPickerLightboxIndex + 1}`}
-                  fill
-                  className="object-contain"
-                />
+	                <Image
+	                  src={roomPickerLightboxImages[roomPickerLightboxIndex]}
+	                  alt={`${roomPickerLightboxTitle} photo ${roomPickerLightboxIndex + 1}`}
+	                  fill
+	                  sizes="100vw"
+	                  className="object-contain"
+	                  onError={(e) => applyImageFallback(e.currentTarget as HTMLImageElement)}
+	                />
               </div>
               <div className="mt-3 flex items-center justify-between text-white">
                 <div className="text-sm md:text-base font-medium">{roomPickerLightboxTitle}</div>

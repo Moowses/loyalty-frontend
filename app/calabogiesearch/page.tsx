@@ -491,7 +491,6 @@ function CalabogieSearchBar() {
         showGuests &&
         createPortal(
           <div className="fixed inset-0 z-[99999] pointer-events-none">
-            {/* ✅ removed black dim background */}
             <div className="absolute inset-0 bg-transparent pointer-events-auto" onClick={() => setShowGuests(false)} />
             <div
               className="absolute inset-x-0 bottom-0 max-h-[92vh] bg-white rounded-t-2xl shadow-2xl p-4
