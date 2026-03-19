@@ -3,11 +3,13 @@
   "hotelNo": "CBE",
   "name": "2 Bed Chalet",
   "brandName": "2 Bed Chalet",
-  "tagline": "Apartment • 5 guests • 2 bedrooms • 1 bath",
-  "descriptionShort": "Relax by the fireplace in our cozy Chalets.",
+  "tagline": "Apartment • 4 guests • 2 bedrooms • 1 bath",
+  "descriptionShort": "Cottage 7 elevates the cottage experience. This beautifully appointed two-storey chalet features a stunning loft king bedroom above and a spacious main-floor king suite below.",
   "roomTypeId":"3b427e83-f01e-4cf8-83cc-b3f4014439f6",
   "descriptionLong": [
-    "Relax by the fireplace in our cozy Chalets. Look down from the loft area and chat with friends and family."
+    "Cottage 7 elevates the cottage experience. This beautifully appointed two-storey chalet features a stunning loft king bedroom above and a spacious main-floor king suite below — offering two private retreats under one roof. Whether you're here as a couple seeking extra room to spread out, or two couples sharing a getaway, the layout is as thoughtful as it is comfortable.
+
+The heart of the chalet is its living and dining area, anchored by a crackling fireplace that sets the mood on cool Calabogie evenings. A full kitchen, 32 inch flat screen TV with satellite, and air conditioning ensure every creature comfort is covered. Outside, a barbecue and bonfire pit invite evenings under the stars. A sofa bed adds flexible sleeping options for a growing party."
    ],
   "Address": "5253 Calabogie Road, Calabogie, Ontario K0J 1H0, Canada",
   "hotelName": "2 Bed Chalet",
@@ -21,20 +23,19 @@
   "longDescription": "Full detailed copy for the modal…",
   "amenities": {
     "general": [
-      "Loft with a queen and a single",
+      "Loft king bedroom + main-floor king bedroom + sofa bed",
       "Air conditioning",
-      "Complimentary wireless Internet",
-      "32 inch flat screen TV/satellite",
-      "Living/dining area with fireplace ",
+      "Complimentary Wi-Fi",
+      "32 inch flat screen TV with satellite",
+      "Fireplace in living area",
       "Screened in porch",
       "Bonfire pit — wood supplied"
     ],
     "kitchenDining": [
-      "Kitchen",
       "Fully-equipped kitchen",
-      "Full-size fridge and stove",
-      "Cookware/dishes/utensils",
-      "Coffee maker/toaster",
+      "Full-size fridge & full stove",
+      "Cookware, dishes & utensils",
+      "Coffee maker, toaster & microwave",
       "Dining area",
       "Kitchen linens/dish soap",
       "Barbecue"
