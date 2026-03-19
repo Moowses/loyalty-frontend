@@ -4,10 +4,11 @@
   "name": "Standard Cabin",
   "brandName": "Standard Cabin",
   "tagline": " 4 guests • 2 bedrooms • 1 bath",
-  "descriptionShort": "Relax by the fireplace in our cozy Chalets.",
+  "descriptionShort": "Give the kids a vacation they'll talk about for years. Cottage 10 is a warm, welcoming two-bedroom cabin crafted with families in mind..",
   "roomTypeId":"ae50e6a8-29dd-447d-840c-b3f40144635d",
   "descriptionLong": [
-    "Relax by the fireplace in our cozy Chalets. Look down from the loft area and chat with friends and family."
+      "Give the kids a vacation they'll talk about for years. Cottage 10 is a warm, welcoming two-bedroom cabin crafted with families in mind — two cozy double beds, a well-stocked kitchen for family meals, and a screened porch where little ones can play without a care in the world.
+      When the sun goes down, roast marshmallows at your own bonfire pit (wood is on us), and when it rises, head out to ski, hike, fish, or kayak — Calabogie's playground is right at your doorstep. Parents will love the fuss-free setup; kids will love absolutely everything else."
    ],
   "Address": "5253 Calabogie Road, Calabogie, Ontario K0J 1H0, Canada",
   "hotelName": "Standard Cabin",
@@ -21,14 +22,14 @@
   "longDescription": "Full detailed copy for the modal…",
   "amenities": {
     "general": [
-      "Loft with a queen and a single",
+      "Two bedrooms with double beds",
       "Air conditioning",
-      "Complimentary wireless Internet",
-      "2 piece bath/separate shower house",
+      "Complimentary Wi-Fi",
+      "2-piece bath with separate shower house",
       "32 inch flat screen TV/satellite",
       "Living/dining area with fireplace ",
       "Screened in porch",
-      "Bonfire pit — wood supplied"
+      "Bonfire pit with complimentary wood"
     ],
     "kitchenDining": [
       "Fully-equipped kitchen",
