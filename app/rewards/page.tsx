@@ -50,7 +50,7 @@ export default function RewardsPage() {
                     lineHeight: 'clamp(54px, 6vw, 92px)',
                   }}
                 >
-                  Escape, earn, repeat.
+                  Escape, Earn, Repeat.
                 </h1>
 
                 <p
