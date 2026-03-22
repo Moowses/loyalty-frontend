@@ -71,6 +71,49 @@ function fmtParam(d: Date) {
   return format(d, "yyyy-MM-dd");
 }
 
+function normalizeCompareText(value?: string) {
+  return String(value || "")
+    .toLowerCase()
+    .replace(/['"]/g, "")
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim();
+}
+
+function cleanPropertyDescription(description?: string, propertyName?: string, address?: string) {
+  if (!description) return undefined;
+
+  const normalized = String(description)
+    .replace(/\\r\\n/g, "\n")
+    .replace(/\\n/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\u00A0/g, " ")
+    .trim()
+    .replace(/^"+|"+$/g, "");
+
+  const compareName = normalizeCompareText(propertyName);
+  const compareAddress = normalizeCompareText(address);
+  const lines = normalized
+    .split(/\n+/)
+    .map((line) => line.trim().replace(/^"+|"+$/g, ""))
+    .filter(Boolean);
+
+  while (lines.length > 0) {
+    const current = normalizeCompareText(lines[0]);
+    if (!current) {
+      lines.shift();
+      continue;
+    }
+    if (current === compareName || current === compareAddress) {
+      lines.shift();
+      continue;
+    }
+    break;
+  }
+
+  const cleaned = lines.join(" ").replace(/\s+/g, " ").trim();
+  return cleaned || undefined;
+}
+
 const DEFAULT_PROPERTY_HERO = "/properties/your-dream-getaway/hero.png";
 const DEFAULT_CALABOGIE_HERO = "/calabogie-properties/CA1B/hero.png";
 const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
@@ -215,7 +258,11 @@ export default function PropertiesPage() {
           hotelNo: row?.hotelNo ? String(row.hotelNo) : undefined,
           propertyName: String(row?.propertyName || ""),
           address: String(row?.address || row?.addpress || "").trim() || undefined,
-          description: row?.description ? String(row.description) : undefined,
+          description: cleanPropertyDescription(
+            row?.description ? String(row.description) : undefined,
+            String(row?.propertyName || ""),
+            String(row?.address || row?.addpress || "").trim() || undefined
+          ),
         }));
         setAll(list);
       } catch (e: any) {

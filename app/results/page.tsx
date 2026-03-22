@@ -1335,7 +1335,6 @@ type RoomPickerContext = {
       null,
     [roomPickerRooms, roomPickerSelectedId]
   );
-
   const continueRoomPicker = () => {
     const room = roomPickerSelectedRoom;
     const ctx = roomPickerCtx;
@@ -2363,7 +2362,7 @@ type RoomPickerContext = {
                     </div>
                   </div>
 
-                  <aside className="hidden lg:flex border-t lg:border-t-0 lg:border-l border-gray-200 bg-white p-4 md:p-5 flex-col">
+	                  <aside className="hidden lg:flex border-t lg:border-t-0 lg:border-l border-gray-200 bg-white p-4 md:p-5 flex-col">
                     <div className="text-[11px] uppercase tracking-[0.18em] font-semibold text-gray-500">Cottage Selected</div>
                     <div className="mt-2 rounded-xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-900">
                       {String(
@@ -2421,15 +2420,15 @@ type RoomPickerContext = {
                       </div>
                     </div>
 
-                    <div className="mt-5 rounded-2xl border border-[#e6e8f2] bg-[#f6f7fb] p-4">
-                      <div className="text-sm text-gray-600">BOOKING SUMMARY</div>
-                      <div className="mt-1 text-lg font-semibold text-[#1f2345]">{roomPickerCtx?.hotelName || 'Property'}</div>
-                      <p className="mt-2 text-xs text-gray-600">
-                        Rates shown are for your selected dates and party size. Final fees and taxes appear on the next step.
-                      </p>
-                    </div>
+	                    <div className="mt-5 rounded-2xl border border-[#e6e8f2] bg-[#f6f7fb] p-4">
+	                      <div className="text-sm text-gray-600">BOOKING SUMMARY</div>
+	                      <div className="mt-1 text-lg font-semibold text-[#1f2345]">{roomPickerCtx?.hotelName || 'Property'}</div>
+	                      <p className="mt-2 text-xs text-gray-600">
+	                        Rates shown are for your selected dates and party size. Final fees and taxes appear on the next step.
+	                      </p>
+	                    </div>
 
-                    <div className="mt-auto pt-5">
+	                    <div className="mt-auto pt-5">
                       <button
                         type="button"
                         disabled={!roomPickerSelectedRoom || roomPickerLoading}
@@ -2443,10 +2442,10 @@ type RoomPickerContext = {
                         Continue to Reserve
                       </button>
                     </div>
-                  </aside>
-                </div>
+	                  </aside>
+	                </div>
 
-                <div className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
+	                <div className="lg:hidden border-t border-gray-200 bg-white/95 backdrop-blur px-4 py-3">
                   <div className="flex items-center justify-between gap-3">
                     <div className="min-w-0">
                       <div className="text-[10px] uppercase tracking-[0.18em] font-semibold text-gray-500">Room Selected</div>

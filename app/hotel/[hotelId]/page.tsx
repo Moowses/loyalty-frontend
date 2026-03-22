@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState, type ComponentType } from 'react';
+import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import {
   Bath,
@@ -25,6 +25,7 @@ import {
   Info,
   CheckCircle2,
   ImagePlus,
+  House,
 } from 'lucide-react';
 
 type Meta = {
@@ -33,6 +34,8 @@ type Meta = {
   name: string;
   brandName?: string;
   tagline?: string;
+  address?: string;
+  Address?: string;
   descriptionShort?: string;
   descriptionLong?: string[];
   amenities?: string[] | Record<string, string[]>;
@@ -57,6 +60,194 @@ const slugify = (s: string) =>
     .replace(/(^-|-$)+/g, '');
 
 const slugCondensed = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+type ApproxLocation = {
+  label: string;
+  lat: number;
+  lng: number;
+};
+
+const approxLocationCache = new Map<string, ApproxLocation | null>();
+const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+let googleMapsPromise: Promise<void> | null = null;
+
+function formatGeneralAreaLabel(address?: string) {
+  const parts = String(address || '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+
+  if (!parts.length) return 'General area';
+
+  const tail = parts.slice(-3).map((part, idx, arr) => {
+    if (idx !== arr.length - 2) return part;
+    return part
+      .replace(/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+  });
+
+  return tail.join(', ');
+}
+
+function buildApproxLocation(lat: number, lng: number, address?: string): ApproxLocation {
+  const approxLat = Math.round(lat * 100) / 100;
+  const approxLng = Math.round(lng * 100) / 100;
+
+  return {
+    label: formatGeneralAreaLabel(address),
+    lat: approxLat,
+    lng: approxLng,
+  };
+}
+
+function loadGoogleMapsScript(): Promise<void> {
+  if (typeof window === 'undefined') return Promise.resolve();
+  if ((window as any).google?.maps) return Promise.resolve();
+  if (googleMapsPromise) return googleMapsPromise;
+
+  googleMapsPromise = new Promise<void>((resolve, reject) => {
+    const existing = document.querySelector('script[data-google-maps-loader="1"]') as HTMLScriptElement | null;
+    if (existing) {
+      existing.addEventListener('load', () => resolve(), { once: true });
+      existing.addEventListener('error', () => reject(new Error('Failed to load Google Maps')), { once: true });
+      return;
+    }
+
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(GOOGLE_MAPS_API_KEY)}`;
+    script.async = true;
+    script.defer = true;
+    script.dataset.googleMapsLoader = '1';
+    script.onload = () => resolve();
+    script.onerror = () => reject(new Error('Failed to load Google Maps'));
+    document.head.appendChild(script);
+  });
+
+  return googleMapsPromise;
+}
+
+async function geocodeApproxLocation(address: string): Promise<ApproxLocation | null> {
+  const key = String(address || '').trim();
+  if (!key) return null;
+  if (approxLocationCache.has(key)) return approxLocationCache.get(key) ?? null;
+
+  try {
+    const url = `https://nominatim.openstreetmap.org/search?format=jsonv2&limit=1&q=${encodeURIComponent(key)}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const data = await res.json();
+    const first = Array.isArray(data) ? data[0] : null;
+    const lat = Number(first?.lat);
+    const lng = Number(first?.lon);
+    const next =
+      Number.isFinite(lat) && Number.isFinite(lng) ? buildApproxLocation(lat, lng, key) : null;
+    approxLocationCache.set(key, next);
+    return next;
+  } catch {
+    approxLocationCache.set(key, null);
+    return null;
+  }
+}
+
+function GeneralAreaMapCard({
+  address,
+  location,
+  loading,
+}: {
+  address?: string;
+  location: ApproxLocation | null;
+  loading: boolean;
+}) {
+  const mapRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!location || !mapRef.current || !GOOGLE_MAPS_API_KEY) return;
+
+    loadGoogleMapsScript()
+      .then(() => {
+        if (cancelled || !mapRef.current || !(window as any).google?.maps) return;
+
+        const google = (window as any).google;
+        const center = { lat: location.lat, lng: location.lng };
+        const map = new google.maps.Map(mapRef.current, {
+          center,
+          zoom: 12,
+          mapTypeControl: false,
+          zoomControl: true,
+          fullscreenControl: true,
+          streetViewControl: true,
+          gestureHandling: 'greedy',
+          clickableIcons: false,
+          disableDefaultUI: false,
+          styles: [
+            { featureType: 'poi', stylers: [{ visibility: 'off' }] },
+            { featureType: 'transit', stylers: [{ visibility: 'off' }] },
+          ],
+        });
+
+        new google.maps.Marker({
+          position: center,
+          map,
+          icon: {
+            path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
+            fillColor: '#1f2345',
+            fillOpacity: 1,
+            strokeColor: '#ffffff',
+            strokeWeight: 2,
+            scale: 1.8,
+            anchor: new google.maps.Point(12, 22),
+          },
+        });
+      })
+      .catch(() => {
+        // Keep the fallback state below if Google Maps fails to load.
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [location]);
+
+  if (!address) return null;
+
+  return (
+    <section className="mt-10">
+      <h2 className="text-xl font-semibold">Where you&apos;ll be</h2>
+      <div className="mt-1 text-sm text-gray-600">
+        {location?.label || formatGeneralAreaLabel(address)}
+      </div>
+      <div className="relative mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
+        {location && GOOGLE_MAPS_API_KEY ? (
+          <>
+            <div ref={mapRef} className="h-64 w-full" aria-label={`General area map for ${location.label}`} />
+            <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/80 bg-white/95 px-3 py-1.5 text-xs font-medium text-gray-700 shadow">
+              Search this area
+            </div>
+            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[#1f2345] text-white shadow-lg ring-4 ring-white/80">
+                <House className="h-5 w-5" />
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="flex h-64 items-center justify-center px-4 text-center text-sm text-gray-500">
+            {loading
+              ? 'Loading map...'
+              : GOOGLE_MAPS_API_KEY
+                ? 'Map preview unavailable for this stay.'
+                : 'Google Maps API key is missing.'}
+          </div>
+        )}
+      </div>
+      <p className="mt-3 text-xs leading-5 text-gray-500">
+        Shown as a general area for privacy. Exact directions can be shared later.
+      </p>
+    </section>
+  );
+}
 
 // LOCAL y-m-d (fixes UTC shift)
 const ymd = (d: Date) => {
@@ -667,6 +858,8 @@ export default function HotelInfoPage() {
   const sDashed = slugify(displayName);
   const sCondensed = slugCondensed(displayName);
   const [meta, setMeta] = useState<Meta | null>(null);
+  const [approxLocation, setApproxLocation] = useState<ApproxLocation | null>(null);
+  const [approxLocationLoading, setApproxLocationLoading] = useState(false);
 
   const amenitiesList = useMemo(() => {
     const a = (meta as any)?.amenities;
@@ -696,6 +889,34 @@ export default function HotelInfoPage() {
     }
     if (displayName) load();
   }, [displayName, sDashed, sCondensed]);
+
+  const propertyAddress = useMemo(
+    () => String(meta?.Address || meta?.address || '').trim(),
+    [meta]
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+
+    if (!propertyAddress) {
+      setApproxLocation(null);
+      setApproxLocationLoading(false);
+      return;
+    }
+
+    setApproxLocationLoading(true);
+    geocodeApproxLocation(propertyAddress)
+      .then((location) => {
+        if (!cancelled) setApproxLocation(location);
+      })
+      .finally(() => {
+        if (!cancelled) setApproxLocationLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [propertyAddress]);
 
   const gallery = meta?.gallery?.length
     ? meta.gallery
@@ -1305,17 +1526,23 @@ function onMemberLogin() {
             <div className="text-[15px] leading-7 text-gray-700">{meta.descriptionShort}</div>
           )}
 
-          {(meta?.descriptionLong?.length || 0) > 0 && (
-            <button
+	          {(meta?.descriptionLong?.length || 0) > 0 && (
+	            <button
               onClick={() => setShowAbout(true)}
               className="mt-3 inline-flex items-center justify-center px-4 py-2 rounded-full border text-sm"
-            >
-              Show more
-            </button>
-          )}
+	            >
+	              Show more
+	            </button>
+	          )}
 
-          {!!amenitiesList.length && (
-            <div className="mt-10">
+	          <GeneralAreaMapCard
+	            address={propertyAddress}
+	            location={approxLocation}
+	            loading={approxLocationLoading}
+	          />
+
+	          {!!amenitiesList.length && (
+	            <div className="mt-10">
               <h2 className="text-xl font-semibold mb-3">Amenities</h2>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-y-2">
                 {amenitiesList.slice(0, 8).map((a, i) => (
