@@ -25,7 +25,7 @@ import {
   Info,
   CheckCircle2,
   ImagePlus,
-  House,
+  Search,
 } from 'lucide-react';
 
 type Meta = {
@@ -152,10 +152,12 @@ async function geocodeApproxLocation(address: string): Promise<ApproxLocation | 
 
 function GeneralAreaMapCard({
   address,
+  fallbackLabel,
   location,
   loading,
 }: {
   address?: string;
+  fallbackLabel?: string;
   location: ApproxLocation | null;
   loading: boolean;
 }) {
@@ -188,17 +190,20 @@ function GeneralAreaMapCard({
           ],
         });
 
+        const houseSvg = `
+          <svg xmlns="http://www.w3.org/2000/svg" width="44" height="44" viewBox="0 0 44 44">
+            <circle cx="22" cy="22" r="20" fill="#1f2345" stroke="#ffffff" stroke-width="2" />
+            <path d="M14 22.2L22 15l8 7.2V31h-5.2v-6.1h-5.6V31H14v-8.8z" fill="#ffffff" />
+          </svg>
+        `.trim();
+
         new google.maps.Marker({
           position: center,
           map,
           icon: {
-            path: 'M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5S10.62 6.5 12 6.5s2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z',
-            fillColor: '#1f2345',
-            fillOpacity: 1,
-            strokeColor: '#ffffff',
-            strokeWeight: 2,
-            scale: 1.8,
-            anchor: new google.maps.Point(12, 22),
+            url: `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(houseSvg)}`,
+            scaledSize: new google.maps.Size(44, 44),
+            anchor: new google.maps.Point(22, 22),
           },
         });
       })
@@ -211,25 +216,23 @@ function GeneralAreaMapCard({
     };
   }, [location]);
 
-  if (!address) return null;
+  if (!address && !location && !fallbackLabel) return null;
 
   return (
     <section className="mt-10">
       <h2 className="text-xl font-semibold">Where you&apos;ll be</h2>
       <div className="mt-1 text-sm text-gray-600">
-        {location?.label || formatGeneralAreaLabel(address)}
+        {location?.label || formatGeneralAreaLabel(address || fallbackLabel)}
       </div>
       <div className="relative mt-4 overflow-hidden rounded-2xl border border-gray-200 bg-gray-100">
         {location && GOOGLE_MAPS_API_KEY ? (
           <>
             <div ref={mapRef} className="h-64 w-full" aria-label={`General area map for ${location.label}`} />
             <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/80 bg-white/95 px-3 py-1.5 text-xs font-medium text-gray-700 shadow">
-              Search this area
-            </div>
-            <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full border border-white/80 bg-[#1f2345] text-white shadow-lg ring-4 ring-white/80">
-                <House className="h-5 w-5" />
-              </div>
+              <span className="inline-flex items-center gap-1.5">
+                <Search className="h-3.5 w-3.5" />
+                Search this area
+              </span>
             </div>
           </>
         ) : (
@@ -894,20 +897,33 @@ export default function HotelInfoPage() {
     () => String(meta?.Address || meta?.address || '').trim(),
     [meta]
   );
+  const fallbackLat = useMemo(() => {
+    const n = Number(lat);
+    return Number.isFinite(n) ? n : null;
+  }, [lat]);
+  const fallbackLng = useMemo(() => {
+    const n = Number(lng);
+    return Number.isFinite(n) ? n : null;
+  }, [lng]);
 
   useEffect(() => {
     let cancelled = false;
 
+    setApproxLocationLoading(true);
+    const fallbackLocation =
+      fallbackLat != null && fallbackLng != null
+        ? buildApproxLocation(fallbackLat, fallbackLng, propertyAddress || displayName)
+        : null;
+
     if (!propertyAddress) {
-      setApproxLocation(null);
+      setApproxLocation(fallbackLocation);
       setApproxLocationLoading(false);
       return;
     }
 
-    setApproxLocationLoading(true);
     geocodeApproxLocation(propertyAddress)
       .then((location) => {
-        if (!cancelled) setApproxLocation(location);
+        if (!cancelled) setApproxLocation(location || fallbackLocation);
       })
       .finally(() => {
         if (!cancelled) setApproxLocationLoading(false);
@@ -916,7 +932,7 @@ export default function HotelInfoPage() {
     return () => {
       cancelled = true;
     };
-  }, [propertyAddress]);
+  }, [displayName, fallbackLat, fallbackLng, propertyAddress]);
 
   const gallery = meta?.gallery?.length
     ? meta.gallery
@@ -1537,6 +1553,7 @@ function onMemberLogin() {
 
 	          <GeneralAreaMapCard
 	            address={propertyAddress}
+	            fallbackLabel={displayName}
 	            location={approxLocation}
 	            loading={approxLocationLoading}
 	          />
