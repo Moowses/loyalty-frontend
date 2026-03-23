@@ -999,6 +999,53 @@ function condensedSlug(s: string) {
   return s.toLowerCase().replace(/[^a-z0-9]/g, '');
 }
 
+function formatGeneralAreaLabel(address?: string) {
+  const cleanPart = (part: string) =>
+    String(part || '')
+      .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+  const parts = String(address || '')
+    .split(',')
+    .map((part) => cleanPart(part))
+    .filter(Boolean);
+
+  if (!parts.length) return 'General area';
+  if (parts.length === 1) {
+    const single = parts[0];
+    if (/^\d+\s/.test(single) || /\b(rd|road|street|st|avenue|ave|lane|ln|drive|dr|trail|trl|boulevard|blvd|highway|hwy)\b/i.test(single)) {
+      return 'General area';
+    }
+    return single;
+  }
+
+  const country = parts[parts.length - 1];
+  const region = parts.length >= 2 ? parts[parts.length - 2] : '';
+  const locality = parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+
+  return [locality, region, country].filter(Boolean).join(', ');
+}
+
+function buildGeneralLocationLabel(source: any, fallbackAddress?: string, fallbackName?: string) {
+  const city = String(source?.city || source?.City || source?.town || source?.village || source?.county || '').trim();
+  const region = String(source?.region || source?.Region || source?.state || source?.State || source?.province || '').trim();
+  const country = String(source?.country || source?.Country || '').trim();
+  const apiLabel = [city, region, country].filter(Boolean).join(', ');
+  if (apiLabel) return apiLabel;
+
+  const cleanedAddress = formatGeneralAreaLabel(fallbackAddress);
+  if (cleanedAddress !== 'General area') return cleanedAddress;
+
+  return formatGeneralAreaLabel(fallbackName);
+}
+
+function isCalabogieListing(room: any) {
+  const name = String(room?.hotelName || room?.RoomType || '').toLowerCase();
+  const hotelNo = String(room?.hotelNo || '').toUpperCase();
+  return hotelNo === 'CBE' || name.includes('calabogie');
+}
+
 /** Exact folder names in /public/properties */
 const slugMap: Record<string, string> = {
   'Your Dream Getaway': 'your-dream-getaway',
@@ -1401,9 +1448,21 @@ function getHotelImage(name?: string) {
     const nightsCount =
       checkIn && checkOut ? Math.max(1, differenceInCalendarDays(checkOut, checkIn)) : 0;
 
-    const imgSrc = getHotelImage(room.hotelName);
+	    const imgSrc = getHotelImage(room.hotelName);
+	    const hero = getHotelImage(room.hotelName);
+	    const slug = hero ? hero.replace(/^\/properties\/|\/hero\.png$/g, '') : '';
+	    let meta: any = {};
+	    try {
+	      meta = require(`@/public/properties/${slug}/meta.json`);
+	    } catch (e) {
+	      meta = {};
+	    }
+	    const address = meta?.Address ?? meta?.address ?? null;
+	    const addressLabel = isCalabogieListing(room)
+	      ? address
+	      : buildGeneralLocationLabel(room, String(address || ''), String(room.hotelName || ''));
 
-    const toNum = (v: any) => {
+	    const toNum = (v: any) => {
       if (v == null) return 0;
       const n = typeof v === 'number' ? v : Number(String(v).replace(/[^0-9.-]/g, ''));
       return Number.isFinite(n) ? n : 0;
@@ -1478,13 +1537,19 @@ function getHotelImage(name?: string) {
                               <span className="text-gray-500"> ({money(nightlyRoomsOnly)} / night)</span>
                             )}
                           </div>
-                          <div>
-                            Pet fee:{' '}
-                            <span className="font-medium text-gray-900">
-                              {petFee > 0 ? money(petFee) : '0'}
-                            </span>
-                          </div>
-                        </div>
+	                          <div>
+	                            Pet fee:{' '}
+	                            <span className="font-medium text-gray-900">
+	                              {petFee > 0 ? money(petFee) : '0'}
+	                            </span>
+	                          </div>
+	                          <div>
+	                            <span className="font-medium text-gray-900">
+	                              {isCalabogieListing(room) ? 'Address:' : 'Area:'}
+	                            </span>{' '}
+	                            <span className="text-gray-700">{addressLabel}</span>
+	                          </div>
+	                        </div>
 
                         {/* Bottom bar */}
                         <div className="mt-4 pt-3 border-t">

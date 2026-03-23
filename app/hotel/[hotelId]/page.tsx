@@ -72,22 +72,31 @@ const GOOGLE_MAPS_API_KEY = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
 let googleMapsPromise: Promise<void> | null = null;
 
 function formatGeneralAreaLabel(address?: string) {
+  const cleanPart = (part: string) =>
+    String(part || '')
+      .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
   const parts = String(address || '')
     .split(',')
-    .map((part) => part.trim())
+    .map((part) => cleanPart(part))
     .filter(Boolean);
 
   if (!parts.length) return 'General area';
+  if (parts.length === 1) {
+    const single = parts[0];
+    if (/^\d+\s/.test(single) || /\b(rd|road|street|st|avenue|ave|lane|ln|drive|dr|trail|trl|boulevard|blvd|highway|hwy)\b/i.test(single)) {
+      return 'General area';
+    }
+    return single;
+  }
 
-  const tail = parts.slice(-3).map((part, idx, arr) => {
-    if (idx !== arr.length - 2) return part;
-    return part
-      .replace(/\b[A-Z]\d[A-Z]\s?\d[A-Z]\d\b/gi, '')
-      .replace(/\s{2,}/g, ' ')
-      .trim();
-  });
+  const country = parts[parts.length - 1];
+  const region = parts.length >= 2 ? parts[parts.length - 2] : '';
+  const locality = parts.length >= 3 ? parts[parts.length - 3] : parts[0];
 
-  return tail.join(', ');
+  return [locality, region, country].filter(Boolean).join(', ');
 }
 
 function buildApproxLocation(lat: number, lng: number, address?: string): ApproxLocation {
@@ -246,7 +255,7 @@ function GeneralAreaMapCard({
         )}
       </div>
       <p className="mt-3 text-xs leading-5 text-gray-500">
-        Shown as a general area for privacy. Exact directions can be shared later.
+        The exact address will be shown after the booking is confirm.
       </p>
     </section>
   );
@@ -897,6 +906,10 @@ export default function HotelInfoPage() {
     () => String(meta?.Address || meta?.address || '').trim(),
     [meta]
   );
+  const generalLocationLabel = useMemo(
+    () => formatGeneralAreaLabel(propertyAddress || displayName),
+    [displayName, propertyAddress]
+  );
   const fallbackLat = useMemo(() => {
     const n = Number(lat);
     return Number.isFinite(n) ? n : null;
@@ -909,19 +922,19 @@ export default function HotelInfoPage() {
   useEffect(() => {
     let cancelled = false;
 
-    setApproxLocationLoading(true);
     const fallbackLocation =
       fallbackLat != null && fallbackLng != null
-        ? buildApproxLocation(fallbackLat, fallbackLng, propertyAddress || displayName)
+        ? buildApproxLocation(fallbackLat, fallbackLng, generalLocationLabel || displayName)
         : null;
 
-    if (!propertyAddress) {
+    if (!generalLocationLabel || generalLocationLabel === 'General area') {
       setApproxLocation(fallbackLocation);
       setApproxLocationLoading(false);
       return;
     }
 
-    geocodeApproxLocation(propertyAddress)
+    setApproxLocationLoading(true);
+    geocodeApproxLocation(generalLocationLabel)
       .then((location) => {
         if (!cancelled) setApproxLocation(location || fallbackLocation);
       })
@@ -932,7 +945,7 @@ export default function HotelInfoPage() {
     return () => {
       cancelled = true;
     };
-  }, [displayName, fallbackLat, fallbackLng, propertyAddress]);
+  }, [displayName, fallbackLat, fallbackLng, generalLocationLabel]);
 
   const gallery = meta?.gallery?.length
     ? meta.gallery
@@ -1551,13 +1564,6 @@ function onMemberLogin() {
 	            </button>
 	          )}
 
-	          <GeneralAreaMapCard
-	            address={propertyAddress}
-	            fallbackLabel={displayName}
-	            location={approxLocation}
-	            loading={approxLocationLoading}
-	          />
-
 	          {!!amenitiesList.length && (
 	            <div className="mt-10">
               <h2 className="text-xl font-semibold mb-3">Amenities</h2>
@@ -1592,10 +1598,17 @@ function onMemberLogin() {
                 >
                   Show more house rules
                 </button>
-              )}
-            </div>
-          )}
-        </div>
+	              )}
+	            </div>
+	          )}
+
+	          <GeneralAreaMapCard
+	            address={propertyAddress}
+	            fallbackLabel={displayName}
+	            location={approxLocation}
+	            loading={approxLocationLoading}
+	          />
+	        </div>
 
         {/* RIGHT: pricing card */}
         <div className="border-2 border-gray-200 rounded-[16px] p-4 shadow-sm h-fit md:sticky md:top-4">

@@ -114,6 +114,37 @@ function cleanPropertyDescription(description?: string, propertyName?: string, a
   return cleaned || undefined;
 }
 
+function formatGeneralAreaLabel(address?: string) {
+  const cleanPart = (part: string) =>
+    String(part || "")
+      .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
+  const parts = String(address || "")
+    .split(",")
+    .map((part) => cleanPart(part))
+    .filter(Boolean);
+
+  if (!parts.length) return "General area";
+  if (parts.length === 1) {
+    const single = parts[0];
+    if (
+      /^\d+\s/.test(single) ||
+      /\b(rd|road|street|st|avenue|ave|lane|ln|drive|dr|trail|trl|boulevard|blvd|highway|hwy)\b/i.test(single)
+    ) {
+      return "General area";
+    }
+    return single;
+  }
+
+  const country = parts[parts.length - 1];
+  const region = parts.length >= 2 ? parts[parts.length - 2] : "";
+  const locality = parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+
+  return [locality, region, country].filter(Boolean).join(", ");
+}
+
 const DEFAULT_PROPERTY_HERO = "/properties/your-dream-getaway/hero.png";
 const DEFAULT_CALABOGIE_HERO = "/calabogie-properties/CA1B/hero.png";
 const CALABOGIE_ROOM_FOLDER_BY_ID: Record<string, string> = {
@@ -764,12 +795,15 @@ export default function PropertiesPage() {
 
       {/* Result-style list cards (like app/result/page.tsx layout) */}
       <div className="space-y-5">
-        {!loading &&
-          filtered.map((p) => {
-            const hero = getHeroImg(p);
-            const href = canSearch ? buildHotelUrl(p) : "#";
+	        {!loading &&
+	          filtered.map((p) => {
+	            const hero = getHeroImg(p);
+	            const href = canSearch ? buildHotelUrl(p) : "#";
+	            const addressLabel = isCalabogieProperty(p)
+	              ? p.address
+	              : formatGeneralAreaLabel(p.address || p.propertyName);
 
-            return (
+	            return (
               <div
                 key={`${p.hotelId}-${p.propertyName}`}
                 className="bg-white rounded-2xl shadow-md ring-1 ring-black/5 overflow-hidden"
@@ -804,7 +838,11 @@ export default function PropertiesPage() {
                       {p.propertyName}
                     </div>
 
-                    {p.address && <div className="text-sm text-gray-600 mt-1">{p.address}</div>}
+	                    {addressLabel && (
+	                      <div className="text-sm text-gray-600 mt-1">
+	                        {isCalabogieProperty(p) ? addressLabel : `Area: ${addressLabel}`}
+	                      </div>
+	                    )}
 
                     {p.description && (
                       <div className="text-sm text-gray-600 mt-3 leading-6 line-clamp-3">

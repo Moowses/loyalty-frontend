@@ -636,6 +636,47 @@ function dedupeBy<T>(arr: T[], key: (x: T) => string) {
   return out;
 }
 
+function formatGeneralAreaLabel(address?: string) {
+  const cleanPart = (part: string) =>
+    String(part || '')
+      .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+  const parts = String(address || '')
+    .split(',')
+    .map((part) => cleanPart(part))
+    .filter(Boolean);
+
+  if (!parts.length) return 'General area';
+  if (parts.length === 1) {
+    const single = parts[0];
+    if (/^\d+\s/.test(single) || /\b(rd|road|street|st|avenue|ave|lane|ln|drive|dr|trail|trl|boulevard|blvd|highway|hwy)\b/i.test(single)) {
+      return 'General area';
+    }
+    return single;
+  }
+
+  const country = parts[parts.length - 1];
+  const region = parts.length >= 2 ? parts[parts.length - 2] : '';
+  const locality = parts.length >= 3 ? parts[parts.length - 3] : parts[0];
+
+  return [locality, region, country].filter(Boolean).join(', ');
+}
+
+function buildGeneralLocationLabel(source: any, fallbackAddress?: string, fallbackName?: string) {
+  const city = String(source?.city || source?.City || source?.town || source?.village || source?.county || '').trim();
+  const region = String(source?.region || source?.Region || source?.state || source?.State || source?.province || '').trim();
+  const country = String(source?.country || source?.Country || '').trim();
+  const apiLabel = [city, region, country].filter(Boolean).join(', ');
+  if (apiLabel) return apiLabel;
+
+  const cleanedAddress = formatGeneralAreaLabel(fallbackAddress);
+  if (cleanedAddress !== 'General area') return cleanedAddress;
+
+  return formatGeneralAreaLabel(fallbackName);
+}
+
 function ResultsContent() {
   const router = useRouter();
   const params = useSearchParams();
@@ -1847,6 +1888,9 @@ type RoomPickerContext = {
     }
 
 	    const address = meta?.Address ?? meta?.address ?? null;
+	    const addressLabel = isCalabogieListing(room)
+	      ? address
+	      : buildGeneralLocationLabel(room, String(address || ''), String(room.hotelName || ''));
 	    const minNights = Number(room?.minNights ?? 1);
 	    const calabogieMetaForCard = calabogieVisualForCard?.meta || null;
 	    const displayRoomTypeName = isCalabogieListing(room)
@@ -1936,10 +1980,12 @@ type RoomPickerContext = {
                               {petFee > 0 ? money(petFee) : '0'}
                             </span>
                           </div>
-                          <div>
-                            <span className="font-medium text-gray-900">Address:</span>{" "}
-                            <span className="text-gray-700">{address}</span>
-                          </div>
+	                          <div>
+	                            <span className="font-medium text-gray-900">
+	                              {isCalabogieListing(room) ? 'Address:' : 'Area:'}
+	                            </span>{" "}
+	                            <span className="text-gray-700">{addressLabel}</span>
+	                          </div>
                         </div>
                         {distanceLabel && (
                           <div>
@@ -2240,11 +2286,23 @@ type RoomPickerContext = {
 	                        const selected = rtId === roomPickerSelectedId;
 	                        const desc = String(
 	                          visual?.meta?.descriptionShort ??
-                            visual?.meta?.shortDescription ??
-                            visual?.meta?.description ??
-                            'Private stay with premium amenities and curated comfort.'
-                        ).trim();
-                        const addr = String(visual?.meta?.Address ?? visual?.meta?.address ?? '').trim();
+	                            visual?.meta?.shortDescription ??
+	                            visual?.meta?.description ??
+	                            'Private stay with premium amenities and curated comfort.'
+	                        ).trim();
+	                        const addr = String(visual?.meta?.Address ?? visual?.meta?.address ?? '').trim();
+	                        const addrLabel = isCalabogieListing(pickRoom)
+	                          ? addr
+	                          : buildGeneralLocationLabel(
+	                              pickRoom,
+	                              addr,
+	                              String(
+	                                visual?.meta?.hotelName ||
+	                                  visual?.meta?.name ||
+	                                  pickRoom?.hotelName ||
+	                                  rtName
+	                              )
+	                            );
 
                         return (
                           <div
@@ -2331,7 +2389,12 @@ type RoomPickerContext = {
 	                                <p className="mt-2 text-sm leading-relaxed text-gray-600">
 	                                  {desc || 'Private stay with premium amenities and curated comfort.'}
 	                                </p>
-	                                {addr && <p className="mt-2 text-xs text-gray-500">{addr}</p>}
+		                                {addrLabel && (
+		                                  <p className="mt-2 text-xs text-gray-500">
+		                                    {isCalabogieListing(pickRoom) ? 'Address: ' : 'Area: '}
+		                                    {addrLabel}
+		                                  </p>
+		                                )}
 	                                {capacity > 0 && (
 	                                  <div className="mt-3 md:mt-auto pt-2 flex items-center gap-2 text-sm text-gray-600">
 	                                    <UsersIcon className="w-4 h-4 text-gray-500" />
