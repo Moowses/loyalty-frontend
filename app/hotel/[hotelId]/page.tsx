@@ -25,7 +25,6 @@ import {
   Info,
   CheckCircle2,
   ImagePlus,
-  Search,
 } from 'lucide-react';
 
 type Meta = {
@@ -237,12 +236,6 @@ function GeneralAreaMapCard({
         {location && GOOGLE_MAPS_API_KEY ? (
           <>
             <div ref={mapRef} className="h-64 w-full" aria-label={`General area map for ${location.label}`} />
-            <div className="pointer-events-none absolute left-3 top-3 rounded-full border border-white/80 bg-white/95 px-3 py-1.5 text-xs font-medium text-gray-700 shadow">
-              <span className="inline-flex items-center gap-1.5">
-                <Search className="h-3.5 w-3.5" />
-                Search this area
-              </span>
-            </div>
           </>
         ) : (
           <div className="flex h-64 items-center justify-center px-4 text-center text-sm text-gray-500">
@@ -255,7 +248,7 @@ function GeneralAreaMapCard({
         )}
       </div>
       <p className="mt-3 text-xs leading-5 text-gray-500">
-        The exact address will be shown after the booking is confirm.
+        The exact address will be shown after the booking is confirmed.
       </p>
     </section>
   );

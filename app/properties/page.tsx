@@ -115,6 +115,14 @@ function cleanPropertyDescription(description?: string, propertyName?: string, a
 }
 
 function formatGeneralAreaLabel(address?: string) {
+  const redactStreetAddress = (value: string) =>
+    String(value || "")
+      .replace(/^(?:unit|apt|apartment|suite|ste|#)\s*[a-z0-9-]+\s*/i, "")
+      .replace(/^\d+[a-z0-9-]*\s*/i, "")
+      .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, "")
+      .replace(/\s{2,}/g, " ")
+      .trim();
+
   const cleanPart = (part: string) =>
     String(part || "")
       .replace(/\b[A-Z]\d[A-Z](?:\s?\d[A-Z]\d)?\b/gi, "")
@@ -133,7 +141,8 @@ function formatGeneralAreaLabel(address?: string) {
       /^\d+\s/.test(single) ||
       /\b(rd|road|street|st|avenue|ave|lane|ln|drive|dr|trail|trl|boulevard|blvd|highway|hwy)\b/i.test(single)
     ) {
-      return "General area";
+      const redacted = redactStreetAddress(single);
+      return redacted || "General area";
     }
     return single;
   }
@@ -801,7 +810,7 @@ export default function PropertiesPage() {
 	            const href = canSearch ? buildHotelUrl(p) : "#";
 	            const addressLabel = isCalabogieProperty(p)
 	              ? p.address
-	              : formatGeneralAreaLabel(p.address || p.propertyName);
+	              : formatGeneralAreaLabel(p.address);
 
 	            return (
               <div
