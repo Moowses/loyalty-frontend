@@ -71,6 +71,10 @@ function fmtParam(d: Date) {
   return format(d, "yyyy-MM-dd");
 }
 
+function isNumericId(value?: string) {
+  return /^\d+$/.test(String(value || "").trim());
+}
+
 function normalizeCompareText(value?: string) {
   return String(value || "")
     .toLowerCase()
@@ -250,6 +254,7 @@ function applyCardImageFallback(el: HTMLImageElement) {
 export default function PropertiesPage() {
   const router = useRouter();
   const [all, setAll] = useState<PropertyItem[]>([]);
+  const [bookingIdByKey, setBookingIdByKey] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState("");
 
@@ -314,10 +319,63 @@ export default function PropertiesPage() {
     run();
   }, []);
 
+  useEffect(() => {
+    let cancelled = false;
+
+    const resolveBookingIds = async () => {
+      const nonCalabogie = all.filter((p) => !isCalabogieProperty(p));
+      if (!nonCalabogie.length) {
+        setBookingIdByKey({});
+        return;
+      }
+
+      const pairs = await Promise.all(
+        nonCalabogie.map(async (p) => {
+          const key = `${p.hotelId}::${p.propertyName}`;
+          if (isNumericId(p.hotelId)) return [key, String(p.hotelId)] as const;
+
+          const dashed = dashedSlug(p.propertyName);
+          const condensed = condensedSlug(p.propertyName);
+          const candidates = [`/properties/${dashed}/meta.json`, `/properties/${condensed}/meta.json`];
+
+          for (const url of candidates) {
+            try {
+              const r = await fetch(url, { cache: "no-store" });
+              if (!r.ok) continue;
+              const j = await r.json();
+              const id = String(j?.hotelId || "").trim();
+              if (isNumericId(id)) return [key, id] as const;
+            } catch {
+              // ignore and keep trying candidates
+            }
+          }
+          return [key, ""] as const;
+        })
+      );
+
+      if (cancelled) return;
+      const next: Record<string, string> = {};
+      for (const [key, id] of pairs) {
+        if (id) next[key] = id;
+      }
+      setBookingIdByKey(next);
+    };
+
+    resolveBookingIds();
+    return () => {
+      cancelled = true;
+    };
+  }, [all]);
+
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
     let list = needle
-      ? all.filter((p) => (p.propertyName || "").toLowerCase().includes(needle))
+      ? all.filter((p) => {
+          const name = (p.propertyName || "").toLowerCase();
+          const address = (p.address || "").toLowerCase();
+          const area = formatGeneralAreaLabel(p.address).toLowerCase();
+          return name.includes(needle) || address.includes(needle) || area.includes(needle);
+        })
       : [...all];
 
     list.sort((a, b) => {
@@ -644,10 +702,12 @@ export default function PropertiesPage() {
   /* Build hotel URL */
   const buildHotelUrl = (p: PropertyItem) => {
     const hotelNo = p.hotelNo || "";
+    const key = `${p.hotelId}::${p.propertyName}`;
+    const bookingId = bookingIdByKey[key] || (isNumericId(p.hotelId) ? String(p.hotelId) : p.hotelId);
     const params = new URLSearchParams({
-      hotelId: p.hotelId,
+      hotelId: bookingId,
       hotelNo: hotelNo || p.hotelId,
-      roomTypeId: p.hotelId,
+      roomTypeId: bookingId,
       checkIn: fmtParam(checkIn!),
       checkOut: fmtParam(checkOut!),
       adult: String(adults),
@@ -657,7 +717,7 @@ export default function PropertiesPage() {
       name: p.propertyName,
     });
 
-    return `/hotel/${p.hotelId}?${params.toString()}`;
+    return `/hotel/${bookingId}?${params.toString()}`;
   };
 
   return (

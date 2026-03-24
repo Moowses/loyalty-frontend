@@ -92,6 +92,7 @@ export default function BookingPage() {
   const infants = Number(params.get('infants') || params.get('infant') || '0');
   const petParam = params.get('pet') || params.get('pets') || '0';
   const currency = (params.get('currency') || 'CAD').toUpperCase();
+  const referralCodeParam = params.get('referralCode') || params.get('referalCode') || '';
 
   const petYN: 'yes' | 'no' =
     String(petParam).toLowerCase() === 'yes' || String(petParam) === '1' ? 'yes' : 'no';
@@ -119,6 +120,7 @@ export default function BookingPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
+  const [referralCode, setReferralCode] = useState(() => referralCodeParam.trim());
   const [country, setCountry] = useState('');
   const [address1, setAddress1] = useState('');
   const [address2, setAddress2] = useState('');
@@ -589,6 +591,7 @@ export default function BookingPage() {
       });
 
       const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+      const normalizedReferralCode = referralCode.trim();
       const res = await fetch(`${base}/api/booking/confirm`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -605,6 +608,7 @@ export default function BookingPage() {
             membershipNo: memberNumber || '',
           },
           payment: { token: paymentToken },
+          ...(normalizedReferralCode ? { referralCode: normalizedReferralCode } : {}),
         }),
       });
 
@@ -762,6 +766,22 @@ export default function BookingPage() {
                 <Field label="City*" value={city} onChange={setCity} required />
                 <Field label="State/Province*" value={state} onChange={setState} required />
                 <Field label="Zip/Postal Code*" value={zip} onChange={setZip} required />
+              </div>
+
+              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+                <div className="flex flex-col gap-1">
+                  <h3 className="text-base font-semibold text-[#211F45]">Do you have a referral code?</h3>
+                  <p className="text-sm text-gray-600">
+                    Enter it here before completing payment. This field is optional.
+                  </p>
+                </div>
+                <div className="mt-4 sm:w-[calc(50%-0.5rem)]">
+                  <Field
+                    label="Referral Code"
+                    value={referralCode}
+                    onChange={setReferralCode}
+                  />
+                </div>
               </div>
 
               {tokenizationKey && (
