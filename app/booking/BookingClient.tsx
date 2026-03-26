@@ -831,7 +831,7 @@ export default function BookingPage() {
 	                  </div>
 	                  <div className="h-px bg-gray-200" />
 	                  <div className="flex items-center justify-between text-base font-semibold text-[#211F45]">
-	                    <span>Estimated total</span>
+	                    <span>{isAuthed === true ? 'Total' : 'Estimated total'}</span>
 	                    <span>{money(displayTotal, quote?.currency || currency || 'CAD')}</span>
 	                  </div>
 	                </div>
@@ -967,7 +967,8 @@ export default function BookingPage() {
 
 	              <div className="pt-2">
 	                <p className="sm:text-1xl font-bold tracking-tight">
-	                  <span className="font-medium font-bold">Estimated total:</span> {money(displayTotal, quote.currency)} ({quote.currency})
+	                  <span className="font-medium font-bold">{isAuthed === true ? 'Total:' : 'Estimated total:'}</span>{' '}
+	                  {money(displayTotal, quote.currency)} ({quote.currency})
 	                </p>
 	              </div>
 

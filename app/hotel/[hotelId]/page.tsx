@@ -1834,7 +1834,7 @@ function onMemberLogin() {
 	            <div className="h-px bg-gray-200 my-2" />
 
 	            <div className="flex items-center justify-between">
-	              <span>Estimated total</span>
+	              <span>{isAuthed === true ? 'Total' : 'Estimated total'}</span>
 	              <b>{available ? money(memberPricing.estimatedTotal, currency) : '$0.00'}</b>
 	            </div>
 	          </div>
