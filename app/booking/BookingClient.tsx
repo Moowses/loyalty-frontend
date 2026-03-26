@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Script from 'next/script';
 import CountrySelect from '@/components/CountrySelect';
+import { getMemberPricing } from '@/lib/utils/member-pricing';
 import { PhoneInput } from 'react-international-phone';
 import 'react-international-phone/style.css';
 
@@ -115,6 +116,17 @@ export default function BookingPage() {
       toNum((quote as any).vatAmount)
     );
   }, [quote]);
+  const memberPricing = useMemo(
+    () =>
+      getMemberPricing({
+        roomRate: quote?.grossAmount,
+        cleaningFee: (quote as any)?.cleaningFeeAmount,
+        taxesAndFees: (quote as any)?.vatAmount,
+        petFee: quote?.petFeeAmount,
+      }),
+    [quote]
+  );
+  const displayTotal = useMemo(() => memberPricing.estimatedTotal || 0, [memberPricing.estimatedTotal]);
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -713,10 +725,10 @@ export default function BookingPage() {
               <div className="text-[13px] font-bold uppercase tracking-[0.08em] text-black">
                 Total
               </div>
-              <div className="mt-0.5 font-semibold text-sm text-black">
-                {money(total, quote?.currency || 'CAD')}
-              </div>
-            </div>
+	              <div className="mt-0.5 font-semibold text-sm text-black">
+	                {money(displayTotal, quote?.currency || 'CAD')}
+	              </div>
+	            </div>
           </div>
         </div>
       </div>
@@ -768,9 +780,9 @@ export default function BookingPage() {
                 <Field label="Zip/Postal Code*" value={zip} onChange={setZip} required />
               </div>
 
-              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-                <div className="flex flex-col gap-1">
-                  <h3 className="text-base font-semibold text-[#211F45]">Do you have a referral code?</h3>
+	              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+	                <div className="flex flex-col gap-1">
+	                  <h3 className="text-base font-semibold text-[#211F45]">Do you have a referral code?</h3>
                   <p className="text-sm text-gray-600">
                     Enter it here before completing payment. This field is optional.
                   </p>
@@ -780,11 +792,52 @@ export default function BookingPage() {
                     label="Referral Code"
                     value={referralCode}
                     onChange={setReferralCode}
-                  />
-                </div>
-              </div>
+	                  />
+	                </div>
+	              </div>
 
-              {tokenizationKey && (
+	              <div className="rounded-2xl border border-[#e6cf8b] bg-[#fff7df] p-5">
+	                {isAuthed !== true && (
+	                  <>
+	                    <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8b6a18]">
+	                      Member preferred pricing
+	                    </div>
+	                    <p className="mt-1 text-sm text-[#211F45]">
+	                      Members save {money(memberPricing.memberSavings, quote?.currency || currency || 'CAD')} on this stay and unlock preferred rates.
+	                    </p>
+	                  </>
+	                )}
+
+	                <div className={`${isAuthed !== true ? 'mt-4' : ''} space-y-2 text-sm text-gray-700`}>
+	                  <div className="flex items-center justify-between">
+	                    <span>Room rate</span>
+	                    <b>{money(memberPricing.roomRate, quote?.currency || currency || 'CAD')}</b>
+	                  </div>
+	                  <div className="flex items-center justify-between">
+	                    <span>Cleaning fee</span>
+	                    <b>{money(memberPricing.cleaningFee, quote?.currency || currency || 'CAD')}</b>
+	                  </div>
+	                  <div className="flex items-center justify-between">
+	                    <span>Taxes &amp; fees</span>
+	                    <b>{money(memberPricing.taxesAndFees, quote?.currency || currency || 'CAD')}</b>
+	                  </div>
+	                  <div className="flex items-center justify-between">
+	                    <span>Pet fee</span>
+	                    <b>{money(memberPricing.petFee, quote?.currency || currency || 'CAD')}</b>
+	                  </div>
+	                  <div className="flex items-center justify-between text-[#8b6a18]">
+	                    <span className="font-medium">Member savings</span>
+	                    <b>-{money(memberPricing.memberSavings, quote?.currency || currency || 'CAD')}</b>
+	                  </div>
+	                  <div className="h-px bg-gray-200" />
+	                  <div className="flex items-center justify-between text-base font-semibold text-[#211F45]">
+	                    <span>Estimated total</span>
+	                    <span>{money(displayTotal, quote?.currency || currency || 'CAD')}</span>
+	                  </div>
+	                </div>
+	              </div>
+
+	              {tokenizationKey && (
                 <Script
                   src="https://secure.nmi.com/token/Collect.js"
                   strategy="afterInteractive"
@@ -912,11 +965,11 @@ export default function BookingPage() {
                 </div>
               )}
 
-              <div className="pt-2">
-                <p className="sm:text-1xl font-bold tracking-tight">
-                  <span className="font-medium font-bold">Total:</span> {money(total, quote.currency)} ({quote.currency})
-                </p>
-              </div>
+	              <div className="pt-2">
+	                <p className="sm:text-1xl font-bold tracking-tight">
+	                  <span className="font-medium font-bold">Estimated total:</span> {money(displayTotal, quote.currency)} ({quote.currency})
+	                </p>
+	              </div>
 
               {err && <div className="text-sm text-red-600 p-2 bg-red-50 rounded">{err}</div>}
 

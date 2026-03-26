@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ComponentType } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
+import { getMemberPricing } from '@/lib/utils/member-pricing';
 import {
   Bath,
   ShowerHead,
@@ -1038,6 +1039,16 @@ export default function HotelInfoPage() {
 
 
   const nightly = useMemo(() => (nights ? roomSubtotal / nights : 0), [roomSubtotal, nights]);
+  const memberPricing = useMemo(
+    () =>
+      getMemberPricing({
+        roomRate: roomSubtotal,
+        cleaningFee,
+        taxesAndFees: vat,
+        petFee,
+      }),
+    [cleaningFee, petFee, roomSubtotal, vat]
+  );
 
   const grandTotal = useMemo(
     () => (roomSubtotal || 0) + (petFee || 0) + (cleaningFee || 0) + (vat || 0),
@@ -1766,19 +1777,30 @@ function onMemberLogin() {
             </div>
           </div>
 
-          <div className="flex items-center justify-between mb-4">
-            <label className="text-xs text-gray-500">PETS</label>
-            <select
+	          <div className="flex items-center justify-between mb-4">
+	            <label className="text-xs text-gray-500">PETS</label>
+	            <select
               value={pet}
               onChange={(e) => setPet(e.target.value as 'yes' | 'no')}
               className="border rounded-lg px-2 py-2"
             >
               <option value="no">No</option>
               <option value="yes">Yes</option>
-            </select>
-          </div>
+	            </select>
+	          </div>
 
-          <div className="text-sm text-gray-700 space-y-1 mb-3">
+	          {isAuthed !== true && (
+	            <div className="mb-4 rounded-2xl border border-[#e6cf8b] bg-[#fff7df] p-4">
+	              <div className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8b6a18]">
+	                Member preferred pricing
+	              </div>
+	              <p className="mt-1 text-sm text-[#211F45]">
+	                Members save {available ? money(memberPricing.memberSavings, currency) : money(0, currency)} on this stay and unlock preferred rates.
+	              </p>
+	            </div>
+	          )}
+
+	          <div className="text-sm text-gray-700 space-y-1 mb-3">
             <div className="flex items-center justify-between">
               <span>Nights</span>
               <b>{nights || 0}</b>
@@ -1799,18 +1821,23 @@ function onMemberLogin() {
               <b>{money(vat, currency)}</b>
             </div>
 
-            <div className="flex items-center justify-between">
-              <span>Pet fee</span>
-              <b>{money(petFee, currency)}</b>
-            </div>
+	            <div className="flex items-center justify-between">
+	              <span>Pet fee</span>
+	              <b>{money(petFee, currency)}</b>
+	            </div>
 
-            <div className="h-px bg-gray-200 my-2" />
+	            <div className="flex items-center justify-between text-[#8b6a18]">
+	              <span className="font-medium">Member savings</span>
+	              <b>-{money(memberPricing.memberSavings, currency)}</b>
+	            </div>
 
-            <div className="flex items-center justify-between">
-              <span>Total</span>
-              <b>{available ? money(grandTotal, currency) : '$0.00'}</b>
-            </div>
-          </div>
+	            <div className="h-px bg-gray-200 my-2" />
+
+	            <div className="flex items-center justify-between">
+	              <span>Estimated total</span>
+	              <b>{available ? money(memberPricing.estimatedTotal, currency) : '$0.00'}</b>
+	            </div>
+	          </div>
 
           <button
             disabled={!canReserve}
