@@ -132,6 +132,7 @@ export default function BookingPage() {
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [memberNumber, setMemberNumber] = useState('');
+  const [reservationNote, setReservationNote] = useState('');
   const [referralCode, setReferralCode] = useState(() => referralCodeParam.trim());
   const [country, setCountry] = useState('');
   const [address1, setAddress1] = useState('');
@@ -603,6 +604,7 @@ export default function BookingPage() {
       });
 
       const base = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
+      const normalizedDescription = reservationNote.trim();
       const normalizedReferralCode = referralCode.trim();
       const res = await fetch(`${base}/api/booking/confirm`, {
         method: 'POST',
@@ -620,6 +622,7 @@ export default function BookingPage() {
             membershipNo: memberNumber || '',
           },
           payment: { token: paymentToken },
+          ...(normalizedDescription ? { description: normalizedDescription } : {}),
           ...(normalizedReferralCode ? { referralCode: normalizedReferralCode } : {}),
         }),
       });
@@ -773,14 +776,27 @@ export default function BookingPage() {
                   <CountrySelect value={country} onChange={setCountry} />
                 </div>
 
-                <Field label="Address 1*" value={address1} onChange={setAddress1} required />
-                <Field label="Address 2" value={address2} onChange={setAddress2} />
-                <Field label="City*" value={city} onChange={setCity} required />
-                <Field label="State/Province*" value={state} onChange={setState} required />
-                <Field label="Zip/Postal Code*" value={zip} onChange={setZip} required />
-              </div>
+	                <Field label="Address 1*" value={address1} onChange={setAddress1} required />
+	                <Field label="Address 2" value={address2} onChange={setAddress2} />
+	                <Field label="City*" value={city} onChange={setCity} required />
+	                <Field label="State/Province*" value={state} onChange={setState} required />
+	                <Field label="Zip/Postal Code*" value={zip} onChange={setZip} required />
+	              </div>
 
-	              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
+	              <div className="flex flex-col gap-1">
+	                <label className="text-xs font-medium text-gray-700">Additional reservation note</label>
+	                <textarea
+	                  value={reservationNote}
+	                  onChange={(e) => setReservationNote(e.target.value)}
+	                  placeholder="Optional special requests or booking notes"
+	                  maxLength={500}
+	                  rows={4}
+	                  className="min-h-[104px] rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 outline-none transition focus:border-[#211F45] focus:ring-2 focus:ring-[#211F45]/10"
+	                />
+	                <div className="text-xs text-gray-500">Optional note for your reservation.</div>
+	              </div>
+
+		              <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
 	                <div className="flex flex-col gap-1">
 	                  <h3 className="text-base font-semibold text-[#211F45]">Do you have a referral code?</h3>
                   <p className="text-sm text-gray-600">
