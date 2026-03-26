@@ -1615,12 +1615,6 @@ function onMemberLogin() {
               Some dates in your selected range are no longer available. Please choose new dates.
             </div>
           )}
-          {calendarFallbackMode && (
-            <div className="mb-3 text-xs text-amber-800 bg-amber-50 border border-amber-200 rounded px-3 py-2">
-              Selected room type is unavailable right now. Showing hotel-level availability.
-            </div>
-          )}
-
           <div className="mb-3">
             <label className="text-xs text-gray-500">DATES</label>
             <button
