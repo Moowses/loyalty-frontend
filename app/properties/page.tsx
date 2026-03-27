@@ -83,6 +83,16 @@ function normalizeCompareText(value?: string) {
     .trim();
 }
 
+function getPropertyDedupKey(property: PropertyItem) {
+  const hotelId = String(property.hotelId || "").trim();
+  if (hotelId) return `hotel:${hotelId}`;
+
+  const hotelNo = String(property.hotelNo || "").trim();
+  if (hotelNo) return `hotelNo:${hotelNo}`;
+
+  return `name:${normalizeCompareText(property.propertyName)}`;
+}
+
 function cleanPropertyDescription(description?: string, propertyName?: string, address?: string) {
   if (!description) return undefined;
 
@@ -309,7 +319,14 @@ export default function PropertiesPage() {
             String(row?.address || row?.addpress || "").trim() || undefined
           ),
         }));
-        setAll(list);
+        const seen = new Set<string>();
+        const deduped = list.filter((property) => {
+          const key = getPropertyDedupKey(property);
+          if (seen.has(key)) return false;
+          seen.add(key);
+          return true;
+        });
+        setAll(deduped);
       } catch (e: any) {
         setErr(e?.message || "Failed to load properties");
       } finally {
