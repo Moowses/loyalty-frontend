@@ -1049,6 +1049,16 @@ export default function HotelInfoPage() {
       }),
     [cleaningFee, petFee, roomSubtotal, vat]
   );
+  const isMember = isAuthed === true;
+  const displayedTotal = isMember
+    ? memberPricing.memberTotal
+    : memberPricing.retailTotal;
+  const displayedRoomRate = isMember
+    ? memberPricing.discountedRoomRate
+    : memberPricing.roomRate;
+  const displayedTaxes = isMember
+    ? memberPricing.discountedTaxesAndFees
+    : memberPricing.taxesAndFees;
 
   const grandTotal = useMemo(
     () => (roomSubtotal || 0) + (petFee || 0) + (cleaningFee || 0) + (vat || 0),
@@ -1403,6 +1413,9 @@ export default function HotelInfoPage() {
       cleaningFee: String(cleaningFee),
       vat: String(vat),
       grandTotal: String(grandTotal),
+      chargeTotal: String(displayedTotal),
+      retailTotal: String(memberPricing.retailTotal),
+      memberTotal: String(memberPricing.memberTotal),
     });
 
     if (isGuest) params.set('guest', '1');
@@ -1795,7 +1808,7 @@ function onMemberLogin() {
 	                Member preferred pricing
 	              </div>
 	              <p className="mt-1 text-sm text-[#211F45]">
-	                Members save {available ? money(memberPricing.memberSavings, currency) : money(0, currency)} on this stay and unlock preferred rates.
+	                Members save {available ? money(memberPricing.memberSavings, currency) : money(0, currency)} on this stay. Guest checkout keeps the full retail price.
 	              </p>
 	            </div>
 	          )}
@@ -1808,7 +1821,7 @@ function onMemberLogin() {
 
             <div className="flex items-center justify-between">
               <span>Room subtotal</span>
-              <b>{available ? money(roomSubtotal, currency) : '$0.00'}</b>
+	              <b>{available ? money(displayedRoomRate, currency) : '$0.00'}</b>
             </div>
 
             <div className="flex items-center justify-between">
@@ -1818,7 +1831,7 @@ function onMemberLogin() {
 
             <div className="flex items-center justify-between">
               <span>Tax / GST</span>
-              <b>{money(vat, currency)}</b>
+	              <b>{money(displayedTaxes, currency)}</b>
             </div>
 
 	            <div className="flex items-center justify-between">
@@ -1827,15 +1840,17 @@ function onMemberLogin() {
 	            </div>
 
 	            <div className="flex items-center justify-between text-[#8b6a18]">
-	              <span className="font-medium">Member savings</span>
+		              <span className="font-medium">
+                  {isMember ? 'Member savings' : 'Member savings (info only)'}
+                </span>
 	              <b>-{money(memberPricing.memberSavings, currency)}</b>
 	            </div>
 
 	            <div className="h-px bg-gray-200 my-2" />
 
 	            <div className="flex items-center justify-between">
-	              <span>{isAuthed === true ? 'Total' : 'Estimated total'}</span>
-	              <b>{available ? money(memberPricing.estimatedTotal, currency) : '$0.00'}</b>
+		              <span>Total</span>
+		              <b>{available ? money(displayedTotal, currency) : '$0.00'}</b>
 	            </div>
 	          </div>
 

@@ -106,16 +106,6 @@ export default function BookingPage() {
   const [err, setErr] = useState('');
   const [available, setAvailable] = useState(true);
 
-  const total = useMemo(() => {
-    if (!quote) return 0;
-    if (toNum(quote.grandTotal) > 0) return toNum(quote.grandTotal);
-    return (
-      toNum(quote.grossAmount) +
-      toNum(quote.petFeeAmount) +
-      toNum((quote as any).cleaningFeeAmount) +
-      toNum((quote as any).vatAmount)
-    );
-  }, [quote]);
   const memberPricing = useMemo(
     () =>
       getMemberPricing({
@@ -126,7 +116,17 @@ export default function BookingPage() {
       }),
     [quote]
   );
-  const displayTotal = useMemo(() => memberPricing.estimatedTotal || 0, [memberPricing.estimatedTotal]);
+  const isMember = isAuthed === true;
+  const displayTotal = useMemo(
+    () => (isMember ? memberPricing.memberTotal : memberPricing.retailTotal) || 0,
+    [isMember, memberPricing.memberTotal, memberPricing.retailTotal]
+  );
+  const displayedRoomRate = isMember
+    ? memberPricing.discountedRoomRate
+    : memberPricing.roomRate;
+  const displayedTaxesAndFees = isMember
+    ? memberPricing.discountedTaxesAndFees
+    : memberPricing.taxesAndFees;
 
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
@@ -610,7 +610,15 @@ export default function BookingPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          quote,
+          quote: {
+            ...quote,
+            retailTotal: memberPricing.retailTotal,
+            memberTotal: memberPricing.memberTotal,
+            chargeTotal: displayTotal,
+            discountedRoomRate: memberPricing.discountedRoomRate,
+            discountedTaxesAndFees: memberPricing.discountedTaxesAndFees,
+            memberSavings: memberPricing.memberSavings,
+          },
           guest: {
             firstName,
             lastName,
@@ -676,9 +684,10 @@ export default function BookingPage() {
         departureDate: endTime,
         guests: { adult: adults, child: children, infant: infants, pet: petYN },
         charges: {
-          base: Number(quote.grossAmount),
+          base: Number(displayedRoomRate),
           petFee: Number(quote.petFeeAmount || 0),
-          total,
+          taxesAndFees: Number(displayedTaxesAndFees || 0),
+          total: displayTotal,
           currency: quote.currency,
         },
         payment: { transactionId: j?.payment?.transactionId || '' },
@@ -729,7 +738,7 @@ export default function BookingPage() {
                 Total
               </div>
 	              <div className="mt-0.5 font-semibold text-sm text-black">
-	                {money(displayTotal, quote?.currency || 'CAD')}
+		                {money(displayTotal, quote?.currency || 'CAD')}
 	              </div>
 	            </div>
           </div>
@@ -819,7 +828,7 @@ export default function BookingPage() {
 	                      Member preferred pricing
 	                    </div>
 	                    <p className="mt-1 text-sm text-[#211F45]">
-	                      Members save {money(memberPricing.memberSavings, quote?.currency || currency || 'CAD')} on this stay and unlock preferred rates.
+		                      Members save {money(memberPricing.memberSavings, quote?.currency || currency || 'CAD')} on this stay. Guest checkout keeps the full retail price.
 	                    </p>
 	                  </>
 	                )}
@@ -827,7 +836,7 @@ export default function BookingPage() {
 	                <div className={`${isAuthed !== true ? 'mt-4' : ''} space-y-2 text-sm text-gray-700`}>
 	                  <div className="flex items-center justify-between">
 	                    <span>Room rate</span>
-	                    <b>{money(memberPricing.roomRate, quote?.currency || currency || 'CAD')}</b>
+		                    <b>{money(displayedRoomRate, quote?.currency || currency || 'CAD')}</b>
 	                  </div>
 	                  <div className="flex items-center justify-between">
 	                    <span>Cleaning fee</span>
@@ -835,19 +844,21 @@ export default function BookingPage() {
 	                  </div>
 	                  <div className="flex items-center justify-between">
 	                    <span>Taxes &amp; fees</span>
-	                    <b>{money(memberPricing.taxesAndFees, quote?.currency || currency || 'CAD')}</b>
+		                    <b>{money(displayedTaxesAndFees, quote?.currency || currency || 'CAD')}</b>
 	                  </div>
 	                  <div className="flex items-center justify-between">
 	                    <span>Pet fee</span>
 	                    <b>{money(memberPricing.petFee, quote?.currency || currency || 'CAD')}</b>
 	                  </div>
 	                  <div className="flex items-center justify-between text-[#8b6a18]">
-	                    <span className="font-medium">Member savings</span>
+		                    <span className="font-medium">
+                              {isMember ? 'Member savings' : 'Member savings (info only)'}
+                            </span>
 	                    <b>-{money(memberPricing.memberSavings, quote?.currency || currency || 'CAD')}</b>
 	                  </div>
 	                  <div className="h-px bg-gray-200" />
 	                  <div className="flex items-center justify-between text-base font-semibold text-[#211F45]">
-	                    <span>{isAuthed === true ? 'Total' : 'Estimated total'}</span>
+		                    <span>Total</span>
 	                    <span>{money(displayTotal, quote?.currency || currency || 'CAD')}</span>
 	                  </div>
 	                </div>
@@ -983,7 +994,7 @@ export default function BookingPage() {
 
 	              <div className="pt-2">
 	                <p className="sm:text-1xl font-bold tracking-tight">
-	                  <span className="font-medium font-bold">{isAuthed === true ? 'Total:' : 'Estimated total:'}</span>{' '}
+		                  <span className="font-medium font-bold">Total:</span>{' '}
 	                  {money(displayTotal, quote.currency)} ({quote.currency})
 	                </p>
 	              </div>

@@ -7,6 +7,7 @@ import Image from 'next/image';
 import dynamic from 'next/dynamic';
 import {
   FaBellConcierge,
+  FaPenToSquare,
   FaSuitcaseRolling,
   FaGift,
   FaHouse,
@@ -615,8 +616,19 @@ export default function DashboardPage() {
                 <FaUser className="text-white/90" />
               </div>
               <div>
-                <div className="text-[25px] md:text-[30px] font-semibold leading-tight">
-                  Hello {data?.name?.split(' ')[0] ?? data?.name ?? 'Member'}
+                <div className="flex flex-wrap items-center gap-3">
+                  <div className="text-[25px] md:text-[30px] font-semibold leading-tight">
+                    Hello {data?.name?.split(' ')[0] ?? data?.name ?? 'Member'}
+                  </div>
+                  <Link
+                    href="/account/user-information"
+                    className="inline-flex items-center gap-2 rounded-full border border-white/45 bg-white/12 px-3 py-1.5 text-sm font-semibold text-white transition hover:bg-white/20"
+                    aria-label="Edit account information"
+                    title="Edit account information"
+                  >
+                    <FaPenToSquare className="text-[13px]" />
+                    <span>Edit profile</span>
+                  </Link>
                 </div>
                 <div className="text-[25px] md:text-[20px] text-white/95">
                   Member Number:{' '}

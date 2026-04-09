@@ -20,15 +20,26 @@ export function getMemberPricing(input: {
   const taxesAndFees = toAmount(input.taxesAndFees);
   const petFee = toAmount(input.petFee);
   const memberSavings = roundCurrency(roomRate * MEMBER_SAVINGS_RATE);
-  const estimatedTotal = roundCurrency(roomRate + cleaningFee + taxesAndFees + petFee - memberSavings);
+  const discountedRoomRate = Math.max(0, roundCurrency(roomRate - memberSavings));
+  const taxRate = roomRate > 0 ? taxesAndFees / roomRate : 0;
+  const discountedTaxesAndFees = roundCurrency(discountedRoomRate * taxRate);
+  const retailTotal = roundCurrency(
+    roomRate + cleaningFee + taxesAndFees + petFee
+  );
+  const memberTotal = roundCurrency(
+    discountedRoomRate + cleaningFee + discountedTaxesAndFees + petFee
+  );
 
   return {
     rate: MEMBER_SAVINGS_RATE,
     roomRate,
+    discountedRoomRate,
     cleaningFee,
     taxesAndFees,
+    discountedTaxesAndFees,
     petFee,
     memberSavings,
-    estimatedTotal: Math.max(0, estimatedTotal),
+    retailTotal: Math.max(0, retailTotal),
+    memberTotal: Math.max(0, memberTotal),
   };
 }
