@@ -1839,12 +1839,14 @@ function onMemberLogin() {
 	              <b>{money(petFee, currency)}</b>
 	            </div>
 
-	            <div className="flex items-center justify-between text-[#8b6a18]">
-		              <span className="font-medium">
-                  {isMember ? 'Member savings' : 'Member savings (info only)'}
-                </span>
-	              <b>-{money(memberPricing.memberSavings, currency)}</b>
-	            </div>
+		            <div className="flex items-center justify-between gap-3 text-[#8b6a18]">
+			              <span className="font-medium">
+	                  {isMember
+	                    ? 'Member savings'
+	                    : `Members save ${money(memberPricing.memberSavings, currency)} on this stay. Guests pay the standard retail rate.`}
+	                </span>
+		              <b>-{money(memberPricing.memberSavings, currency)}</b>
+		            </div>
 
 	            <div className="h-px bg-gray-200 my-2" />
 
