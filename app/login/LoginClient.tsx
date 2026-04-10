@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import MiniDashboard from './MiniDashboard';
+import CountrySelect from '@/components/CountrySelect';
 
 // Option A phone input (you already added CSS in globals.css)
 import { PhoneInput } from 'react-international-phone';
@@ -17,18 +18,8 @@ type FormState = {
   password: string;
   country: string;
   postalcode: string;
+  dateofbirth: string;
 };
-
-const KNOWN_COUNTRIES = [
-  { country: 'Canada', iso2: 'ca' },
-  { country: 'United States', iso2: 'us' },
-  { country: 'Philippines', iso2: 'ph' },
-  { country: 'United Kingdom', iso2: 'gb' },
-  { country: 'Australia', iso2: 'au' },
-] as const;
-
-const countryToIso2 = (country: string) =>
-  KNOWN_COUNTRIES.find((c) => c.country === country)?.iso2 || 'ca';
 
 export default function LoginClient() {
   const router = useRouter(); // kept (don’t remove to avoid breaking future uses)
@@ -54,8 +45,9 @@ export default function LoginClient() {
     email: '',
     mobilenumber: '',
     password: '',
-    country: 'Canada',
+    country: 'CA',
     postalcode: '',
+    dateofbirth: '',
   });
 
   const [agreements, setAgreements] = useState<Agreements>({
@@ -169,6 +161,11 @@ export default function LoginClient() {
         setIsSubmitting(false);
         return;
       }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test((form.dateofbirth || '').trim())) {
+        setError('Please enter date of birth in YYYY-MM-DD format.');
+        setIsSubmitting(false);
+        return;
+      }
     }
 
     try {
@@ -180,7 +177,7 @@ export default function LoginClient() {
             ...form,
             communicationspreference: '111111',
             contactpreference: 'email',
-            dateofbirth: '08/08/1988',
+            dateofbirth: form.dateofbirth,
             mailingaddress: 'N/A',
             city: 'N/A',
             state: 'N/A',
@@ -274,7 +271,7 @@ export default function LoginClient() {
     }
   };
 
-  const iso2 = countryToIso2(form.country);
+  const iso2 = String(form.country || 'CA').toLowerCase();
 
   return (
     <div className="w-full m-0 p-0 bg-transparent">
@@ -449,20 +446,10 @@ export default function LoginClient() {
                       <div className="grid grid-cols-2 gap-3">
                         <div>
                           <label className="mb-1 block text-sm text-neutral-700">Country</label>
-                          <select
-                            name="country"
+                          <CountrySelect
                             value={form.country}
-                            onChange={handleInput}
-                            className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
-                            required
-                          >
-                            {KNOWN_COUNTRIES.map((c) => (
-                              <option key={c.country} value={c.country}>
-                                {c.country}
-                              </option>
-                            ))}
-                            <option value="Other">Other</option>
-                          </select>
+                            onChange={(value) => setForm((prev) => ({ ...prev, country: value }))}
+                          />
                         </div>
 
                         <div>
@@ -475,6 +462,18 @@ export default function LoginClient() {
                             className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
                           />
                         </div>
+                      </div>
+
+                      <div>
+                        <label className="mb-1 block text-sm text-neutral-700">Date of Birth</label>
+                        <input
+                          type="date"
+                          name="dateofbirth"
+                          value={form.dateofbirth}
+                          onChange={handleInput}
+                          required
+                          className="w-full rounded-md border border-neutral-300 px-3 py-2 text-neutral-900 outline-none focus:border-[#1b4a68]"
+                        />
                       </div>
                     </>
                   )}

@@ -3,21 +3,11 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useEffect, useState, useCallback } from 'react';
-import { useRouter, usePathname } from 'next/navigation';
 import ChatbotWidget, { type ChatbotMember } from "./ChatbotWidget";
 const BRAND = '#211F45';
 
 // Define API base
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE_URL || 'http://localhost:5000';
-
-interface AuthResponse {
-  loggedIn: boolean;
-  user?: {
-    id: string;
-    email: string;
-    // token if needed.
-  };
-}
 
 export default function SiteHeader() {
   const [open, setOpen] = useState(false);
@@ -26,16 +16,7 @@ export default function SiteHeader() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [member, setMember] = useState<ChatbotMember | null>(null);
   const [authSrc, setAuthSrc] = useState("/login");
-  const pathname = usePathname();
-  const currentPath = pathname || '';
-
-  const isInsideMemberApp =
-    currentPath.startsWith('/dashboard') || currentPath.startsWith('/account');
-  const accountHref = loggedIn
-    ? isInsideMemberApp
-      ? '/account/settings'
-      : '/dashboard'
-    : '/dashboard';
+  const accountHref = '/dashboard';
 
   const checkAuth = useCallback(async () => {
   setChecking(true);
@@ -145,33 +126,9 @@ export default function SiteHeader() {
     };
   }, [checkAuth]);
 
-const onMsg = (ev: MessageEvent) => {
-  if (!ev?.data?.type) return;
-
-  if (ev.data.type === 'auth-success' || ev.data.type === 'auth-logout') {
-    setShowLoginModal(false);
-
-    try {
-      localStorage.setItem('dtc_auth_changed', String(Date.now()));
-    } catch {}
-
-    checkAuth();
-
-    if (ev.data.type === 'auth-success') {
-      try {
-        const redirect = sessionStorage.getItem('dtc_post_login_redirect');
-        if (redirect) {
-          // mimic manual close behavior that already works
-          setTimeout(() => window.location.reload(), 80);
-        }
-      } catch {}
-    }
-  }
-};
-
   // login modal open requests
 useEffect(() => {
-  const handler = () => {
+  const handler: EventListener = () => {
     if (loggedIn) return;
 
     try {
@@ -188,8 +145,8 @@ useEffect(() => {
     setShowLoginModal(true);
   };
 
-  window.addEventListener("dtc:open-login" as any, handler as any);
-  return () => window.removeEventListener("dtc:open-login" as any, handler as any);
+  window.addEventListener("dtc:open-login", handler);
+  return () => window.removeEventListener("dtc:open-login", handler);
 }, [loggedIn]);
 async function logout() {
   

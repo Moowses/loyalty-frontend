@@ -16,10 +16,10 @@ type Profile = {
   membershipNo: string;
   firstName: string;
   lastName: string;
+  dateOfBirth: string;
   mobilePhone: string;
   gender: string;
   addressLine1: string;
-  addressLine2: string;
   stateProvince: string;
   postalCode: string;
   country: string;
@@ -57,10 +57,10 @@ const EMPTY_PROFILE: Profile = {
   membershipNo: '',
   firstName: '',
   lastName: '',
+  dateOfBirth: '',
   mobilePhone: '',
   gender: '',
   addressLine1: '',
-  addressLine2: '',
   stateProvince: '',
   postalCode: '',
   country: '',
@@ -92,6 +92,44 @@ function parseCountryCode(countryRaw: string | null | undefined): string {
 function getErrorMessage(error: unknown, fallback: string) {
   if (error instanceof Error && error.message) return error.message;
   return fallback;
+}
+
+function getFriendlyProfileError(message: string) {
+  const value = String(message || '').trim();
+  if (!value) return 'Unable to update profile. Please try again.';
+
+  if (
+    value.includes(
+      'The date format for users under the age of 18 or above is incorrect and should be yyyy-MM-dd.'
+    )
+  ) {
+    return 'Member must be at least 18 years old.';
+  }
+
+  return value;
+}
+
+function normalizeDateOfBirth(dateRaw: string | null | undefined) {
+  const value = String(dateRaw || '').trim();
+  if (!value) return '';
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    return value;
+  }
+
+  const slashMatch = value.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
+  if (slashMatch) {
+    const [, month, day, year] = slashMatch;
+    return `${year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+  }
+
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  const year = parsed.getUTCFullYear();
+  const month = String(parsed.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getUTCDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function inferCountryCode(countryRaw: string | null | undefined, phoneRaw: string) {
@@ -156,6 +194,18 @@ function Input(props: React.InputHTMLAttributes<HTMLInputElement>) {
       {...rest}
       className={`w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-[15px] text-[#1F2042] outline-none focus:border-[#211F45] focus:ring-2 focus:ring-[#211F45]/10 disabled:cursor-not-allowed disabled:bg-gray-100 ${className || ''}`}
     />
+  );
+}
+
+function StaticField({
+  value,
+}: {
+  value: string;
+}) {
+  return (
+    <div className="w-full rounded-lg border border-gray-200 bg-gray-100 px-3 py-2 text-[15px] text-[#6B7280]">
+      {value || '-'}
+    </div>
   );
 }
 
@@ -362,13 +412,13 @@ export default function UserInformationPage() {
             membershipNo: String(row.membershipno || '').trim(),
             firstName: String(row.firstname || '').trim(),
             lastName: String(row.lastname || '').trim(),
+            dateOfBirth: normalizeDateOfBirth(
+              row.dateofbirth || row.DateofBirth || row.birthday
+            ),
             mobilePhone,
             gender: String(row.gender || '').trim(),
             addressLine1: String(
               row.address1 || row.mailingaddress || ''
-            ).trim(),
-            addressLine2: String(
-              row.address2 || row.mailingaddress2 || ''
             ).trim(),
             stateProvince: String(row.state || '').trim(),
             postalCode: String(row.postalcode || row.zip || '').trim(),
@@ -456,10 +506,10 @@ export default function UserInformationPage() {
           email: profile.email,
           FirstName: profile.firstName.trim(),
           LastName: profile.lastName.trim(),
+          DateofBirth: profile.dateOfBirth.trim(),
           MobilePhone: profile.mobilePhone.trim(),
           Gender: profile.gender.trim(),
           AddressLine1: profile.addressLine1.trim(),
-          AddressLine2: profile.addressLine2.trim(),
           PostalCode: profile.postalCode.trim(),
           Country: profile.country.trim().toUpperCase(),
           StateProvince: profile.stateProvince.trim(),
@@ -472,8 +522,7 @@ export default function UserInformationPage() {
       const data = isJSON ? await res.json().catch(() => null) : null;
 
       if (!res.ok || data?.result === 'error' || data?.result !== 'success') {
-        const message =
-          data?.message || 'Unable to update profile. Please try again.';
+        const message = getFriendlyProfileError(data?.message || '');
         setFormError(message);
         setSaveDialog({
           open: true,
@@ -497,7 +546,9 @@ export default function UserInformationPage() {
         setSaveDialog({ open: false });
       }, 1600);
     } catch (error) {
-      const message = getErrorMessage(error, 'Failed to update profile.');
+      const message = getFriendlyProfileError(
+        getErrorMessage(error, 'Failed to update profile.')
+      );
       setFormError(message);
       setSaveDialog({
         open: true,
@@ -561,14 +612,12 @@ export default function UserInformationPage() {
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                 <div>
                   <Label>Membership Number</Label>
-                  <Input value={profile.membershipNo} readOnly />
-                  <Hint>Read-only. Managed by the backend system.</Hint>
+                  <StaticField value={profile.membershipNo} />
                 </div>
 
                 <div>
-                  <Label>Login Email</Label>
-                  <Input value={profile.email} readOnly />
-                  <Hint>Not editable through this route.</Hint>
+                  <Label>Email</Label>
+                  <StaticField value={profile.email} />
                 </div>
 
                 <div>
@@ -596,6 +645,21 @@ export default function UserInformationPage() {
                       setProfile((prev) => ({
                         ...prev,
                         lastName: e.target.value,
+                      }))
+                    }
+                  />
+                </div>
+
+                <div>
+                  <Label>Date of Birth</Label>
+                  <Input
+                    type="date"
+                    value={profile.dateOfBirth}
+                    max={new Date().toISOString().slice(0, 10)}
+                    onChange={(e) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        dateOfBirth: e.target.value,
                       }))
                     }
                   />
@@ -654,19 +718,6 @@ export default function UserInformationPage() {
                   />
                 </div>
 
-                <div className="md:col-span-2">
-                  <Label>Address Line 2</Label>
-                  <Input
-                    value={profile.addressLine2}
-                    onChange={(e) =>
-                      setProfile((prev) => ({
-                        ...prev,
-                        addressLine2: e.target.value,
-                      }))
-                    }
-                  />
-                </div>
-
                 <div>
                   <Label>
                     Country<span className="text-red-500"> *</span>
@@ -710,7 +761,6 @@ export default function UserInformationPage() {
                       </option>
                     ))}
                   </Select>
-                  <Hint>Province/state comes from the same backend validation dataset.</Hint>
                 </div>
 
                 <div>

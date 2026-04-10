@@ -57,6 +57,12 @@ function isValidE164(v: string) {
   const s = String(v || '').trim();
   return /^\+\d{8,15}$/.test(s);
 }
+function isValidISODate(v: string) {
+  const s = String(v || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(s)) return false;
+  const d = new Date(`${s}T00:00:00Z`);
+  return !Number.isNaN(d.getTime()) && d.toISOString().slice(0, 10) === s;
+}
 
 function parseLocalDateOnly(raw?: string) {
   if (!raw) return null;
@@ -148,6 +154,7 @@ export default function BookingPage() {
 
   const [createAccount, setCreateAccount] = useState(false);
   const [mobileNumber, setMobileNumber] = useState('');
+  const [dateOfBirth, setDateOfBirth] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
@@ -256,6 +263,7 @@ export default function BookingPage() {
       setPassword('');
       setConfirmPassword('');
       setMobileNumber('');
+      setDateOfBirth('');
       return;
     }
     if (isAuthed === false) {
@@ -514,6 +522,7 @@ export default function BookingPage() {
 
     if (!isValidEmail(email)) throw new Error('Please enter a valid email address.');
     if (!isValidE164(mobileNumber)) throw new Error('Mobile number must be in international format like +639xxxxxxxxx.');
+    if (!isValidISODate(dateOfBirth)) throw new Error('Date of birth must be in YYYY-MM-DD format.');
     if (!password || password.length < 8) throw new Error('Password must be at least 8 characters.');
     if (password !== confirmPassword) throw new Error('Passwords do not match.');
 
@@ -531,7 +540,7 @@ export default function BookingPage() {
         country,
         communicationspreference: consentEmail ? 'Email' : '',
         contactpreference: consentSms ? 'SMS' : '',
-        dateofbirth: '',
+        dateofbirth: dateOfBirth,
         mailingaddress: `${address1}${address2 ? ', ' + address2 : ''}`,
         city,
         state,
@@ -965,14 +974,19 @@ export default function BookingPage() {
 
                   {createAccount && (
                     <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                     
                       <PhoneInput
                         defaultCountry="us"
                         value={mobileNumber}
                         onChange={setMobileNumber}
                         required
                       />
-                      <div />
+                      <Field
+                        label="Date of Birth*"
+                        type="date"
+                        value={dateOfBirth}
+                        onChange={setDateOfBirth}
+                        required
+                      />
                       <Field
                         label="Password*"
                         type="password"
