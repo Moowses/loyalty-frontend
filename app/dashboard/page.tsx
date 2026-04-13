@@ -54,6 +54,9 @@ type StaysPayload = {
   missing?: StayBooking[];
 };
 
+const HOME =
+  (process.env.NEXT_PUBLIC_HOME_URL || '').replace(/\/+$/, '') || '/';
+
 //chatbot
 const ChatbotWidget = dynamic(() => import('@/components/ChatbotWidget'), {
   ssr: false,
@@ -361,8 +364,6 @@ export default function DashboardPage() {
   useEffect(() => {
     let cancelled = false;
     const controller = new AbortController();
-
-    const HOME = '//';
     const base =
       process.env.NEXT_PUBLIC_API_BASE_URL?.replace(/\/+$/, '') ||
       '';
@@ -401,7 +402,7 @@ export default function DashboardPage() {
           loggedIn = !!me?.loggedIn;
         }
       } catch {
-        loggedIn = !!cookieEmail;
+        loggedIn = false;
       }
 
       if (!loggedIn) {
@@ -410,7 +411,7 @@ export default function DashboardPage() {
       }
 
       const email =
-        cookieEmail || localStorage.getItem('email') || '';
+        localStorage.getItem('email') || cookieEmail || '';
 
       if (!email) {
         safeRedirect(false);

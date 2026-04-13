@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import nationalities from 'i18n-nationality';
+import nationalityEn from 'i18n-nationality/langs/en.json';
 import {
   PhoneInput,
   getCountry,
@@ -19,6 +21,7 @@ type Profile = {
   dateOfBirth: string;
   mobilePhone: string;
   gender: string;
+  nationality: string;
   addressLine1: string;
   stateProvince: string;
   postalCode: string;
@@ -60,6 +63,7 @@ const EMPTY_PROFILE: Profile = {
   dateOfBirth: '',
   mobilePhone: '',
   gender: '',
+  nationality: '',
   addressLine1: '',
   stateProvince: '',
   postalCode: '',
@@ -72,6 +76,8 @@ const EMPTY_LOCATION_OPTIONS: LocationOptionsResponse = {
 };
 
 const E164_REGEX = /^\+[1-9]\d{7,14}$/;
+
+nationalities.registerLocale(nationalityEn);
 
 function getCookie(name: string): string {
   if (typeof document === 'undefined') return '';
@@ -168,6 +174,33 @@ function normalizeBackendPhone(countryCode: string, phoneRaw: string) {
   }
 
   return `+${country.dialCode}${localDigits}`;
+}
+
+function inferNationality(
+  nationalityRaw: string | null | undefined,
+  countryCode: string
+) {
+  const explicitNationality = String(nationalityRaw || '').trim();
+  if (explicitNationality) return explicitNationality;
+
+  const normalizedCountryCode = String(countryCode || '').trim().toUpperCase();
+  if (!normalizedCountryCode) return '';
+
+  return nationalities.getName(normalizedCountryCode, 'en') || '';
+}
+
+function inferNationalityCode(
+  nationalityRaw: string | null | undefined,
+  countryCode: string
+) {
+  const explicitNationality = String(nationalityRaw || '').trim();
+  if (explicitNationality) {
+    const resolved = nationalities.getAlpha2Code(explicitNationality, 'en');
+    if (resolved) return String(resolved).toUpperCase();
+  }
+
+  const normalizedCountryCode = String(countryCode || '').trim().toUpperCase();
+  return normalizedCountryCode || '';
 }
 
 function Label({
@@ -302,6 +335,11 @@ export default function UserInformationPage() {
     () => locationOptions.provincesByCountryCode[profile.country] || [],
     [locationOptions.provincesByCountryCode, profile.country]
   );
+  const nationalityOptions = useMemo(() => {
+    return Object.values(nationalities.getNames('en') || {})
+      .filter(Boolean)
+      .sort((a, b) => a.localeCompare(b));
+  }, []);
   const phoneCountry = useMemo(() => {
     const next = String(profile.country || '').trim().toLowerCase();
     return /^[a-z]{2}$/.test(next) ? next : 'us';
@@ -403,6 +441,14 @@ export default function UserInformationPage() {
           ).trim();
           const countryCode = inferCountryCode(row.country, backendPhone);
           const mobilePhone = normalizeBackendPhone(countryCode, backendPhone);
+          const nationality = inferNationality(
+            row.nationality || row.Nationality,
+            countryCode
+          );
+          const nationalityCode = inferNationalityCode(
+            row.nationality || row.Nationality,
+            countryCode
+          );
           setProfile({
             email:
               String(row.primaryemail || '').trim() ||
@@ -417,8 +463,9 @@ export default function UserInformationPage() {
             ),
             mobilePhone,
             gender: String(row.gender || '').trim(),
+            nationality: nationality || inferNationality(undefined, nationalityCode),
             addressLine1: String(
-              row.address1 || row.mailingaddress || ''
+              row.address2 || row.address1 || row.mailingaddress || ''
             ).trim(),
             stateProvince: String(row.state || '').trim(),
             postalCode: String(row.postalcode || row.zip || '').trim(),
@@ -458,6 +505,7 @@ export default function UserInformationPage() {
     !!profile.firstName.trim() &&
     !!profile.lastName.trim() &&
     !!profile.mobilePhone.trim() &&
+    !!profile.nationality.trim() &&
     !!profile.country.trim() &&
     !!profile.stateProvince.trim() &&
     phoneValid;
@@ -481,6 +529,20 @@ export default function UserInformationPage() {
 
     if (!phoneValid) {
       setFormError('Mobile phone must follow E.164 format, for example +639171234567.');
+      return;
+    }
+
+    if (!profile.nationality.trim()) {
+      setFormError('Nationality is required.');
+      return;
+    }
+
+    const nationalityCode = inferNationalityCode(
+      profile.nationality.trim(),
+      profile.country.trim()
+    );
+    if (!nationalityCode) {
+      setFormError('Unable to determine nationality code for the selected nationality.');
       return;
     }
 
@@ -509,7 +571,9 @@ export default function UserInformationPage() {
           DateofBirth: profile.dateOfBirth.trim(),
           MobilePhone: profile.mobilePhone.trim(),
           Gender: profile.gender.trim(),
-          AddressLine1: profile.addressLine1.trim(),
+          Nationality: profile.nationality.trim(),
+          NationalityCode: nationalityCode,
+          AddressLine2: profile.addressLine1.trim(),
           PostalCode: profile.postalCode.trim(),
           Country: profile.country.trim().toUpperCase(),
           StateProvince: profile.stateProvince.trim(),
@@ -702,6 +766,28 @@ export default function UserInformationPage() {
                     <option value="Prefer not to say">
                       Prefer not to say
                     </option>
+                  </Select>
+                </div>
+
+                <div>
+                  <Label>
+                    Nationality<span className="text-red-500"> *</span>
+                  </Label>
+                  <Select
+                    value={profile.nationality}
+                    onChange={(e) =>
+                      setProfile((prev) => ({
+                        ...prev,
+                        nationality: e.target.value,
+                      }))
+                    }
+                  >
+                    <option value="">Select nationality</option>
+                    {nationalityOptions.map((nationality) => (
+                      <option key={nationality} value={nationality}>
+                        {nationality}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
