@@ -360,6 +360,7 @@ export default function DashboardPage() {
   const [selectedStay, setSelectedStay] =
     useState<StayBooking | null>(null);
   const [loading, setLoading] = useState(true);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -379,10 +380,7 @@ export default function DashboardPage() {
         router.replace(HOME);
         return;
       }
-      setTimeout(() => {
-        alert('You must Log In first.');
-        router.replace(HOME);
-      }, 1500);
+      setShowLoginPrompt(true);
     };
 
     const run = async () => {
@@ -603,6 +601,32 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#F6F8FB]">
+      {showLoginPrompt && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl">
+            <h2 className="text-xl font-semibold text-[#1F2042]">Please log in</h2>
+            <p className="mt-2 text-sm leading-6 text-[#4B5563]">
+              You need to sign in to access your dashboard.
+            </p>
+            <div className="mt-5 flex justify-end">
+              <button
+                type="button"
+                onClick={() => {
+                  try {
+                    sessionStorage.setItem('dtc_post_login_redirect', '/dashboard');
+                    sessionStorage.setItem('dtc_open_login_after_redirect', 'true');
+                  } catch {}
+                  setShowLoginPrompt(false);
+                  router.replace(HOME);
+                }}
+                className="inline-flex items-center rounded-lg bg-[#211F45] px-4 py-2 font-semibold text-white hover:opacity-90"
+              >
+                OK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       {/*BODY: Light DTC layout  */}
       <main className="max-w-7xl mx-auto px-4 md:px-6 py-8 text-[#1F2042]">
         

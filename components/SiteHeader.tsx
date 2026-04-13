@@ -126,6 +126,26 @@ export default function SiteHeader() {
     };
   }, [checkAuth]);
 
+  useEffect(() => {
+    if (loggedIn) return;
+
+    try {
+      const shouldOpen = sessionStorage.getItem('dtc_open_login_after_redirect');
+      if (!shouldOpen) return;
+
+      sessionStorage.removeItem('dtc_open_login_after_redirect');
+      const redirect = sessionStorage.getItem("dtc_post_login_redirect");
+      if (redirect) {
+        setAuthSrc(`/login?redirect=${encodeURIComponent(redirect)}`);
+      } else {
+        setAuthSrc("/login");
+      }
+      setShowLoginModal(true);
+    } catch {
+      // ignore sessionStorage access issues
+    }
+  }, [loggedIn]);
+
   // login modal open requests
 useEffect(() => {
   const handler: EventListener = () => {
